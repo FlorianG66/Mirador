@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement (phase 0 — fondations du repo). Aucune fonctionnalité n'est encore livrée.
+> **Statut** : projet en cours de développement — phase 1 livrée en local (backend socle : santé, erreurs, logs, config, base, migrations). Aucune fonctionnalité métier n'est encore livrée.
 
 ## Présentation
 
@@ -22,7 +22,7 @@ Détails et justifications : [`SPEC.md`](SPEC.md) §5, [`docs/ARCHITECTURE.md`](
 
 - Python 3.12+
 - Node.js 20+
-- Docker + Docker Compose
+- Docker + Docker Compose (base de dev ; les tests ne le nécessitent pas : PostgreSQL éphémère fourni par `pgserver`)
 - `pre-commit` et `gitleaks` (voir ci-dessous)
 
 ## Installation
@@ -31,18 +31,24 @@ Détails et justifications : [`SPEC.md`](SPEC.md) §5, [`docs/ARCHITECTURE.md`](
 # 1. Variables d'environnement
 cp .env.example .env
 
-# 2. Base de données
+# 2. Base de données (dev)
 docker compose up -d
 
-# 3. Hooks de validation (ruff, gitleaks)
+# 3. Backend (dépendances épinglées dans pyproject.toml)
+cd backend
+python -m venv .venv
+python -m pip install -e ".[dev]"
+cd ..
+
+# 4. Hooks de validation (ruff, gitleaks)
 pip install pre-commit && pre-commit install
 ```
 
 ## Lancement
 
 ```bash
-# Backend
-cd backend && uvicorn app.main:app --reload
+# Backend (settings lus de l'environnement puis .env)
+cd backend && python -m uvicorn app.main:create_app --factory --reload
 
 # Frontend (phase 3)
 cd frontend && npm run dev
@@ -51,8 +57,11 @@ cd frontend && npm run dev
 ## Tests
 
 ```bash
-# Backend
-cd backend && pytest --cov
+# Backend : pytest + couverture (seuil 80 %, vérifié en local à 100 %)
+cd backend && pytest --cov=app
+
+# Qualité backend
+cd backend && ruff check . && ruff format --check . && mypy
 
 # Hooks de qualité
 pre-commit run --all-files

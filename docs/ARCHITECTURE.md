@@ -18,15 +18,23 @@
 
 ```
 backend/app/
+  main.py       create_app(settings) : assemblage (logging, routes, erreurs)
   routers/      HTTP uniquement, aucune logique métier
   services/     logique métier
   repositories/ accès aux données
   models/       modèles SQLAlchemy
   schemas/      schémas Pydantic (entrée/sortie)
-  core/         config, erreurs (RFC 9457), dépendances partagées
+  core/         config (pydantic-settings), erreurs RFC 9457, logging JSON, base asyncpg
 ```
 
 Couches : `routers → services → repositories`.
+
+- **API** : préfixe `/api/v1` ; `/health` (vivacité, sans base) et `/health/db` (200 si PostgreSQL répond, 503 en `application/problem+json` sinon).
+- **Erreurs** : handlers globaux (404, 405, 422, 500) au format RFC 9457, titres = phrases HTTP ; jamais d'erreur 500 brute ni de fuite de détail.
+- **Logging** : handler unique JSON sur le logger `app` (tous les modules `app.*` y propagent), `propagate=False`, idempotent.
+- **Config** : `Settings` (env → `.env`), URL forcée en `postgresql+asyncpg://` ; les settings sont portés par `app.state` et injectés en test via `create_app`.
+- **Migrations** : Alembic async (`alembic/env.py` lit les settings), baseline `0001` (tables métiers en phase 2).
+- **Tests** : `pgserver` lance PostgreSQL 16.2 éphémère pour les tests (CI incluse, sans Docker) ; seuil de couverture 80 %.
 
 ## Structure frontend
 
