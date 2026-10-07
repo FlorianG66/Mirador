@@ -1,0 +1,12 @@
+# Fin de ligne LF partout (cohérence Windows/macOS/Linux, warning « LF → CRLF » évité)
+* text=auto eol=lf
+
+# Fichiers binaires
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

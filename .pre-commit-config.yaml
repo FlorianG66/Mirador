@@ -1,0 +1,39 @@
+# Hooks exécutés à chaque commit (pre-commit install).
+# Le même ensemble tourne dans la CI sur l'intégralité du dépôt.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Frontend : actif dès que frontend/package.json existe (phase 3).
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: npm --prefix frontend run lint --
+        language: system
+        files: ^frontend/.*\.[cm]?[jt]sx?$
+
+      # Gitleaks : binaire attendu sur le PATH (winget/choco en local), version
+      # épinglée v8.30.1 dans la CI. pass_filenames: false sinon gitleaks reçoit
+      # les noms de fichiers en argument et plante.
+      - id: gitleaks
+        name: Détection de secrets (gitleaks)
+        entry: gitleaks git --pre-commit --staged --redact --verbose
+        language: system
+        pass_filenames: false
+        always_run: true
