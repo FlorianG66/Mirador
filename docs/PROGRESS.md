@@ -6,9 +6,9 @@
 
 - **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
   2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit (**livrée et commitée**),
-  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit (**livrée**, commit en attente), 2e Google OIDC.
+  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit (**livrée et commitée**), 2e Google OIDC.
 - **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
-- **Prochaine action** : commit de la sous-phase 2d, puis sous-phase 2e — connexion Google (OIDC).
+- **Prochaine action** : sous-phase 2e — connexion Google (OIDC).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -193,4 +193,5 @@
 - Hygiène : `ruff check` + `ruff format` (9 fichiers reformattés), `mypy` 0 erreur (65 fichiers), `pre-commit run --all-files` → 11 hooks ✅ (gitleaks inclus).
 - Fix infra : `tests/conftest.py` → `cleanup_mode="delete"` (les clusters pgserver de test remplissaient `%TEMP%`, ~50 Mo par exécution — disque tombé à 10 Mo en cours de phase).
 - Docs : `ARCHITECTURE.md` (bloc invitations/équipe/audit, quotas, nettoyage des clusters), `DECISIONS.md` (6 décisions), `CHANGELOG.md`, `README.md`, ce fichier.
-- **Non fait** : commit (en attente de ce paragraphe), push (aucun remote GitHub), merge sur `main` (sans feu vert).
+- Commit : `9d7045e feat: invitations, permissions par module et journal d'audit (sous-phase 2d)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert).
