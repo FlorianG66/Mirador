@@ -25,6 +25,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     # Null pour un compte créé via Google OIDC (aucun mot de passe local).
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # A2F TOTP (SPEC §2) : secret nullable, activation datée (phase 2c).
+    # Le secret est stocké en clair au repos : voir docs/DECISIONS.md (chiffrement
+    # AES-GCM prévu avec le module des connexions tierces, SPEC §6).
+    totp_secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -61,3 +61,31 @@ Chaque processus garde une fenêtre glissante par couple (route, IP) sur `app.st
 ## 2026-10-08 — Couverture : les lignes après `await` ne sont pas mesurées
 
 coverage.py (testé `pytrace`, `ctrace`, `sysmon`) ne remonte pas les lignes exécutées juste après un `await` dans les coroutines du socle (SQLAlchemy async / FastAPI) : le code tourne pourtant (lignes vues par d'autres assertions), la mesure reste plancher. Raison : seuil de couverture conservé à 80 % (mesuré ~92 %), l'écart est documenté et chaque branche sensible a un test dédié — ne pas gonfler la couverture par des usines à gaz.
+
+## 2026-10-08 — TOTP implémenté en interne, validé par les vecteurs RFC 6238
+
+Pas de nouvelle dépendance : `app/core/totp.py` implémente RFC 6238 (HMAC-SHA1, 6 chiffres, période 30 s, tolérance d'un pas) en une vingtaine de lignes, testé contre l'appendice B officiel. Raison : le standard est stable et court, une bibliothèque de plus à surveiller n'est pas justifiée (AGENTS.md §2).
+
+## 2026-10-08 — Secret TOTP stocké en clair au repos
+
+`users.totp_secret` n'est pas chiffré en base ; le chiffrement (AES-GCM, clé maîtresse) arrive avec le module des identifiants d'outils tiers (SPEC §6). Raison : pas de clé maîtresse de chiffrement avant la phase des intégrations, et le secret volé ne suffit pas à se connecter (il faut aussi le mot de passe) ; l'A2F reste une protection forte contre le phishing et le vol de session.
+
+## 2026-10-08 — Codes de secours hachés SHA-256, sans comparaison à coût élevé
+
+Backup codes : 10 × 8 caractères (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, sans caractères ambigus), stockés en base uniquement hachés SHA-256. Raison : leur entropie (≈ 40 bits) plus le rate limiting de `verify` excluent la force brute ; Argon2 serait un surcoût inutile sur une table dédiée.
+
+## 2026-10-08 — Défi A2F à usage unique, cookie dédié
+
+Connexion avec TOTP actif : aucun cookie de session, un cookie `mirador_2fa` (httpOnly, `Path=/api/v1/auth`, 5 min) et une ligne `auth_challenges` (jeton opaque haché) ; `verify` échange le défi contre une session complète puis le consomme. Raison : le cookie de défi ne porte aucun privilège, il est limité à la route de vérification ; la ligne consommée bloque le rejeu.
+
+## 2026-10-08 — Jeton de réinitialisation : 30 min, à usage unique, révocation des sessions
+
+`password_reset_tokens` : jeton opaque haché, expiration 30 min, consommé à l'usage ; le reset change le mot de passe et révoque toutes les sessions du compte. Raison : un lien capté doit expirer vite et ne servir qu'une fois ; toute session ouverte ailleurs doit mourir (mot de passe == nouveau).
+
+## 2026-10-08 — E-mails journalisés jusqu'au SMTP (phase 11)
+
+Interface `EmailSender` + `LogEmailSender` sur `app.state.email_sender`, remplacée par de vrais e-mails seulement à la phase 11. Raison : sans SMTP, le lien de reset doit rester visible en dev ; l'interface permet aux tests d'injecter un faux émetteur sans toucher aux routes.
+
+## 2026-10-08 — `forgot`/`reset`/`verify` sans CSRF quand anonyme, protégés sinon
+
+`auth/password/*` et `auth/2fa/verify` sont exemptés de la vérification CSRF seulement quand aucun cookie d'authentification n'est joint (l'utilisateur vient de la page de connexion) ; s'ils arrivent avec une session, la protection s'applique. Raison : pas de CSRF à fournir depuis la page publique, mais une attaque depuis un site tiers ne doit jamais pouvoir agir sur un compte connecté.

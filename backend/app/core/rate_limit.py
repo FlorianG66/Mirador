@@ -19,6 +19,14 @@ LOGIN_RATE_WINDOW_SECONDS = 60
 REGISTER_RATE_LIMIT = 5
 REGISTER_RATE_WINDOW_SECONDS = 60
 
+# Second facteur et récupération de compte (phase 2c) : quotas volontairement stricts.
+TWO_FACTOR_VERIFY_RATE_LIMIT = 5
+TWO_FACTOR_VERIFY_RATE_WINDOW_SECONDS = 60
+PASSWORD_FORGOT_RATE_LIMIT = 3
+PASSWORD_FORGOT_RATE_WINDOW_SECONDS = 15 * 60
+PASSWORD_RESET_RATE_LIMIT = 5
+PASSWORD_RESET_RATE_WINDOW_SECONDS = 60 * 60
+
 
 class RateLimiter:
     """Compteur de tentatives par clé, purge automatique des fenêtres expirées."""

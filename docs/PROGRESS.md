@@ -6,9 +6,9 @@
 
 - **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
   2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit (**livrée et commitée**),
-  2c A2F TOTP + codes de secours + mot de passe oublié, 2d invitations/permissions/révocation/audit, 2e Google OIDC.
+  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit, 2e Google OIDC.
 - **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
-- **Prochaine action** : sous-phase 2c — A2F TOTP, codes de secours, mot de passe oublié.
+- **Prochaine action** : sous-phase 2d — invitations, permissions par module, révocation, journal d'audit.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -75,6 +75,33 @@
 - **coverage.py et coroutines** : ni `pytrace`, ni `ctrace`, ni `sysmon` ne remontent les lignes après un `await` dans les coroutines SQLAlchemy async/FastAPI (le code s'exécute pourtant, prouvé par les assertions). Mesure plancher ~92 % ; ne pas tordre le code pour faire mentir l'outil (v. `DECISIONS.md`).
 - **Le CSRF avant le routage** : le middleware intercepte avant FastAPI ; sans la garde « cookie d'authentification présent », il transformait le 405 d'un `POST /health` en 403. La sécurité a une fenêtre : on ne protège que ce qui porte des credentials.
 
+### Critères de la phase 2c — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests écrits d'abord (RED) puis GREEN | ✅ RED avant toute implémentation (collection errors : `app.core.totp` absents) ; GREEN : **129 passed** |
+| pytest vert | ✅ `pytest --cov=app` → 129 passed |
+| Couverture ≥ 80 % | ✅ **89,5 % mesurés** (artefact coverage coroutines, v. `DECISIONS.md`) |
+| ruff check + format | ✅ exit 0 |
+| mypy strict | ✅ 0 erreur sur 53 fichiers |
+| TOTP | ✅ RFC 6238 maison validé par les vecteurs officiels de l'appendice B, fenêtre ±1 pas |
+| Codes de secours | ✅ 10 codes stockés hachés SHA-256, consommés à l'usage (rejeu → 401) |
+| Défi A2F | ✅ login TOTP → `totp_required` + cookie `mirador_2fa` sans session ; défi à usage unique (rejeu → 401, même code) |
+| Mot de passe oublié | ✅ réponse invariante (anti-énumération), jeton 30 min haché à usage unique, reset révoque toutes les sessions |
+| Migration Alembic `0004` | ✅ aller-retour `head → base` vérifié, tables hors RLS, colonnes `totp_*` ajoutées |
+| CSRF A2F | ✅ enable/disable protégés (403 sans jeton) ; verify/forgot/reset libres sans session |
+| Rate limit | ✅ `verify-2fa` 5/min, `forgot` 3/15 min, `reset` 5/h — 429 + `Retry-After` |
+| pre-commit passe | ✅ `pre-commit run --all-files` → 11 hooks Passed |
+| gitleaks ne détecte rien | ✅ passé dans pre-commit |
+| CI backend | ⚠️ job écrit, **non exécuté** (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 2c (à ne pas re-piocher)
+- **gitleaks bloque le vecteur RFC** : le secret de test base32 du RFC 6238 (`GEZDGNBV…`) a l'entropie d'une clé API → `generic-api-key` le détecte et refuse le commit. Le secret se décode depuis `b"12345678901234567890"` (les octets ASCII réels du RFC) au lieu d'être écrit littéralement.
+- **Format `%n` dans `logger.info`** : `"…| %s%n%s"` est interprété par le formatage printf du logging → `ValueError: unsupported format character 'n'`. Écrire `\\n` dans la chaîne de format, ne pas mettre de `%n`.
+- **CSRF intercepte l'anonyme aussi** : dès qu'un cookie d'authentification traîne dans le jar, `forgot`/`reset`/`enable` reçoivent 403 au lieu de 422/200. Les tests de flux de récupération doivent partir anonyme (`client.cookies.clear()`) puisque la page de connexion n'a aucun cookie ; sinon c'est la vérification CSRF qui répond en premier.
+- **Rejeu du défi A2F en test** : rejouer le cookie `mirador_2fa` avec les cookies de session du premier succès renvoie 403 (CSRF), pas 401. Vider le jar puis reposer le seul cookie de défi pour isoler la consommation du défi.
+- **Formatage des messages de test** : les vecteurs RFC utilisent des timestamps exacts (`totp_at(secret, timestamp)`), les tests de flux utilisent l'heure courante (`totp_at(secret)`) — la primitive accepte les deux, pas le test de l'URI otpauth.
+- **E-mail de reset dans le log, pas envoyé** : sans SMTP le lien vit dans `LogEmailSender` ; les tests injectent `FakeEmailSender` via `app.state.email_sender` (les routes le lisent sur `request.app.state`).
+
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -123,3 +150,13 @@
 - Infrastructure de test : `clean_tables` (TRUNCATE autouse) règle l'isolation des e-mails uniques entre tests qui commitent.
 - Vérifications : 98 passed · couverture **92 % mesurés** (artefact coverage sur les coroutines, documenté) · ruff ✅ · format ✅ · mypy strict ✅ (38 fichiers) · pre-commit ✅ · gitleaks ✅ · CI non exécutée sans remote.
 - **Non fait** : commit (en attente de ce paragraphe), dernier coup d'œil à `CHANGELOG.md` / `ARCHITECTURE.md` / `PROGRESS.md` au moment du commit.
+
+### 2026-10-08 — Sous-phase 2c livrée
+- TDD respecté : RED avant toute implémentation (collection errors sur les modules absents), puis GREEN (**129 passed**).
+- A2F TOTP maison (`app/core/totp.py`, RFC 6238 validé par les vecteurs officiels), secret 20 octets base32, fenêtre ±1 pas ; activation en une étape (secret + URI otpauth + 10 codes de secours affichés une fois), réactivation régénère tout, désactivation exige le mot de passe courant.
+- Défi de connexion : login TOTP → `LoginResponse(totp_required=true)` + cookie `mirador_2fa` (5 min, confiné à `/api/v1/auth`) + défi `auth_challenges` à usage unique (jeton haché) ; `POST /auth/2fa/verify` échange code TOTP **ou** code de secours contre une session, puis consomme le défi et le code.
+- Récupération : `POST /auth/password/forgot` (réponse invariante, anti-énumération, 1 e-mail max par compte) → jeton `password_reset_tokens` 30 min haché à usage unique ; `POST /auth/password/reset` change le mot de passe et révoque toutes les sessions.
+- E-mails : interface `EmailSender` + `LogEmailSender` (SMTP à la phase 11), lien de reset construit sur `Settings.app_base_url` ; `AuthChallenges`/`BackupCodes`/`PasswordResetTokens` hors RLS (données d'identité globales), migration `0004`.
+- Rate limits dédiés (`verify-2fa` 5/min, `forgot` 3/15 min, `reset` 5/h) ; `.env.example` documente `APP_BASE_URL`.
+- Vérifications : 129 passed · couverture 89,5 % · ruff ✅ · format ✅ · mypy strict ✅ (53 fichiers) · pre-commit ✅ (11 hooks, gitleaks inclus) · `.env.example` en phase avec `Settings`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert).

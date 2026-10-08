@@ -6,10 +6,12 @@ from alembic import command
 from tests.conftest import alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
-HEAD_REVISION = "0003"
+HEAD_REVISION = "0004"
 
 # Tables soumises à Row-Level Security : elles portent toutes organization_id.
 TENANT_TABLES = ("memberships", "module_permissions", "invitations", "audit_logs")
+# Globals d'identité (comme `users` et `sessions`) : hors RLS, phase 2c.
+IDENTITY_TABLES = ("auth_challenges", "backup_codes", "password_reset_tokens")
 
 
 def test_upgrade_head_then_downgrade_base_round_trip(alembic_test_database_url: str) -> None:
@@ -69,9 +71,23 @@ def test_tenant_tables_enforce_row_level_security(alembic_test_database_url: str
 def test_phase2_tables_created_by_migration(alembic_test_database_url: str) -> None:
     upgrade_to_head(alembic_test_database_url)
 
-    for table in (*TENANT_TABLES, "organizations", "users", "sessions"):
+    for table in (*TENANT_TABLES, *IDENTITY_TABLES, "organizations", "users", "sessions"):
         exists = fetch_scalar(alembic_test_database_url, f"SELECT to_regclass('{table}')")
         assert exists is not None, f"table {table} absente du schéma"
+
+
+def test_two_factor_columns_added_to_users(alembic_test_database_url: str) -> None:
+    """Phase 2c : le compte porte le secret (nullable) et la date d'activation TOTP."""
+    upgrade_to_head(alembic_test_database_url)
+
+    columns = fetch_scalar(
+        alembic_test_database_url,
+        "SELECT string_agg(column_name, ',' ORDER BY column_name)"
+        " FROM information_schema.columns WHERE table_name = 'users'",
+    )
+    assert isinstance(columns, str)
+    assert "totp_secret" in columns
+    assert "totp_enabled_at" in columns
 
 
 def test_sessions_stay_out_of_row_level_security(alembic_test_database_url: str) -> None:
@@ -83,3 +99,15 @@ def test_sessions_stay_out_of_row_level_security(alembic_test_database_url: str)
         "SELECT relrowsecurity FROM pg_class WHERE oid = to_regclass('sessions')",
     )
     assert row_level_security is False
+
+
+def test_two_factor_tables_stay_out_of_row_level_security(alembic_test_database_url: str) -> None:
+    """Défis, codes de secours et jetons de réinitialisation : pas de tenant (phase 2c)."""
+    upgrade_to_head(alembic_test_database_url)
+
+    for table in IDENTITY_TABLES:
+        row_level_security = fetch_scalar(
+            alembic_test_database_url,
+            f"SELECT relrowsecurity FROM pg_class WHERE oid = to_regclass('{table}')",
+        )
+        assert row_level_security is False

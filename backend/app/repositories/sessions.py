@@ -79,3 +79,12 @@ async def revoke(session: AsyncSession, row: UserSession) -> None:
     await session.execute(
         update(UserSession).where(UserSession.id == row.id).values(revoked_at=func.now())
     )
+
+
+async def revoke_all_for_user(session: AsyncSession, *, user_id: uuid.UUID) -> None:
+    """Révoque toutes les sessions d'un compte (réinitialisation de mot de passe)."""
+    await session.execute(
+        update(UserSession)
+        .where(UserSession.user_id == user_id, UserSession.revoked_at.is_(None))
+        .values(revoked_at=func.now())
+    )

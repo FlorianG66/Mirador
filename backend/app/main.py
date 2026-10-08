@@ -14,6 +14,9 @@ from app.core.middleware import SecurityMiddleware
 from app.core.rate_limit import RateLimiter
 from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
+from app.routers.password import router as password_router
+from app.routers.two_factor import router as two_factor_router
+from app.services.emails import LogEmailSender
 
 
 @asynccontextmanager
@@ -40,11 +43,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(SecurityMiddleware, settings=resolved_settings)
     # Compteur de tentatives d'authentification, isolé par application (donc par test).
     app.state.rate_limiter = RateLimiter()
+    # Envoi d'e-mails : journalisation en développement, SMTP en phase 11.
+    app.state.email_sender = LogEmailSender()
     engine = create_async_engine(resolved_settings.database_url)
     app.state.engine = engine
     # Une fabrique partagée : une session (donc une transaction) par requête.
     app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
     app.include_router(auth_router, prefix=API_PREFIX)
+    app.include_router(two_factor_router, prefix=API_PREFIX)
+    app.include_router(password_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)
     register_exception_handlers(app)
     return app

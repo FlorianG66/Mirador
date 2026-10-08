@@ -58,7 +58,10 @@ class RegisterResponse(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    user: UserOut
+    """Connexion : session distribuée, ou défi A2F à présenter d'abord."""
+
+    user: UserOut | None = None
+    totp_required: bool = False
 
 
 class MembershipOut(BaseModel):

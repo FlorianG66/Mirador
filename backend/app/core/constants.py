@@ -14,3 +14,9 @@ ACCESS_COOKIE = "mirador_access"
 REFRESH_COOKIE = "mirador_refresh"
 CSRF_COOKIE = "mirador_csrf"
 CSRF_HEADER = "x-csrf-token"
+
+# A2F et récupération de compte (phase 2c).
+TWO_FACTOR_COOKIE = "mirador_2fa"
+TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60
+PASSWORD_RESET_TOKEN_TTL_SECONDS = 30 * 60
+BACKUP_CODE_COUNT = 10

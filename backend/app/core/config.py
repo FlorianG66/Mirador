@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     database_url: str = DATABASE_URL_PREFIX + "mirador:mirador-dev-local@localhost:5432/mirador"
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    # Base publique de l'application : préfixe des liens envoyés par e-mail
+    # (réinitialisation de mot de passe, plus tard invitations) — phase 2c.
+    app_base_url: str = "http://localhost:8000"
 
     @field_validator("database_url")
     @classmethod

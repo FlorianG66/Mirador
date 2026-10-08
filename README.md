@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2b livrée (inscription, connexion, sessions, CSRF, rate limit d'authentification). Seuls les endpoints d'authentification sont exposés pour l'instant.
+> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2c livrée (A2F TOTP + codes de secours, mot de passe oublié). Seuls les endpoints d'authentification sont exposés pour l'instant.
 
 ## Présentation
 
