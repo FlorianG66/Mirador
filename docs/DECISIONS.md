@@ -89,3 +89,23 @@ Interface `EmailSender` + `LogEmailSender` sur `app.state.email_sender`, remplac
 ## 2026-10-08 — `forgot`/`reset`/`verify` sans CSRF quand anonyme, protégés sinon
 
 `auth/password/*` et `auth/2fa/verify` sont exemptés de la vérification CSRF seulement quand aucun cookie d'authentification n'est joint (l'utilisateur vient de la page de connexion) ; s'ils arrivent avec une session, la protection s'applique. Raison : pas de CSRF à fournir depuis la page publique, mais une attaque depuis un site tiers ne doit jamais pouvoir agir sur un compte connecté.
+
+## 2026-10-08 — Le lien d'invitation porte l'organisation
+
+Le lien contient le jeton **et** l'organisation (`/invitations/accept?token=…&organization=…`) ; `accept` pose le tenant avant de lire l'invitation. Raison : la table `invitations` est sous RLS, sans GUC tenant la ligne est invisible, et le seul jeton ne dit pas dans quelle organisation on entre.
+
+## 2026-10-08 — `none` n'est jamais stocké
+
+Seules les lignes `view` et `edit` sont écrites ; l'absence de ligne vaut `none`, et la réponse API affiche toujours les cinq modules (l'admin a `edit` partout sans ligne). Raison : évite un état redondant susceptible de contredire l'absence de ligne, et rend la lecture d'une fiche simple (une ligne par module accordé).
+
+## 2026-10-08 — Erreurs métier levées par les services (`ServiceProblem`)
+
+Les services lèvent `ServiceProblem(status_code, detail)` ; le handler global la convertit en RFC 9457, les routes ne font aucun `try/except`. Raison : messages figés au même endroit, testés à l'unité comme via l'API, et la logique reste dans `services` (AGENTS.md §4).
+
+## 2026-10-08 — Auto-révocation interdite
+
+Un admin ne peut ni retirer ses propres permissions ni se révoquer lui-même (400). Raison : sinon l'organisation peut se retrouver sans aucun administrateur, et personne n'est alors plus habilité à la récupérer.
+
+## 2026-10-08 — Clusters de test PostgreSQL détruits (`cleanup_mode="delete"`)
+
+Le `conftest` crée un cluster pgserver par session avec `cleanup_mode="delete"` (au lieu du défaut `stop`, qui ne fait que l'arrêter). Raison : chaque session laissait ~50 Mo dans `%TEMP%`, ce qui a fait tomber le disque en plein milieu de phase ; le répertoire est de toute façon recréé à chaque run.

@@ -14,7 +14,10 @@ from app.core.middleware import SecurityMiddleware
 from app.core.rate_limit import RateLimiter
 from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
+from app.routers.invitations import accept_router as invitation_accept_router
+from app.routers.invitations import router as invitations_router
 from app.routers.password import router as password_router
+from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
 
@@ -52,6 +55,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_router, prefix=API_PREFIX)
     app.include_router(two_factor_router, prefix=API_PREFIX)
     app.include_router(password_router, prefix=API_PREFIX)
+    app.include_router(invitations_router, prefix=API_PREFIX)
+    app.include_router(invitation_accept_router, prefix=API_PREFIX)
+    app.include_router(team_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)
     register_exception_handlers(app)
     return app

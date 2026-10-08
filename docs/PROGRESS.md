@@ -6,9 +6,9 @@
 
 - **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
   2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit (**livrée et commitée**),
-  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit, 2e Google OIDC.
+  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit (**livrée**, commit en attente), 2e Google OIDC.
 - **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
-- **Prochaine action** : sous-phase 2d — invitations, permissions par module, révocation, journal d'audit.
+- **Prochaine action** : commit de la sous-phase 2d, puis sous-phase 2e — connexion Google (OIDC).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -102,6 +102,29 @@
 - **Formatage des messages de test** : les vecteurs RFC utilisent des timestamps exacts (`totp_at(secret, timestamp)`), les tests de flux utilisent l'heure courante (`totp_at(secret)`) — la primitive accepte les deux, pas le test de l'URI otpauth.
 - **E-mail de reset dans le log, pas envoyé** : sans SMTP le lien vit dans `LogEmailSender` ; les tests injectent `FakeEmailSender` via `app.state.email_sender` (les routes le lisent sur `request.app.state`).
 
+### Critères de la phase 2d — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests écrits d'abord (RED) puis GREEN | ✅ RED avant toute implémentation (modules absents → erreurs de collection) ; GREEN : **161 passed** |
+| pytest vert | ✅ `coverage run -m pytest` → 161 passed (32 nouveaux : 15 invitations, 12 équipe, 5 garde-modules) |
+| Couverture ≥ 80 % | ✅ **87 % mesurés** (artefact coverage coroutines, v. `DECISIONS.md`) |
+| ruff check + format | ✅ `ruff check .` + `ruff format .` → 0 erreur / 97 fichiers |
+| mypy strict | ✅ 0 erreur sur 65 fichiers |
+| pre-commit passe | ✅ `pre-commit run --all-files` → 11 hooks Passed |
+| gitleaks ne détecte rien | ✅ passé dans pre-commit |
+| Invitations | ✅ admin seul, TTL 7 j, rate limit `invite` 10/h, révocation, acceptation (401 jeton invalide, 403 e-mail différent, 409 déjà membre), lien portant l'organisation |
+| Permissions par module | ✅ réponse toujours sur les 5 modules, `none` non stocké (absence de ligne), admin = `edit` partout, garde-modules 403 hors `view` |
+| Révocation | ✅ `DELETE /members/{id}` + auto-révocation refusée (400) |
+| Journal d'audit | ✅ `invitation.created/revoked/accepted`, `membership.permissions.updated` (avant/après), `membership.revoked` ; lecture limitée aux admins (`GET /audit-logs`) |
+| RLS réelle | ✅ requêtes SQL brutes sur `invitations`/`audit_logs` sans `set_tenant` → zéro ligne (piège constaté en test) |
+| CI backend | ⚠️ job écrit, **non exécuté** (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 2d (à ne pas re-piocher)
+- **RLS et SQL brut dans les tests** : toute requête `text(...)` sur une table tenant (`invitations`, `audit_logs`, `memberships`, `module_permissions`) doit d'abord `await set_tenant(session, organization_id=…)`, sinon la RLS ne renvoie aucune ligne et le test échoue sur « introuvable » au lieu de dire pourquoi.
+- **CSRF sur `DELETE`** : le middleware n'a pas d'exemption de méthode — une écriture `DELETE` sans `headers=csrf_headers(client)` reçoit 403 avant même le routeur.
+- **Le service refuse d'inviter un membre** (409 voulu) : le test « acceptation d'une invitation alors qu'on est déjà membre » ne peut pas passer par l'API pour la 2ᵉ invitation ; il l'insère directement en SQL (jeton haché via `generate_token`/`hash_token`).
+- **Disque plein au milieu de la phase** : chaque session de tests laissait un cluster pgserver (~50 Mo) dans `%TEMP%`. Corrigé par `cleanup_mode="delete"` dans `tests/conftest.py` ; vérifier qu'aucun `mirador-pg-*` ne subsiste après un run.
+
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -160,3 +183,14 @@
 - Rate limits dédiés (`verify-2fa` 5/min, `forgot` 3/15 min, `reset` 5/h) ; `.env.example` documente `APP_BASE_URL`.
 - Vérifications : 129 passed · couverture 89,5 % · ruff ✅ · format ✅ · mypy strict ✅ (53 fichiers) · pre-commit ✅ (11 hooks, gitleaks inclus) · `.env.example` en phase avec `Settings`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### 2026-10-08 — Sous-phase 2d livrée
+- TDD respecté : RED avant toute implémentation (modules absents → erreurs de collection), puis GREEN (**161 passed**, dont 32 nouveaux).
+- Invitations : `POST /organizations/{id}/invitations` (admin seul, TTL 7 j, rate limit `invite` 10/h, e-mail via `EmailSender`), révocation `DELETE …/invitations/{id}`, acceptation `POST /auth/invitations/accept` (compte authentifié, e-mail correspondant ; 401 jeton absent/expiré, 403 autre e-mail, 409 déjà membre) — le lien contient le jeton **et** l'organisation, `accept` pose le tenant avant de lire (table sous RLS).
+- Équipe : `GET /organizations/{id}/members`, `GET /permissions` (les 5 modules, `none` non stocké, admin = `edit` partout), `PATCH /members/{user_id}/permissions` (audit avant/après), `DELETE /members/{user_id}` (auto-révocation refusée), `GET /audit-logs` (admin) ; garde-modules `require_module` en 403 sur `view`/`edit`.
+- Schémas `schemas/invitations.py` + `schemas/team.py`, routers `invitations.py` + `team.py` (câblés dans `main.py`), erreurs levées par les services via `ServiceProblem` (aucun `try/except` dans les routes).
+- Journal d'audit : `invitation.created/revoked/accepted`, `membership.permissions.updated`, `membership.revoked`.
+- Hygiène : `ruff check` + `ruff format` (9 fichiers reformattés), `mypy` 0 erreur (65 fichiers), `pre-commit run --all-files` → 11 hooks ✅ (gitleaks inclus).
+- Fix infra : `tests/conftest.py` → `cleanup_mode="delete"` (les clusters pgserver de test remplissaient `%TEMP%`, ~50 Mo par exécution — disque tombé à 10 Mo en cours de phase).
+- Docs : `ARCHITECTURE.md` (bloc invitations/équipe/audit, quotas, nettoyage des clusters), `DECISIONS.md` (6 décisions), `CHANGELOG.md`, `README.md`, ce fichier.
+- **Non fait** : commit (en attente de ce paragraphe), push (aucun remote GitHub), merge sur `main` (sans feu vert).

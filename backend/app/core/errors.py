@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.db import DatabaseUnavailableError
+from app.services.errors import ServiceProblem
 
 # « app.core.errors » : se propage jusqu'au logger « app » configuré par configure_logging().
 logger = logging.getLogger(__name__)
@@ -88,9 +89,16 @@ async def database_unavailable_handler(request: Request, exc: Exception) -> JSON
     return _problem_response(request, 503, "La base de données est momentanément indisponible.")
 
 
+async def service_problem_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Refus métier d'un service (conflit, accès interdit...) déjà prêt à sérialiser."""
+    assert isinstance(exc, ServiceProblem)
+    return _problem_response(request, exc.status_code, exc.detail)
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Branche tous les gestionnaires d'erreurs sur l'application."""
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(DatabaseUnavailableError, database_unavailable_handler)
+    app.add_exception_handler(ServiceProblem, service_problem_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)

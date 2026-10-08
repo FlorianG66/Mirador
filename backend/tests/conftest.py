@@ -194,7 +194,9 @@ def build_request(app: FastAPI, path: str = "/") -> Request:
 def test_database_url() -> Iterator[str]:
     """Base PostgreSQL réelle, isolée et jetable : créée une fois par session de tests."""
     datadir = Path(tempfile.mkdtemp(prefix="mirador-pg-"))
-    server = pgserver.get_server(str(datadir))
+    # cleanup_mode="delete" : le cluster est supprimé à la fin (sinon chaque
+    # session de tests laisse ~50 Mo dans %TEMP% et remplit le disque).
+    server = pgserver.get_server(str(datadir), cleanup_mode="delete")
     try:
         # pgserver expose postgresql:// ; SQLAlchemy a besoin du dialecte +asyncpg.
         yield server.get_uri().replace("postgresql://", SQLALCHEMY_URL_PREFIX, 1)

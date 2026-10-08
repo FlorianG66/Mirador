@@ -35,6 +35,25 @@ async def list_members(session: AsyncSession, *, organization_id: uuid.UUID) -> 
     return list(result.scalars().all())
 
 
+async def get_membership(
+    session: AsyncSession, *, organization_id: uuid.UUID, user_id: uuid.UUID
+) -> Membership | None:
+    """Rattachement d'un utilisateur à une organisation : filtre explicite + RLS."""
+    result = await session.execute(
+        select(Membership).where(
+            Membership.organization_id == organization_id,
+            Membership.user_id == user_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def delete_membership(session: AsyncSession, membership: Membership) -> None:
+    """Retire un rattachement ; ses permissions suivent en cascade (FK). Flush seulement."""
+    await session.delete(membership)
+    await session.flush()
+
+
 async def list_memberships_for_user(
     session: AsyncSession, *, user_id: uuid.UUID
 ) -> list[Membership]:

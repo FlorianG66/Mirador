@@ -27,6 +27,10 @@ PASSWORD_FORGOT_RATE_WINDOW_SECONDS = 15 * 60
 PASSWORD_RESET_RATE_LIMIT = 5
 PASSWORD_RESET_RATE_WINDOW_SECONDS = 60 * 60
 
+# Invitation d'un collaborateur (phase 2d) : chaque tentative déclenche un e-mail.
+INVITE_RATE_LIMIT = 10
+INVITE_RATE_WINDOW_SECONDS = 60 * 60
+
 
 class RateLimiter:
     """Compteur de tentatives par clé, purge automatique des fenêtres expirées."""

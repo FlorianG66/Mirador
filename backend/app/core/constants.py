@@ -20,3 +20,8 @@ TWO_FACTOR_COOKIE = "mirador_2fa"
 TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60
 PASSWORD_RESET_TOKEN_TTL_SECONDS = 30 * 60
 BACKUP_CODE_COUNT = 10
+
+# Invitation d'un collaborateur (phase 2d) : le lien expire au bout d'une semaine.
+INVITATION_TTL_SECONDS = 7 * 24 * 3600
+# Nombre maximal de journaux d'audit renvoyés par requête.
+AUDIT_LOGS_LIMIT = 100
