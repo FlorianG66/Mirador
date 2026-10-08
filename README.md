@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2e livrée (connexion Google OIDC), phase 2 complète côté API. Les endpoints d'authentification, d'organisation et d'équipe sont exposés pour l'instant.
+> **Statut** : projet en cours de développement — phase 2 livrée (auth, organisations, permissions, Google OIDC) ; phase 3 en cours (frontend socle & design system) : sous-phase 3a livrée (socle Vite + React + TypeScript strict, Vitest, proxy `/api`). Le frontend affiche un écran provisoire ; l'API expose l'authentification, l'organisation et l'équipe.
 
 ## Présentation
 
@@ -40,6 +40,12 @@ python -m venv .venv
 python -m pip install -e ".[dev]"
 cd ..
 
+# 4. Frontend (versions épinglées exactement dans package.json)
+cd frontend
+npm install
+cd ..
+cd ..
+
 # 4. Hooks de validation (ruff, gitleaks)
 pip install pre-commit && pre-commit install
 ```
@@ -47,10 +53,11 @@ pip install pre-commit && pre-commit install
 ## Lancement
 
 ```bash
-# Backend (settings lus de l'environnement puis .env)
+# Backend (settings lus de l'environnement puis .env) — attendu sur 127.0.0.1:8000
 cd backend && python -m uvicorn app.main:create_app --factory --reload
 
-# Frontend (phase 3)
+# Frontend — http://localhost:5173 (le proxy Vite redirige /api/* vers le backend,
+# le navigateur reste same-origin : pas de CORS à configurer en dev)
 cd frontend && npm run dev
 ```
 
@@ -63,6 +70,9 @@ cd backend && pytest --cov=app
 # Qualité backend
 cd backend && ruff check . && ruff format --check . && mypy
 
+# Frontend : tests Vitest (jsdom), types, lint, build
+cd frontend && npm test && npm run typecheck && npm run lint && npm run build
+
 # Hooks de qualité
 pre-commit run --all-files
 gitleaks git . -v
@@ -72,7 +82,7 @@ gitleaks git . -v
 
 ```
 backend/     API FastAPI (routers, services, repositories, models, schemas, core)
-frontend/    SPA React + TypeScript
+frontend/    SPA Vite + React + TypeScript strict (src/, tests, config ESLint/Vitest)
 docs/        SPEC, ROADMAP, ARCHITECTURE, DECISIONS, PROGRESS
 infra/       éléments d'infrastructure (hors dépôt privé de production)
 .github/     workflows CI, Dependabot

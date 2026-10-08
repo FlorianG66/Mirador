@@ -133,3 +133,15 @@ Un callback Google sur un compte à TOTP actif délivre le défi `mirador_2fa` (
 ## 2026-10-08 — Échec du fournisseur OIDC : 502 dédié
 
 `OidcProviderError` a son propre handler global : message figé « Connexion Google impossible. », détail technique au journal uniquement. Raison : sans handler, l'exception remonterait en 500 générique sans trace exploitable, et un message repris de Google exposerait le détail d'un tiers (ASVS L2).
+
+## 2026-10-08 — Frontend épinglé : TypeScript 5.9, pas la « latest » 7
+
+`typescript@7.0.2` est « latest » sur npm mais `typescript-eslint@8.71.1` n'accepte que `typescript < 6.1.0` : on épingle `5.9.3` (dernière 5.x), et on remontera quand le plugin la supportera. Raison : un lint TypeScript est impossible avec TS 7 aujourd'hui ; toutes les versions frontend sont d'ailleurs épinglées exactement (pas de caret).
+
+## 2026-10-08 — Proxy Vite `/api` en dev, pas de CORS
+
+`vite.config.ts` proxifie `/api/*` vers `127.0.0.1:8000` ; le navigateur reste same-origin. Raison : le client API (3c) appellera `/api/v1` sans base URL à configurer, et la règle CORS du backend reste limitée à ce qui sert vraiment en prod.
+
+## 2026-10-08 — Règles React Hooks épinglées par nom
+
+ESLint embarque `eslint-plugin-react-hooks` avec `rules-of-hooks` (error) et `exhaustive-deps` (warn) déclarés nommément, et non via `configs.recommended` (dont la clé et le contenu varient entre versions du plugin). Raison : lint stable indépendamment des évolutions du plugin (v7 change ses bundles).

@@ -1,0 +1,10 @@
+/* Feuille de base en attendant les design tokens (phase 3b). */
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+}

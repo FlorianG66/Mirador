@@ -52,6 +52,22 @@ Couches : `routers → services → repositories`.
 
 SPA React (Vite) derrière login : pas de SSR (le backend est déjà FastAPI). Client API généré depuis l'OpenAPI. Voir `SPEC.md` §5.2.
 
+```
+frontend/
+  index.html           entrée HTML (lang fr ; titre posé via PROJECT_NAME au chargement)
+  vite.config.ts       Vite + plugin React + proxy /api → 127.0.0.1:8000 + config Vitest
+  eslint.config.js     ESLint flat (JS + TS typé + règles React Hooks + react-refresh)
+  tsconfig*.json       TypeScript strict, build par incréments (app + node)
+  src/
+    main.tsx           montage React, document.title = PROJECT_NAME
+    App.tsx            écran racine (layout et navigation en 3b)
+    constants.ts       PROJECT_NAME centralisé (AGENTS.md §1)
+    index.css          styles de base (design tokens en 3b)
+    test/setup.ts      Vitest : matchers jest-dom + nettoyage du DOM
+```
+
+Qualité frontend : `npm run lint` (ESLint, aussi en hook pre-commit), `npm run typecheck` (`tsc -b`), `npm test` (Vitest, environnement jsdom), `npm run build` (`tsc -b && vite build`). En dev, le backend doit tourner sur `127.0.0.1:8000` (uvicorn) et le navigateur ouvre `http://localhost:5173`.
+
 ## Environnements
 
 - **Dev** : Docker Compose (PostgreSQL avec volume persistant), `.env.example` en modèle.

@@ -24,9 +24,10 @@ repos:
     hooks:
       - id: eslint
         name: eslint
-        entry: npm --prefix frontend run lint --
+        entry: npm --prefix frontend run lint
         language: system
-        files: ^frontend/.*\.[cm]?[jt]sx?$
+        pass_filenames: false
+        always_run: true
 
       # Gitleaks : binaire attendu sur le PATH (winget/choco en local), version
       # épinglée v8.30.1 dans la CI. pass_filenames: false sinon gitleaks reçoit

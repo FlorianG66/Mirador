@@ -4,11 +4,12 @@
 
 ## État
 
-- **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
-  2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit (**livrée et commitée**),
-  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit (**livrée et commitée**), 2e Google OIDC (**livrée**, commit en cours).
-- **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
-- **Prochaine action** : commit de la sous-phase 2e, puis clôture de la phase 2 (récap) ; phase suivante : 3 — Frontend socle & design system.
+- **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
+  3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée, commit en cours**),
+  3b design system (tokens clair/sombre, layout + menu latéral, composants de base),
+  3c i18n FR/EN + client API généré + gardes de routes, 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
+- **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
+- **Prochaine action** : commit de la sous-phase 3a, puis 3b — design tokens, layout + menu latéral, composants de base.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -147,6 +148,24 @@
 - **`OidcProviderError` sans handler = 500** : l'exception vient du fournisseur, pas de FastAPI — elle a besoin de son handler dédié (502 + journal) sinon elle remonte en erreur interne générique.
 - **Anomalie coverage visible sur `google.py`** : les lignes après `await` (cookies, retours) sont exécutées et testées mais non mesurées — c'est l'artefact déjà documenté, pas un trou de couverture ; `services/oidc.py` est à 100 %.
 
+### Critères de la phase 3a — vérité du terrain
+| Critère | État |
+|---|---|
+| TypeScript strict | ✅ `npm run typecheck` (`tsc -b`) : 0 erreur ; `strict`, `noUnusedLocals/Parameters`, `verbatimModuleSyntax`, `erasableSyntaxOnly` |
+| ESLint | ✅ `eslint .` (flat, JS + TS typé + React Hooks par nom + react-refresh) : 0 erreur |
+| Vitest | ✅ `npm test` : 1 test composant (RTL + jest-dom, jsdom), setup de nettoyage DOM |
+| Build | ✅ `npm run build` (`tsc -b && vite build`) : 17 modules, 219 kB js / 68 kB gzip (React 19.3.0) |
+| Proxy dev | ✅ `/api` → `127.0.0.1:8000` (same-origin, pas de CORS en dev) |
+| Épinglage | ✅ toutes versions exactes (sans caret) ; TS `5.9.3` (TS 7 non compatible typescript-eslint) ; `npm install` sans conflit de peers |
+| pre-commit | ✅ `pre-commit run` staged : 10 hooks Passed, eslint actif (pass_filenames: false, le hook exact passe les chemins racine qu'on ne peut pas transmettre à npm) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 3a (à ne pas re-piocher)
+- **TS 7 est « latest » mais bloquant** : `typescript-eslint` 8.71.1 déclare un peer `typescript >=4.8.4 <6.1.0` → `npm install` avec TS 7 échouerait ; on reste sur 5.9.3 et on remontera quand le plugin suivra (v. `DECISIONS.md`).
+- **`@eslint/js` et `eslint` n'ont pas la même numérotation** : 10.0.1 vs 10.12.0 — vérifier le peer `eslint ^10` au lieu de croire à une égalité de versions.
+- **Le bundle de règles React Hooks varie selon la version** : ne pas invoquer `configs.recommended`, épinger `rules-of-hooks` / `exhaustive-deps` par nom (v. `DECISIONS.md`).
+- **Vitest jsdom démarre lentement** (~45 s pour 1 test) : c'est le coût de l'environnement DOM, pas de la suite ; ne pas déduire une lenteur de tests de cette première exécution.
+
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -227,3 +246,9 @@
 - Docs : `ARCHITECTURE.md` (bloc Google + quota `google`), `DECISIONS.md` (6 décisions : compte existant uniquement, userinfo sans JWT, cookie d'état, A2F conservée, URI dérivée, 502 dédié), `CHANGELOG.md`, `README.md`, ce fichier.
 - Commit : `5a735bc feat: connexion Google OIDC (sous-phase 2e)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; tests manuels avec un vrai compte Google (aucun identifiant réel dans ce dépôt public).
+
+### 2026-10-08 — Phase 3 ouverte, sous-phase 3a livrée (socle frontend)
+- Socle `frontend/` : Vite 8.3.4 + React 19.3.0 + TypeScript strict 5.9.3 + ESLint flat + Vitest 5.0.3 (jsdom) ; `tsconfig` décomposés (app + node), `erasableSyntaxOnly`, build par incréments ; toutes les versions épinglées **sans caret**, install sans conflit de peers.
+- Proxy de dev `/api` → `127.0.0.1:8000` (same-origin, pas de CORS en dev, v. `DECISIONS.md`) ; `PROJECT_NAME` centralisé dans `src/constants.ts` et posé sur `document.title` ; écran provisoire `App.tsx` + premier test Vitest (RTL + jest-dom).
+- Vérifs : `npm run lint` ✅ · `npm run typecheck` ✅ · `npm test` (1 test) ✅ · `npm run build` ✅ (219 kB js / 68 kB gzip) ; hook eslint de pre-commit actif (config corrigée : `pass_filenames: false`, confirmé sur ce commit).
+- **Non fait** : push (aucun remote GitHub), merge (sans feu vert) ; design tokens, layout, i18n, client API (sous-phases 3b à 3d).
