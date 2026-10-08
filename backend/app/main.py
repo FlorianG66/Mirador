@@ -10,6 +10,9 @@ from app.core.config import Settings, get_settings
 from app.core.constants import API_PREFIX, API_VERSION, PROJECT_NAME
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
+from app.core.middleware import SecurityMiddleware
+from app.core.rate_limit import RateLimiter
+from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
 
 
@@ -33,10 +36,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings
+    # En-têtes de sécurité + CSRF : une couche unique, au-dessus de toutes les routes.
+    app.add_middleware(SecurityMiddleware, settings=resolved_settings)
+    # Compteur de tentatives d'authentification, isolé par application (donc par test).
+    app.state.rate_limiter = RateLimiter()
     engine = create_async_engine(resolved_settings.database_url)
     app.state.engine = engine
     # Une fabrique partagée : une session (donc une transaction) par requête.
     app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    app.include_router(auth_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)
     register_exception_handlers(app)
     return app

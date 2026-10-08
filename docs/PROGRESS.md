@@ -5,10 +5,10 @@
 ## État
 
 - **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
-  2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit,
+  2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit (**livrée et commitée**),
   2c A2F TOTP + codes de secours + mot de passe oublié, 2d invitations/permissions/révocation/audit, 2e Google OIDC.
 - **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
-- **Prochaine action** : passer à la sous-phase 2b — inscription, connexion, sessions, CSRF, rate-limit.
+- **Prochaine action** : sous-phase 2c — A2F TOTP, codes de secours, mot de passe oublié.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -51,6 +51,30 @@
 - **Le rôle `postgres` est superuser** : PostgreSQL le fait toujours passer avant la RLS (`FORCE` ne s'applique qu'au propriétaire). Les tests d'isolation se connectent donc en `mirador_test` (LOGIN, sans droits sur le schéma avant `GRANT`), sinon ils ne testent rien.
 - **Isolation des tests** : `db_session` n'annule que ce qui n'a pas été commité ; deux tests qui commitent le même e-mail entrent en conflit → un e-mail unique par test.
 
+### Critères de la phase 2b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests écrits d'abord (RED) puis GREEN | ✅ RED avant toute implémentation : **44 failed / 52 passed** ; GREEN : **98 passed** |
+| pytest vert | ✅ `pytest --cov=app` → 98 passed |
+| Couverture ≥ 80 % | ✅ **92 % mesurés** (le manque restant est un artefact coverage sur les coroutines, voir `DECISIONS.md`) |
+| ruff check + format | ✅ exit 0 / 61 fichiers conformes |
+| mypy strict | ✅ 0 erreur sur 38 fichiers |
+| Migration Alembic `0003` (sessions) | ✅ aller-retour `head → base` vérifié sur base jetable, table sans RLS |
+| Anti-énumération | ✅ message unique `Identifiants incorrects.` + vérification d'un hachage factice |
+| CSRF | ✅ 403 sans jeton / jeton faux, exemptes register+login, un 405 reste un 405 |
+| Rate limit | ✅ 429 + `Retry-After`, login et register comptés séparément |
+| Cookies | ✅ httpOnly, `SameSite=lax`, paths respectifs, `Secure` en production |
+| pre-commit passe | ✅ `pre-commit run --all-files` → 10 hooks Passed |
+| gitleaks ne détecte rien | ✅ passé dans pre-commit |
+| CI backend | ⚠️ job écrit, **non exécuté** (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 2b (à ne pas re-piocher)
+- **Les tests HTTP commitent** : la base de test est partagée et l'inscription est persistante → deux tests avec le même e-mail se marchaient dessus. Corrige par un `TRUNCATE ... CASCADE` autouse avant chaque test (`clean_tables`).
+- **Response injectée × Response retournée** : une `Response` injectée par FastAPI a `status_code=None` ; la retourner telle quelle casse la réponse. Pour un 204, construire explicitement une `Response(status_code=204)` et poser les cookies dessus.
+- **`Response.headers` injectée ≠ mergée si on retourne une Response** : FastAPI ne recopie les en-têtes de la Response injectée que dans le cas « développement de la réponse » (retour de modèle). En retournant une Response, tout passe par l'objet retourné.
+- **coverage.py et coroutines** : ni `pytrace`, ni `ctrace`, ni `sysmon` ne remontent les lignes après un `await` dans les coroutines SQLAlchemy async/FastAPI (le code s'exécute pourtant, prouvé par les assertions). Mesure plancher ~92 % ; ne pas tordre le code pour faire mentir l'outil (v. `DECISIONS.md`).
+- **Le CSRF avant le routage** : le middleware intercepte avant FastAPI ; sans la garde « cookie d'authentification présent », il transformait le 405 d'un `POST /health` en 403. La sécurité a une fenêtre : on ne protège que ce qui porte des credentials.
+
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -90,3 +114,12 @@
 - Revérification avant commit : `pytest --cov=app` → 55 passed, couverture 100 % · ruff check/format ✅ · mypy strict ✅ (28 fichiers) · `pre-commit run --all-files` → 10 hooks ✅ · `gitleaks git . --redact` → no leaks found.
 - Docs mises à jour : `ARCHITECTURE.md` (tenant, session par requête, repositories), `CHANGELOG.md`, `README.md` (statut phase 2), `PROGRESS.md`.
 - Push impossible : aucun remote GitHub configuré (voir « À faire au premier push »).
+
+### 2026-10-08 — Sous-phase 2b livrée
+- TDD respecté : RED (44 failed / 52 passed — zéro erreur de collection) avant toute implémentation, puis GREEN (98 passed).
+- Authentification : `/auth/register` (201), `/auth/login` (200), `/auth/refresh` (rotation des jetons), `/auth/logout` (204, révocation), `/auth/me` (200) ; erreurs RFC 9457.
+- Sécurité : argon2-cffi (params OWASP), e-mail normalisé + SIREN Luhn, anti-énumération par hachage factice, cookies httpOnly/SameSite=lax/`Secure` en prod, CSRF double submit sur couche middleware (exemptes register/login, exigé seulement si cookies d'auth présents), rate limit en mémoire (429 + Retry-After), en-têtes de sécurité partout (jusqu'aux erreurs).
+- Table `sessions` (migration `0003`) : globale sans RLS, SHA-256 des jetons, rotation à chaque refresh, révocation au logout.
+- Infrastructure de test : `clean_tables` (TRUNCATE autouse) règle l'isolation des e-mails uniques entre tests qui commitent.
+- Vérifications : 98 passed · couverture **92 % mesurés** (artefact coverage sur les coroutines, documenté) · ruff ✅ · format ✅ · mypy strict ✅ (38 fichiers) · pre-commit ✅ · gitleaks ✅ · CI non exécutée sans remote.
+- **Non fait** : commit (en attente de ce paragraphe), dernier coup d'œil à `CHANGELOG.md` / `ARCHITECTURE.md` / `PROGRESS.md` au moment du commit.

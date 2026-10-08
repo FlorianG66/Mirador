@@ -20,6 +20,7 @@ from starlette.requests import Request
 
 from alembic import command
 from app.core.config import Settings
+from app.core.constants import API_PREFIX
 from app.core.tenancy import set_tenant
 from app.main import create_app
 from app.models.enums import Role
@@ -150,6 +151,25 @@ async def seed_organization_with_admin(
     return organization.id, user.id
 
 
+async def register_client(
+    client: httpx.AsyncClient,
+    *,
+    email: str = "admin@example.com",
+    password: str = "mot-de-passe-secret",
+    organization_name: str = "Acme",
+    siren: str | None = None,
+) -> httpx.Response:
+    """Inscription via l'API : le parcours standard des tests d'authentification."""
+    payload: dict[str, str] = {
+        "email": email,
+        "password": password,
+        "organization_name": organization_name,
+    }
+    if siren is not None:
+        payload["siren"] = siren
+    return await client.post(f"{API_PREFIX}/auth/register", json=payload)
+
+
 def build_request(app: FastAPI, path: str = "/") -> Request:
     """Request ASGI minimale portant l'application : sert à tester les dépendances FastAPI."""
     return Request(
@@ -199,6 +219,24 @@ def alembic_test_database_url(test_database_url: str) -> Iterator[str]:
         yield _with_database(test_database_url, database_name)
     finally:
         drop_test_database(test_database_url, database_name)
+
+
+@pytest.fixture(autouse=True)
+async def clean_tables(session_factory: async_sessionmaker[AsyncSession]) -> AsyncIterator[None]:
+    """Base vidée avant chaque test : les tests HTTP commitent, les autres rollback.
+
+    Sans nettoyage, deux tests qui s'inscrivent avec le même e-mail entrent en
+    conflit sur la contrainte d'unicité (piège rencontré en phase 2a).
+    """
+    async with session_factory() as session:
+        await session.execute(
+            text(
+                "TRUNCATE users, organizations, memberships, module_permissions,"
+                " invitations, audit_logs, sessions CASCADE"
+            )
+        )
+        await session.commit()
+    yield
 
 
 @pytest.fixture

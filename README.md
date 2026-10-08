@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2a livrée (modèle de données multi-tenant, RLS, repositories). Aucun endpoint métier exposé pour l'instant.
+> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2b livrée (inscription, connexion, sessions, CSRF, rate limit d'authentification). Seuls les endpoints d'authentification sont exposés pour l'instant.
 
 ## Présentation
 
@@ -57,7 +57,7 @@ cd frontend && npm run dev
 ## Tests
 
 ```bash
-# Backend : pytest + couverture (seuil 80 %, vérifié en local à 100 %)
+# Backend : pytest + couverture (seuil 80 % ; la mesure des coroutines asyncio sous-estime < quelques points, v. DECISIONS)
 cd backend && pytest --cov=app
 
 # Qualité backend

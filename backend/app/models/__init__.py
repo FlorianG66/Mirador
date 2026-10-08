@@ -11,6 +11,7 @@ from app.models.invitation import Invitation
 from app.models.membership import Membership
 from app.models.module_permission import ModulePermission
 from app.models.organization import Organization
+from app.models.session import UserSession
 from app.models.user import User
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "PermissionLevel",
     "Role",
     "User",
+    "UserSession",
 ]

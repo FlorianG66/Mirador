@@ -2,20 +2,15 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from app.core.config import Settings
 from app.core.constants import API_SERVICE, API_VERSION
 from app.core.db import get_database_version
+from app.core.deps import get_request_settings
 from app.schemas.health import DatabaseDetails, DatabaseHealthResponse, HealthResponse
 
 router = APIRouter()
-
-
-def get_request_settings(request: Request) -> Settings:
-    """Récupère les settings portés par l'application (permet de les injecter en test)."""
-    settings: Settings = request.app.state.settings
-    return settings
 
 
 @router.get("/health", response_model=HealthResponse)

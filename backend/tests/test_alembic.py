@@ -6,7 +6,7 @@ from alembic import command
 from tests.conftest import alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
-PHASE2_REVISION = "0002"
+HEAD_REVISION = "0003"
 
 # Tables soumises à Row-Level Security : elles portent toutes organization_id.
 TENANT_TABLES = ("memberships", "module_permissions", "invitations", "audit_logs")
@@ -18,7 +18,7 @@ def test_upgrade_head_then_downgrade_base_round_trip(alembic_test_database_url: 
     command.upgrade(config, "head")
 
     revision = fetch_scalar(alembic_test_database_url, "SELECT version_num FROM alembic_version")
-    assert revision == PHASE2_REVISION
+    assert revision == HEAD_REVISION
     table_exists = fetch_scalar(alembic_test_database_url, "SELECT to_regclass('organizations')")
     assert table_exists is not None
 
@@ -43,7 +43,7 @@ def test_upgrade_from_baseline_reaches_phase2(alembic_test_database_url: str) ->
 
     upgrade_to_head(alembic_test_database_url)
     assert fetch_scalar(alembic_test_database_url, "SELECT version_num FROM alembic_version") == (
-        PHASE2_REVISION
+        HEAD_REVISION
     )
 
 
@@ -69,6 +69,17 @@ def test_tenant_tables_enforce_row_level_security(alembic_test_database_url: str
 def test_phase2_tables_created_by_migration(alembic_test_database_url: str) -> None:
     upgrade_to_head(alembic_test_database_url)
 
-    for table in (*TENANT_TABLES, "organizations", "users"):
+    for table in (*TENANT_TABLES, "organizations", "users", "sessions"):
         exists = fetch_scalar(alembic_test_database_url, f"SELECT to_regclass('{table}')")
         assert exists is not None, f"table {table} absente du schéma"
+
+
+def test_sessions_stay_out_of_row_level_security(alembic_test_database_url: str) -> None:
+    """`sessions` est un global d'identité (comme `users`) : la RLS ne la concerne pas."""
+    upgrade_to_head(alembic_test_database_url)
+
+    row_level_security = fetch_scalar(
+        alembic_test_database_url,
+        "SELECT relrowsecurity FROM pg_class WHERE oid = to_regclass('sessions')",
+    )
+    assert row_level_security is False
