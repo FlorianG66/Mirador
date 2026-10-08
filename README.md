@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 1 livrée en local (backend socle : santé, erreurs, logs, config, base, migrations). Aucune fonctionnalité métier n'est encore livrée.
+> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2a livrée (modèle de données multi-tenant, RLS, repositories). Aucun endpoint métier exposé pour l'instant.
 
 ## Présentation
 

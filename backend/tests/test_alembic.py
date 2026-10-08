@@ -1,54 +1,74 @@
-"""Tests d'Alembic : migration de base aller-retour sur la base de test."""
+"""Tests d'Alembic : aller-retour des migrations et schéma de la phase 2."""
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
-
-import asyncpg
-from alembic.config import Config
-
 from alembic import command
+from tests.conftest import alembic_config, fetch_scalar, upgrade_to_head
 
-BACKEND_ROOT = Path(__file__).parents[1]
 BASELINE_REVISION = "0001"
+PHASE2_REVISION = "0002"
+
+# Tables soumises à Row-Level Security : elles portent toutes organization_id.
+TENANT_TABLES = ("memberships", "module_permissions", "invitations", "audit_logs")
 
 
-def _as_raw_pg_url(database_url: str) -> str:
-    """asyncpg parle postgresql:// ; SQLAlchemy utilise postgresql+asyncpg://."""
-    return database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
-
-
-def _alembic_config(database_url: str) -> Config:
-    config = Config(str(BACKEND_ROOT / "alembic.ini"))
-    config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
-    config.set_main_option("sqlalchemy.url", database_url)
-    return config
-
-
-async def _fetch(sql: str, database_url: str) -> object | None:
-    conn = await asyncpg.connect(_as_raw_pg_url(database_url))
-    try:
-        return await conn.fetchval(sql)
-    finally:
-        await conn.close()
-
-
-def test_upgrade_head_then_downgrade_base_round_trip(test_database_url: str) -> None:
-    config = _alembic_config(test_database_url)
+def test_upgrade_head_then_downgrade_base_round_trip(alembic_test_database_url: str) -> None:
+    config = alembic_config(alembic_test_database_url)
 
     command.upgrade(config, "head")
 
-    revision = asyncio.run(_fetch("SELECT version_num FROM alembic_version", test_database_url))
-    assert revision == BASELINE_REVISION
-    table_exists = asyncio.run(_fetch("SELECT to_regclass('organizations')", test_database_url))
-    assert table_exists is None  # la baseline ne crée aucune table métier (phase 2)
+    revision = fetch_scalar(alembic_test_database_url, "SELECT version_num FROM alembic_version")
+    assert revision == PHASE2_REVISION
+    table_exists = fetch_scalar(alembic_test_database_url, "SELECT to_regclass('organizations')")
+    assert table_exists is not None
 
     command.downgrade(config, "base")
 
-    # Alembic vide l'historique mais conserve la table : la baseline ne crée aucune table
-    # métier, donc vérifier l'absence de version suffit (constaté, pas supposé).
-    version = asyncio.run(_fetch("SELECT version_num FROM alembic_version", test_database_url))
+    # Alembic vide l'historique mais conserve la table : vérifier l'absence de version
+    # et l'absence de table suffit (constaté, pas supposé).
+    version = fetch_scalar(alembic_test_database_url, "SELECT version_num FROM alembic_version")
     assert version is None
-    table_exists = asyncio.run(_fetch("SELECT to_regclass('organizations')", test_database_url))
+    table_exists = fetch_scalar(alembic_test_database_url, "SELECT to_regclass('organizations')")
     assert table_exists is None
+
+
+def test_upgrade_from_baseline_reaches_phase2(alembic_test_database_url: str) -> None:
+    """La révision de base 0001 existe bien : l'historique n'est pas orphelin."""
+    config = alembic_config(alembic_test_database_url)
+
+    command.upgrade(config, BASELINE_REVISION)
+    assert fetch_scalar(alembic_test_database_url, "SELECT version_num FROM alembic_version") == (
+        BASELINE_REVISION
+    )
+
+    upgrade_to_head(alembic_test_database_url)
+    assert fetch_scalar(alembic_test_database_url, "SELECT version_num FROM alembic_version") == (
+        PHASE2_REVISION
+    )
+
+
+def test_tenant_tables_enforce_row_level_security(alembic_test_database_url: str) -> None:
+    """Défense en profondeur (AGENTS.md §5) : RLS activée ET forcée sur chaque table tenant."""
+    upgrade_to_head(alembic_test_database_url)
+
+    for table in TENANT_TABLES:
+        enabled = fetch_scalar(
+            alembic_test_database_url,
+            f"SELECT relrowsecurity AND relforcerowsecurity FROM pg_class"
+            f" WHERE oid = to_regclass('{table}')",
+        )
+        assert enabled is True, f"RLS activée et forcée sur {table}"
+
+    policy_count = fetch_scalar(
+        alembic_test_database_url,
+        "SELECT count(*) FROM pg_policies WHERE schemaname = 'public'",
+    )
+    assert policy_count == len(TENANT_TABLES)
+
+
+def test_phase2_tables_created_by_migration(alembic_test_database_url: str) -> None:
+    upgrade_to_head(alembic_test_database_url)
+
+    for table in (*TENANT_TABLES, "organizations", "users"):
+        exists = fetch_scalar(alembic_test_database_url, f"SELECT to_regclass('{table}')")
+        assert exists is not None, f"table {table} absente du schéma"

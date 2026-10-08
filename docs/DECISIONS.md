@@ -25,3 +25,19 @@ Cette machine n'a ni Docker ni PostgreSQL : la couche base (phase 1) est écrite
 ## 2026-10-07 — Application créée par fabrique, settings portés par l'app
 
 `create_app(settings=None)` au lieu d'un objet `app` au niveau module ; les settings vivent sur `app.state.settings` et sont injectés en test via les paramètres de `create_app`. Raison : aucun import déclencheur de config, et les tests changent d'URL de base sans variables d'environnement globales.
+
+## 2026-10-07 — RLS sur les tables tenant uniquement
+
+`memberships`, `module_permissions`, `invitations`, `audit_logs` portent `organization_id` et la RLS activée + forcée ; `users` et `organizations` restent des tables d'identité globales sans RLS. Raison : un utilisateur et une organisation existent avant d'appartenir à un tenant, leur isolation se joue par les memberships (AGENTS.md §5).
+
+## 2026-10-07 — Une seule politique RLS par table, `WITH CHECK` plus restrictif
+
+`USING` lit l'organisation **ou** l'utilisateur courant (un membre voit ses rattachements avant de connaître l'organisation active) ; `WITH CHECK` n'accepte que l'organisation courante. Raison : sinon un utilisateur pourrait s'insérer lui-même dans n'importe quelle organisation — escalade de privilèges. Le compte de politiques est fixé à 4 par les tests.
+
+## 2026-10-07 — Tests d'isolation en rôle non-superuser
+
+PostgreSQL contourne toujours la RLS pour un superuser (`FORCE` ne vise que le propriétaire de table) : les fixtures créent `mirador_test` (LOGIN, `GRANT` sur le schéma public) et l'application de test s'y connecte. Raison : vérifié sur le terrain, sinon les tests d'isolation passeraient à vide.
+
+## 2026-10-07 — E-mail normalisé dans le repository
+
+`users.create_user` / `get_user_by_email` convertissent en minuscules avant écriture et lecture. Raison : la contrainte `users_email_lowercase` et l'index unique l'exigent, et l'authentification par e-mail doit être insensible à la casse quel que soit l'appelant.

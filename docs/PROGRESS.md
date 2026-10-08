@@ -4,8 +4,12 @@
 
 ## État
 
-- **Phase en cours** : 1 — Backend socle : **terminée en local**, prête à commit sur `phase-1-backend-socle`
-- **Prochaine action** : commit phase 1, puis validation par le mainteneur ; ensuite phase 2 (voir `ROADMAP.md`).
+- **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
+  2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit,
+  2c A2F TOTP + codes de secours + mot de passe oublié, 2d invitations/permissions/révocation/audit, 2e Google OIDC.
+- **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
+- **Prochaine action** : passer à la sous-phase 2b — inscription, connexion, sessions, CSRF, rate-limit.
+- **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
 | Critère | État |
@@ -26,6 +30,26 @@
 | Tests base réelle (PostgreSQL) | ✅ pgserver 16.2 : `/health/db` 200 + 503 injoignable, aller-retour Alembic |
 | CI backend | ⚠️ job écrit, **non exécuté** (aucun remote GitHub) |
 | pre-commit passe | ✅ relancé avant commit |
+
+### Critères de la phase 2a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests écrits d'abord (RED) puis GREEN | ✅ RED avant toute implémentation : **25 failed + 5 errors** (29 passed) ; GREEN : **55 passed** |
+| pytest vert | ✅ `pytest --cov=app` → 55 passed |
+| Couverture ≥ 80 % | ✅ **100 %** (345 lignes, 0 manquantes) |
+| ruff check + format | ✅ exit 0 / 43 fichiers conformes |
+| mypy strict | ✅ 0 erreur sur 28 fichiers |
+| Migrations Alembic | ✅ `0002` autogénérée : 6 tables, aller-retour `head → base` vérifié sur base jetable |
+| RLS réelle | ✅ `ENABLE` + `FORCE` sur `memberships`, `module_permissions`, `invitations`, `audit_logs` ; exactement 4 politiques ; tests d'isolation **en rôle non-superuser** |
+| Tests base réelle (PostgreSQL) | ✅ pgserver 16.2 partagé + bases jetables par test d'Alembic |
+| pre-commit passe | ✅ `pre-commit run --all-files` → 9 hooks Passed |
+| gitleaks ne détecte rien | ✅ `gitleaks git . --redact` → « no leaks found » (2 commits) |
+| CI backend | ⚠️ job écrit, **non exécuté** (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 2a (à ne pas re-piocher)
+- **`removeprefix` au lieu de `replace`** : `_raw_pg_url` produisait `postgres:@host` au lieu de `postgresql://postgres:@host` → `ConnectionRefusedError` incompréhensible. Le schéma doit être remplacé, pas supprimé.
+- **Le rôle `postgres` est superuser** : PostgreSQL le fait toujours passer avant la RLS (`FORCE` ne s'applique qu'au propriétaire). Les tests d'isolation se connectent donc en `mirador_test` (LOGIN, sans droits sur le schéma avant `GRANT`), sinon ils ne testent rien.
+- **Isolation des tests** : `db_session` n'annule que ce qui n'a pas été commité ; deux tests qui commitent le même e-mail entrent en conflit → un e-mail unique par test.
 
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
@@ -51,3 +75,18 @@
 - Base de test : `pgserver==0.1.4` → PostgreSQL 16.2 éphémère réel (remplace la limite « pas de PostgreSQL » de la phase 0).
 - Écarts de conception corrigés en cours de route (constatés par les tests) : logger réel `app.*` (pas `mirador.*`), pytest injecte ses handlers sur les loggers non-propagants (compter nos handlers via `JsonFormatter`), Alembic conserve `alembic_version` vidée après downgrade.
 - Vérifications : 30 passed · couverture 100 % · ruff ✅ · format ✅ · mypy strict ✅ · CI backend ajoutée (non exécutée sans remote).
+
+### 2026-10-07 — Sous-phase 2a livrée (en local)
+- Branche `phase-2-auth-organisations`. TDD respecté : RED (25 failed + 5 errors) avant toute implémentation.
+- Schéma : `organizations`, `users` (globaux, hors RLS), `memberships`, `module_permissions`, `invitations`, `audit_logs` (tenants, RLS activée + forcée, une politique par table).
+- Multi-tenant : `app.core.tenancy.set_tenant` pose deux GUC transactionnels (`app.current_user_id`, `app.current_organization_id`, `is_local=true`) ; `app.core.deps.get_session` donne une session par requête (commit en fin de succès, rollback sinon, tenant neutre au départ).
+- Repositories : `organizations`, `users` (e-mail normalisé en minuscules), `memberships` (filtre explicite **et** RLS).
+- `create_app` crée maintenant l'engine + la fabrique de sessions (`app.state.engine`, `app.state.session_factory`) et dispose le pool dans un lifespan.
+- Infrastructure de test : bases jetables par test d'Alembic, rôle `mirador_test` non-superuser, fixtures `app`/`client`/`db_session`.
+- Vérifications : 55 passed · couverture 100 % · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ · gitleaks ✅ · CI non exécutée sans remote.
+- **Non fait** : commit (en attente), documentation `ARCHITECTURE.md` / `CHANGELOG.md` / `README.md` à compléter au moment du commit de fin de sous-phase.
+
+### 2026-10-08 — Sous-phase 2a commitée
+- Revérification avant commit : `pytest --cov=app` → 55 passed, couverture 100 % · ruff check/format ✅ · mypy strict ✅ (28 fichiers) · `pre-commit run --all-files` → 10 hooks ✅ · `gitleaks git . --redact` → no leaks found.
+- Docs mises à jour : `ARCHITECTURE.md` (tenant, session par requête, repositories), `CHANGELOG.md`, `README.md` (statut phase 2), `PROGRESS.md`.
+- Push impossible : aucun remote GitHub configuré (voir « À faire au premier push »).

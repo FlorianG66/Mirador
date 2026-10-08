@@ -16,7 +16,7 @@ from alembic import context
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings  # noqa: E402
-from app.models.base import Base  # noqa: E402
+from app.models import Base  # noqa: E402  # importe tous les modèles dans Base.metadata
 
 config = context.config
 target_metadata = Base.metadata
