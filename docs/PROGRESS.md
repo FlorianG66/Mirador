@@ -225,4 +225,5 @@
 - Config : `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (vide = routes en 404), `Settings.google_redirect_uri` dérivé de `app_base_url`, `httpx==0.28.1` promu dépendance runtime, `.env.example` mis à jour.
 - Qualité : ruff ✅ · format ✅ · mypy strict ✅ (67 fichiers) · pre-commit ✅ (11 hooks, gitleaks inclus) · couverture 88 % (artefact coverage coroutines, v. `DECISIONS.md`).
 - Docs : `ARCHITECTURE.md` (bloc Google + quota `google`), `DECISIONS.md` (6 décisions : compte existant uniquement, userinfo sans JWT, cookie d'état, A2F conservée, URI dérivée, 502 dédié), `CHANGELOG.md`, `README.md`, ce fichier.
+- Commit : `5a735bc feat: connexion Google OIDC (sous-phase 2e)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; tests manuels avec un vrai compte Google (aucun identifiant réel dans ce dépôt public).
