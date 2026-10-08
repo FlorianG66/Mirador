@@ -251,4 +251,5 @@
 - Socle `frontend/` : Vite 8.3.4 + React 19.3.0 + TypeScript strict 5.9.3 + ESLint flat + Vitest 5.0.3 (jsdom) ; `tsconfig` décomposés (app + node), `erasableSyntaxOnly`, build par incréments ; toutes les versions épinglées **sans caret**, install sans conflit de peers.
 - Proxy de dev `/api` → `127.0.0.1:8000` (same-origin, pas de CORS en dev, v. `DECISIONS.md`) ; `PROJECT_NAME` centralisé dans `src/constants.ts` et posé sur `document.title` ; écran provisoire `App.tsx` + premier test Vitest (RTL + jest-dom).
 - Vérifs : `npm run lint` ✅ · `npm run typecheck` ✅ · `npm test` (1 test) ✅ · `npm run build` ✅ (219 kB js / 68 kB gzip) ; hook eslint de pre-commit actif (config corrigée : `pass_filenames: false`, confirmé sur ce commit).
+- Commit : `1d675ef feat: socle frontend Vite + React + TypeScript strict (sous-phase 3a)`.
 - **Non fait** : push (aucun remote GitHub), merge (sans feu vert) ; design tokens, layout, i18n, client API (sous-phases 3b à 3d).
