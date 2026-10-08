@@ -1,9 +1,10 @@
-"""Outils de test partagés par les sous-phases « équipe » (invitations, permissions, audit)."""
+"""Outils de test partagés (invitations, permissions, audit, connexion Google)."""
 
 from __future__ import annotations
 
 import re
 import uuid
+from urllib.parse import urlencode
 
 import httpx
 from fastapi import FastAPI
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.constants import API_PREFIX, CSRF_COOKIE
 from app.core.tenancy import set_tenant
+from app.services.oidc import OidcIdentity, OidcProviderError
 from tests.conftest import register_client
 
 PASSWORD = "mot-de-passe-secret"
@@ -47,6 +49,53 @@ class FakeEmailSender:
 
     async def send(self, *, to: str, subject: str, content: str) -> None:
         self.sent.append((to, subject, content))
+
+
+class FakeOidcProvider:
+    """Fournisseur OIDC de test : aucune requête réseau, tout tient en mémoire.
+
+    L'URL d'autorisation est conservée pour que les tests lisent l'état et le
+    redirect_uri réellement envoyés ; `exchange_calls` journalise les échanges.
+    """
+
+    def __init__(
+        self, identity: OidcIdentity | None = None, *, error: OidcProviderError | None = None
+    ) -> None:
+        self.identity = identity or OidcIdentity(
+            subject="google-subject", email="admin@example.com", email_verified=True, name="Ada"
+        )
+        self.error = error
+        self.authorization_urls: list[str] = []
+        self.exchange_calls: list[tuple[str, str]] = []
+
+    def authorization_url(self, *, state: str, redirect_uri: str) -> str:
+        query = urlencode(
+            {
+                "client_id": "client-de-test",
+                "redirect_uri": redirect_uri,
+                "response_type": "code",
+                "scope": "openid email profile",
+                "state": state,
+            }
+        )
+        url = f"https://accounts.example.test/o/oauth2/v2/auth?{query}"
+        self.authorization_urls.append(url)
+        return url
+
+    async def exchange_code(self, *, code: str, redirect_uri: str) -> OidcIdentity:
+        self.exchange_calls.append((code, redirect_uri))
+        if self.error is not None:
+            raise self.error
+        return self.identity
+
+
+def install_oidc(
+    app: FastAPI, identity: OidcIdentity | None = None, *, error: OidcProviderError | None = None
+) -> FakeOidcProvider:
+    """Branche un fournisseur factice sur l'application sous test."""
+    provider = FakeOidcProvider(identity, error=error)
+    app.state.oidc_provider = provider
+    return provider
 
 
 def csrf_headers(client: httpx.AsyncClient) -> dict[str, str]:

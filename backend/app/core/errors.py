@@ -15,6 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.db import DatabaseUnavailableError
 from app.services.errors import ServiceProblem
+from app.services.oidc import OidcProviderError
 
 # « app.core.errors » : se propage jusqu'au logger « app » configuré par configure_logging().
 logger = logging.getLogger(__name__)
@@ -95,10 +96,22 @@ async def service_problem_handler(request: Request, exc: Exception) -> JSONRespo
     return _problem_response(request, exc.status_code, exc.detail)
 
 
+async def oidc_provider_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Échec du fournisseur Google (réseau, code refusé) : 502 sans fuite de détail.
+
+    Le détail technique part au journal, jamais au client (ASVS L2) : le message
+    affiché est figé côté backend, indépendant de ce que Google a répondu.
+    """
+    assert isinstance(exc, OidcProviderError)
+    logger.warning("Fournisseur OIDC en échec sur %s : %s", request.url.path, exc)
+    return _problem_response(request, 502, "Connexion Google impossible.")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Branche tous les gestionnaires d'erreurs sur l'application."""
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(DatabaseUnavailableError, database_unavailable_handler)
     app.add_exception_handler(ServiceProblem, service_problem_handler)
+    app.add_exception_handler(OidcProviderError, oidc_provider_error_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)

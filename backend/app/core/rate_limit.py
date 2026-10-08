@@ -31,6 +31,10 @@ PASSWORD_RESET_RATE_WINDOW_SECONDS = 60 * 60
 INVITE_RATE_LIMIT = 10
 INVITE_RATE_WINDOW_SECONDS = 60 * 60
 
+# Connexion Google (phase 2e) : démarrage et callback partagent le même quota.
+GOOGLE_RATE_LIMIT = 10
+GOOGLE_RATE_WINDOW_SECONDS = 60
+
 
 class RateLimiter:
     """Compteur de tentatives par clé, purge automatique des fenêtres expirées."""

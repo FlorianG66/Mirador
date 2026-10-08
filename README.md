@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2d livrée (invitations, permissions par module, révocation, journal d'audit). Les endpoints d'authentification, d'organisation et d'équipe sont exposés pour l'instant.
+> **Statut** : projet en cours de développement — phase 2 en cours (auth, organisations, permissions) : sous-phase 2e livrée (connexion Google OIDC), phase 2 complète côté API. Les endpoints d'authentification, d'organisation et d'équipe sont exposés pour l'instant.
 
 ## Présentation
 

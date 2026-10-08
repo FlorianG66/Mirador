@@ -25,3 +25,7 @@ BACKUP_CODE_COUNT = 10
 INVITATION_TTL_SECONDS = 7 * 24 * 3600
 # Nombre maximal de journaux d'audit renvoyés par requête.
 AUDIT_LOGS_LIMIT = 100
+
+# Connexion Google (phase 2e) : cookie d'état du parcours OIDC, usage unique.
+OAUTH_STATE_COOKIE = "mirador_oauth_state"
+OAUTH_STATE_TTL_SECONDS = 10 * 60

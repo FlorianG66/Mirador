@@ -6,6 +6,8 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.constants import API_PREFIX
+
 DATABASE_URL_PREFIX = "postgresql+asyncpg://"
 
 Environment = Literal["development", "test", "production"]
@@ -25,6 +27,18 @@ class Settings(BaseSettings):
     # Base publique de l'application : préfixe des liens envoyés par e-mail
     # (réinitialisation de mot de passe, plus tard invitations) — phase 2c.
     app_base_url: str = "http://localhost:8000"
+    # Connexion Google (phase 2e) : vide = fournisseur non branché (404 sur les routes).
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
+    @property
+    def google_redirect_uri(self) -> str:
+        """URI de retour : elle doit être enregistrée à l'identique chez Google.
+
+        On suppose l'application servie depuis une seule origine (`app_base_url`),
+        le frontend et l'API partageant le domaine — voir docs/DECISIONS.md.
+        """
+        return f"{self.app_base_url}{API_PREFIX}/auth/google/callback"
 
     @field_validator("database_url")
     @classmethod

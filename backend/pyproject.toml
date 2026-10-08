@@ -18,6 +18,8 @@ dependencies = [
     # Auth phase 2b : hachage de mot de passe (Argon2id) et validation d'e-mail (EmailStr).
     "argon2-cffi==25.1.0",
     "email-validator==2.3.0",
+    # Connexion Google (phase 2e) : échange du code OIDC et userinfo (déjà utilisé en test).
+    "httpx==0.28.1",
 ]
 
 [project.optional-dependencies]
@@ -25,7 +27,6 @@ dev = [
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
     "pytest-cov==7.1.0",
-    "httpx==0.28.1",
     "ruff==0.16.10",
     "mypy==2.4.0",
     "pgserver==0.1.4",

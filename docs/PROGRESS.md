@@ -6,9 +6,9 @@
 
 - **Phase en cours** : 2 — Auth, organisations, permissions. Découpage en sous-phases :
   2a modèle + RLS + repositories (**livrée et commitée**), 2b inscription/connexion/sessions/CSRF/rate-limit (**livrée et commitée**),
-  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit (**livrée et commitée**), 2e Google OIDC.
+  2c A2F TOTP + codes de secours + mot de passe oublié (**livrée et commitée**), 2d invitations/permissions/révocation/audit (**livrée et commitée**), 2e Google OIDC (**livrée**, commit en cours).
 - **Branche** : `phase-2-auth-organisations` (créée depuis `phase-1-backend-socle`).
-- **Prochaine action** : sous-phase 2e — connexion Google (OIDC).
+- **Prochaine action** : commit de la sous-phase 2e, puis clôture de la phase 2 (récap) ; phase suivante : 3 — Frontend socle & design system.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -125,6 +125,28 @@
 - **Le service refuse d'inviter un membre** (409 voulu) : le test « acceptation d'une invitation alors qu'on est déjà membre » ne peut pas passer par l'API pour la 2ᵉ invitation ; il l'insère directement en SQL (jeton haché via `generate_token`/`hash_token`).
 - **Disque plein au milieu de la phase** : chaque session de tests laissait un cluster pgserver (~50 Mo) dans `%TEMP%`. Corrigé par `cleanup_mode="delete"` dans `tests/conftest.py` ; vérifier qu'aucun `mirador-pg-*` ne subsiste après un run.
 
+### Critères de la phase 2e — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests écrits d'abord (RED) puis GREEN | ✅ RED avant toute implémentation (erreur de collection : `OAUTH_STATE_COOKIE` absent de `constants.py`) ; GREEN : **179 passed** |
+| pytest vert | ✅ `coverage run -m pytest` → 179 passed (18 nouveaux : 13 parcours + 5 fournisseur) |
+| Couverture ≥ 80 % | ✅ **88 % mesurés** (`routers/google.py` 87 %, `services/oidc.py` 100 % ; écart restant = artefact coverage coroutines, v. `DECISIONS.md`) |
+| ruff check + format | ✅ `ruff check .` + `ruff format .` → 0 erreur / 100 fichiers |
+| mypy strict | ✅ 0 erreur sur 67 fichiers |
+| pre-commit passe | ✅ `pre-commit run --all-files` → 11 hooks Passed (gitleaks inclus) |
+| Démarrage | ✅ 302 vers Google avec `state`, cookie `mirador_oauth_state` httpOnly + `Path=/api/v1/auth`, `redirect_uri` conforme à `Settings.google_redirect_uri` |
+| Callback | ✅ session complète (200 + cookies + `/auth/me`), état à usage unique (effacé au succès) ; mismatch d'état, état absent, code absent → 400 sans appel au fournisseur ; `error=…` → 400 « annulée » |
+| Garde-fous | ✅ compte absent → 403, e-mail non vérifié → 403, `OidcProviderError` → 502 message figé (détail au journal), fournisseur absent → 404, quota `google` 10/min → 429 |
+| A2F conservée | ✅ compte à TOTP actif → `totp_required=true` + cookie `mirador_2fa`, **aucun** cookie de session |
+| Fournisseur réel | ✅ tests unitaires `authorization_url` / `exchange_code` via `httpx.MockTransport` (URLs et paramètres Google vérifiés, refus 400 et userinfo sans e-mail → `OidcProviderError`) |
+| CI backend | ⚠️ job écrit, **non exécuté** (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 2e (à ne pas re-piocher)
+- **Le cookie d'état sur un 302** : il faut le poser sur la `RedirectResponse` retournée, pas sur la `Response` injectée (FastAPI n'en recopie pas les en-têtes quand on retourne une `Response`) — même piège que le 204 de la phase 2b.
+- **L'état n'est pas effacé quand le callback échoue** : les 400/403/502 passent par les handlers, qui construisent une réponse neuve sans nos cookies. Sans risque (le cookie ne vaut que pour ce navigateur et expire en 10 min, il est régénéré au démarrage), mais à revoir si le parcours évolue.
+- **`OidcProviderError` sans handler = 500** : l'exception vient du fournisseur, pas de FastAPI — elle a besoin de son handler dédié (502 + journal) sinon elle remonte en erreur interne générique.
+- **Anomalie coverage visible sur `google.py`** : les lignes après `await` (cookies, retours) sont exécutées et testées mais non mesurées — c'est l'artefact déjà documenté, pas un trou de couverture ; `services/oidc.py` est à 100 %.
+
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -195,3 +217,12 @@
 - Docs : `ARCHITECTURE.md` (bloc invitations/équipe/audit, quotas, nettoyage des clusters), `DECISIONS.md` (6 décisions), `CHANGELOG.md`, `README.md`, ce fichier.
 - Commit : `9d7045e feat: invitations, permissions par module et journal d'audit (sous-phase 2d)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### 2026-10-08 — Sous-phase 2e livrée (connexion Google OIDC)
+- TDD respecté : RED avant toute implémentation (erreur de collection : `OAUTH_STATE_COOKIE` et `app.services.oidc` absents), puis GREEN (**179 passed**, dont 18 nouveaux).
+- Routes : `GET /auth/google` (état opaque en cookie httpOnly 10 min + 302 vers Google) et `GET /auth/google/callback` (comparaison à temps constant, échange du code, session ou défi A2F) ; `app/routers/google.py`, service `app/services/oidc.py` (`OidcProvider` en protocole, `GoogleOidcProvider` réel, `FakeOidcProvider` en test), `authenticate_google` dans `services/auth.py` (jamais de création de compte).
+- Garde-fous : compte absent → 403, e-mail non vérifié → 403, fournisseur absent → 404, `OidcProviderError` → 502 (handler dédié, message figé, détail au journal), quota `google` 10/min partagé démarrage/callback ; A2F TOTP toujours exigée (défi `mirador_2fa`, aucun cookie de session).
+- Config : `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (vide = routes en 404), `Settings.google_redirect_uri` dérivé de `app_base_url`, `httpx==0.28.1` promu dépendance runtime, `.env.example` mis à jour.
+- Qualité : ruff ✅ · format ✅ · mypy strict ✅ (67 fichiers) · pre-commit ✅ (11 hooks, gitleaks inclus) · couverture 88 % (artefact coverage coroutines, v. `DECISIONS.md`).
+- Docs : `ARCHITECTURE.md` (bloc Google + quota `google`), `DECISIONS.md` (6 décisions : compte existant uniquement, userinfo sans JWT, cookie d'état, A2F conservée, URI dérivée, 502 dédié), `CHANGELOG.md`, `README.md`, ce fichier.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; tests manuels avec un vrai compte Google (aucun identifiant réel dans ce dépôt public).

@@ -13,6 +13,7 @@ from app.core.logging import configure_logging
 from app.core.middleware import SecurityMiddleware
 from app.core.rate_limit import RateLimiter
 from app.routers.auth import router as auth_router
+from app.routers.google import router as google_router
 from app.routers.health import router as health_router
 from app.routers.invitations import accept_router as invitation_accept_router
 from app.routers.invitations import router as invitations_router
@@ -20,6 +21,7 @@ from app.routers.password import router as password_router
 from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
+from app.services.oidc import GoogleOidcProvider
 
 
 @asynccontextmanager
@@ -48,11 +50,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.rate_limiter = RateLimiter()
     # Envoi d'e-mails : journalisation en développement, SMTP en phase 11.
     app.state.email_sender = LogEmailSender()
+    # Connexion Google : fournisseur absent (routes en 404) tant que les
+    # identifiants ne sont pas renseignés dans l'environnement.
+    app.state.oidc_provider = (
+        GoogleOidcProvider(
+            client_id=resolved_settings.google_client_id,
+            client_secret=resolved_settings.google_client_secret,
+        )
+        if resolved_settings.google_client_id
+        else None
+    )
     engine = create_async_engine(resolved_settings.database_url)
     app.state.engine = engine
     # Une fabrique partagée : une session (donc une transaction) par requête.
     app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
     app.include_router(auth_router, prefix=API_PREFIX)
+    app.include_router(google_router, prefix=API_PREFIX)
     app.include_router(two_factor_router, prefix=API_PREFIX)
     app.include_router(password_router, prefix=API_PREFIX)
     app.include_router(invitations_router, prefix=API_PREFIX)

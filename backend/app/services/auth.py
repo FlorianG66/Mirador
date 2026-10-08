@@ -11,6 +11,8 @@ from app.models.enums import Role
 from app.models.organization import Organization
 from app.models.user import User
 from app.repositories import memberships, organizations, users
+from app.services.errors import ServiceProblem
+from app.services.oidc import OidcIdentity
 
 # Hachage factice vérifié quand le compte est inconnu : le temps de calcul ne
 # trahit pas l'existence de l'e-mail (aucune énumération par minutage).
@@ -66,4 +68,19 @@ async def authenticate(session: AsyncSession, *, email: str, password: str) -> U
         return None
     if not verify_password(password, digest):
         return None
+    return user
+
+
+async def authenticate_google(session: AsyncSession, *, identity: OidcIdentity) -> User:
+    """Rattache une identité Google à un compte existant (jamais de création ici).
+
+    L'e-mail non vérifié est refusé : seules les adresses confirmées par Google
+    ouvrent une session. La création de compte reste du domaine des invitations
+    (phase 2d) — voir docs/DECISIONS.md.
+    """
+    if not identity.email_verified:
+        raise ServiceProblem(403, "Adresse e-mail Google non vérifiée.")
+    user = await users.get_user_by_email(session, identity.email)
+    if user is None:
+        raise ServiceProblem(403, "Aucun compte n'est associé à cette adresse e-mail.")
     return user

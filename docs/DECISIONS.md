@@ -109,3 +109,27 @@ Un admin ne peut ni retirer ses propres permissions ni se révoquer lui-même (4
 ## 2026-10-08 — Clusters de test PostgreSQL détruits (`cleanup_mode="delete"`)
 
 Le `conftest` crée un cluster pgserver par session avec `cleanup_mode="delete"` (au lieu du défaut `stop`, qui ne fait que l'arrêter). Raison : chaque session laissait ~50 Mo dans `%TEMP%`, ce qui a fait tomber le disque en plein milieu de phase ; le répertoire est de toute façon recréé à chaque run.
+
+## 2026-10-08 — Google ne crée jamais de compte
+
+`authenticate_google` ne relie l'identité Google qu'à un **compte existant** (e-mail non vérifié → 403, aucun compte → 403). Raison : créer un compte depuis un e-mail imposerait d'inventer un nom d'organisation et contournerait les invitations (2d) ; la création automatique sera arbitrée à une phase ultérieure si le besoin se confirme.
+
+## 2026-10-08 — Identité Google via userinfo, sans vérification JWT locale
+
+Échange du code en HTTPS (`client_secret`) puis appel au userinfo pour l'identité : aucune dépendance crypto ni vérification de signature côté backend. Raison : `httpx` (déjà épinglé `0.28.1` en dev) est promu dépendance runtime, et Google reste la seule source de vérité sur l'e-mail vérifié.
+
+## 2026-10-08 — État OAuth en cookie httpOnly comparé à temps constant
+
+L'état vit dans `mirador_oauth_state` (httpOnly, `SameSite=lax`, 10 min, `Path=/api/v1/auth`), comparé au paramètre `state` via `hmac.compare_digest`, effacé au succès du callback. Raison : le frontend n'a jamais besoin de le lire, et un état lisible ou persistant exposerait la protection CSRF du parcours (RFC 6749 §10.12).
+
+## 2026-10-08 — L'A2F TOTP reste exigée après Google
+
+Un callback Google sur un compte à TOTP actif délivre le défi `mirador_2fa` (comme le login e-mail/mot de passe), jamais une session directe. Raison : sinon la connexion Google contournerait le second facteur — l'A2F protège le compte, pas la méthode d'entrée.
+
+## 2026-10-08 — URI de retour Google dérivée de `app_base_url`
+
+`Settings.google_redirect_uri = app_base_url + /api/v1/auth/google/callback`, sans setting dédié. Raison : une seule origine (frontend + API) est supposée, à enregistrer à l'identique dans la console Google ; si les domaines divergent, un setting dédié sera ajouté alors (pas de configuration prématurée).
+
+## 2026-10-08 — Échec du fournisseur OIDC : 502 dédié
+
+`OidcProviderError` a son propre handler global : message figé « Connexion Google impossible. », détail technique au journal uniquement. Raison : sans handler, l'exception remonterait en 500 générique sans trace exploitable, et un message repris de Google exposerait le détail d'un tiers (ASVS L2).

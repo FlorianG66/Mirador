@@ -12,7 +12,10 @@ from fastapi import Response
 from app.core.config import Settings
 from app.core.constants import (
     ACCESS_COOKIE,
+    API_PREFIX,
     CSRF_COOKIE,
+    OAUTH_STATE_COOKIE,
+    OAUTH_STATE_TTL_SECONDS,
     REFRESH_COOKIE,
     TWO_FACTOR_COOKIE,
 )
@@ -85,4 +88,28 @@ def clear_two_factor_cookie(response: Response, settings: Settings) -> None:
     """Efface le défi A2F (fin du parcours de vérification)."""
     response.delete_cookie(
         TWO_FACTOR_COOKIE, path="/api/v1/auth", secure=_secure(settings), samesite="lax"
+    )
+
+
+def set_oauth_state_cookie(response: Response, state: str, settings: Settings) -> None:
+    """État du parcours Google (phase 2e) : httpOnly, éphémère, zone d'authentification.
+
+    Le frontend n'a jamais besoin de le lire : c'est le backend qui le compare au
+    paramètre `state` renvoyé par Google (anti-CSRF, RFC 6749 §10.12).
+    """
+    response.set_cookie(
+        OAUTH_STATE_COOKIE,
+        state,
+        max_age=OAUTH_STATE_TTL_SECONDS,
+        httponly=True,
+        secure=_secure(settings),
+        samesite="lax",
+        path=f"{API_PREFIX}/auth",
+    )
+
+
+def clear_oauth_state_cookie(response: Response, settings: Settings) -> None:
+    """Consomme l'état du parcours Google (le callback est à usage unique)."""
+    response.delete_cookie(
+        OAUTH_STATE_COOKIE, path=f"{API_PREFIX}/auth", secure=_secure(settings), samesite="lax"
     )
