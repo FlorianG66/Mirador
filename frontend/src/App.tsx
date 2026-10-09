@@ -1,13 +1,9 @@
-// Écran provisoire de la sous-phase 3a : vérifie que la chaîne React +
-// TypeScript strict + ESLint + Vitest tourne. Le vrai layout (menu latéral,
-// design tokens, i18n) arrive en 3b/3c.
-import { PROJECT_NAME } from './constants.ts'
+// Point de montage des routes de l'application.
+import { createBrowserRouter, RouterProvider } from 'react-router'
+import { routes } from './app/routes.tsx'
+
+const router = createBrowserRouter(routes)
 
 export default function App() {
-  return (
-    <main>
-      <h1>{PROJECT_NAME}</h1>
-      <p>Application en construction — sous-phase 3a (socle frontend).</p>
-    </main>
-  )
+  return <RouterProvider router={router} />
 }

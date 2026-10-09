@@ -1,10 +1,90 @@
-/* Feuille de base en attendant les design tokens (phase 3b). */
+@import 'tailwindcss';
+
+/* Mode sombre piloté par la classe .dark posée sur <html> (hook useTheme et
+   script d'amorçage dans index.html) : le thème est choisi par l'utilisateur,
+   pas imposé par le navigateur. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens (SPEC §7) : les composants ne manipulent que ces variables
+   sémantiques, jamais une couleur brute, pour que clair/sombre et le futur
+   branding restent triviaux. Le runtime bascule les valeurs, pas le build. */
 :root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
-  color-scheme: light dark;
+  --background: #fafafa;
+  --surface: #ffffff;
+  --surface-muted: #f4f4f5;
+  --surface-hover: #ececef;
+  --border: #e4e4e7;
+  --text: #18181b;
+  --text-muted: #71717a;
+  --brand: #4f46e5;
+  --brand-foreground: #ffffff;
+  --brand-muted: #eef2ff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
 }
 
-body {
-  margin: 0;
+.dark {
+  --background: #0b0b0f;
+  --surface: #141419;
+  --surface-muted: #1c1c23;
+  --surface-hover: #23232b;
+  --border: #2a2a34;
+  --text: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --brand: #818cf8;
+  --brand-foreground: #141419;
+  --brand-muted: rgba(99, 102, 241, 0.16);
+  --success: #4ade80;
+  --success-foreground: #0b0b0f;
+  --warning: #fbbf24;
+  --warning-foreground: #0b0b0f;
+  --danger: #f87171;
+  --danger-foreground: #0b0b0f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-foreground: var(--text);
+  --color-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
 }

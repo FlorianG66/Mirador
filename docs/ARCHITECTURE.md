@@ -50,23 +50,39 @@ Couches : `routers → services → repositories`.
 
 ## Structure frontend
 
-SPA React (Vite) derrière login : pas de SSR (le backend est déjà FastAPI). Client API généré depuis l'OpenAPI. Voir `SPEC.md` §5.2.
+SPA React (Vite) derrière login : pas de SSR (le backend est déjà FastAPI). Client API généré depuis l'OpenAPI (phase 3c). Voir `SPEC.md` §5.2.
 
 ```
 frontend/
-  index.html           entrée HTML (lang fr ; titre posé via PROJECT_NAME au chargement)
-  vite.config.ts       Vite + plugin React + proxy /api → 127.0.0.1:8000 + config Vitest
-  eslint.config.js     ESLint flat (JS + TS typé + règles React Hooks + react-refresh)
-  tsconfig*.json       TypeScript strict, build par incréments (app + node)
+  index.html            entrée HTML ; script d'amorçage du thème (classe .dark avant le premier rendu)
+  vite.config.ts        Vite (React + Tailwind v4) + proxy /api → 127.0.0.1:8000 + config Vitest
+  eslint.config.js      ESLint flat (JS + TS typé + règles React Hooks + react-refresh)
+  tsconfig*.json        TypeScript strict, build par incréments (app + node)
   src/
-    main.tsx           montage React, document.title = PROJECT_NAME
-    App.tsx            écran racine (layout et navigation en 3b)
-    constants.ts       PROJECT_NAME centralisé (AGENTS.md §1)
-    index.css          styles de base (design tokens en 3b)
-    test/setup.ts      Vitest : matchers jest-dom + nettoyage du DOM
+    main.tsx            montage React, document.title = PROJECT_NAME, import de l'i18n
+    App.tsx             routeur (createBrowserRouter) sur la table de routes
+    app/routes.tsx      table des routes (AppShell + pages)
+    components/
+      layout/           AppShell (menu latéral + topbar), Sidebar, SidebarNavItem,
+                        Topbar, ThemeToggle, LanguageSwitcher, PageTransition
+      ui/               design system : Button, Card, KpiCard, ChartCard, Skeleton,
+                        EmptyState, ErrorState, button-variants
+    pages/              DashboardPage, ModulePage, NotFoundPage (placeholders 3b)
+    hooks/              useTheme (clair/sombre), usePrefersReducedMotion, useCountUp
+    i18n/               instance i18next (FR défaut, EN) + locales fr/en
+    lib/utils.ts        cn() = clsx + tailwind-merge
+    constants.ts        PROJECT_NAME centralisé (AGENTS.md §1)
+    index.css           design tokens (variables CSS) + mapping @theme inline (Tailwind v4)
+    test/setup.ts       Vitest : matchers jest-dom + i18n + nettoyage du DOM
 ```
 
-Qualité frontend : `npm run lint` (ESLint, aussi en hook pre-commit), `npm run typecheck` (`tsc -b`), `npm test` (Vitest, environnement jsdom), `npm run build` (`tsc -b && vite build`). En dev, le backend doit tourner sur `127.0.0.1:8000` (uvicorn) et le navigateur ouvre `http://localhost:5173`.
+- **Design system (3b)** : couleurs et rayons en variables CSS (`:root` clair, `.dark` sombre) exposées à Tailwind par `@theme inline` ; les composants n'utilisent que des tokens sémantiques (`bg-surface`, `text-muted`, `text-danger`…). Thème piloté par la classe `.dark` sur `<html>` (hook `useTheme`, préférence dans `localStorage` ; `prefers-color-scheme` seulement à la première visite), amorcé par un script inline pour éviter le flash.
+- **Layout** : `AppShell` = menu latéral gauche + topbar + contenu ; sur desktop la grille est `[16rem_1fr]`, sur mobile le menu coulisse (overlay, fermeture par Échap). Lien d'évitement vers le contenu et `aria-current` actif sur la navigation (WCAG AA).
+- **i18n** : aucun texte en dur (AGENTS.md §7) ; ressources FR/EN embarquées, `initAsync:false` (init synchrone), `<html lang>` suit la langue active.
+- **Animations** : transitions de page via Motion (fondu + glissement), compteurs animés via `requestAnimationFrame` ; toutes neutralisées si `prefers-reduced-motion: reduce`.
+- **Routing** : React Router ; les routes de modules sont des placeholders à états vides, sans données en dur (AGENTS.md §8), en attendant l'API et les pages réelles (3c/3d, phase 5).
+
+Qualité frontend : `npm run lint` (ESLint, aussi en hook pre-commit), `npm run typecheck` (`tsc -b`), `npm test` (Vitest, environnement jsdom), `npm run build` (`tsc -b && vite build` ; bundle non gzippé > 500 kB à ce stade, v. `DECISIONS.md`). En dev, le backend doit tourner sur `127.0.0.1:8000` (uvicorn) et le navigateur ouvre `http://localhost:5173`.
 
 ## Environnements
 

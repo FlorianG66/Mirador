@@ -5,11 +5,11 @@
 ## État
 
 - **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
-  3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée, commit en cours**),
-  3b design system (tokens clair/sombre, layout + menu latéral, composants de base),
-  3c i18n FR/EN + client API généré + gardes de routes, 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
+  3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée**),
+  3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée, commit en cours**),
+  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions, 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
 - **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
-- **Prochaine action** : commit de la sous-phase 3a, puis 3b — design tokens, layout + menu latéral, composants de base.
+- **Prochaine action** : commit de la sous-phase 3b, puis 3c — client API généré depuis l'OpenAPI + gardes de routes.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -166,6 +166,31 @@
 - **Le bundle de règles React Hooks varie selon la version** : ne pas invoquer `configs.recommended`, épinger `rules-of-hooks` / `exhaustive-deps` par nom (v. `DECISIONS.md`).
 - **Vitest jsdom démarre lentement** (~45 s pour 1 test) : c'est le coût de l'environnement DOM, pas de la suite ; ne pas déduire une lenteur de tests de cette première exécution.
 
+### Critères de la phase 3b — vérité du terrain
+| Critère | État |
+|---|---|
+| TypeScript strict | ✅ `npm run typecheck` (`tsc -b`) : 0 erreur |
+| ESLint | ✅ `eslint .` : 0 erreur, 0 avertissement |
+| Vitest | ✅ `npm test` : **5 fichiers / 10 tests** (App+coquille, KpiCard, ChartCard, EmptyState, ErrorState) |
+| Build | ✅ `npm run build` : 2433 modules, 530,74 kB js / 169,22 kB gzip ; **avertissement Vite** « chunk > 500 kB » assumé (v. `DECISIONS.md`) |
+| Design tokens | ✅ couleurs + rayons en variables CSS (`:root`/`.dark`), exposés par `@theme inline` |
+| Thème clair/sombre | ✅ classe `.dark` (hook `useTheme`) + script d'amorçage dans `index.html` (pas de flash) |
+| Layout | ✅ `AppShell` menu latéral gauche, topbar (thème + langue), overlay mobile + fermeture Échap, lien d'évitement, `aria-current` actif |
+| Composants de base | ✅ Button, Card, KpiCard (compteur animé), ChartCard, Skeleton, EmptyState, ErrorState |
+| i18n FR/EN | ✅ i18next `initAsync:false`, `<html lang>` suivi, aucun texte en dur |
+| Routing | ✅ React Router ; pages placeholder à états vides, aucune donnée en dur (AGENTS.md §8) |
+| `prefers-reduced-motion` | ✅ transitions de page (Motion) et compteurs neutralisés |
+| pre-commit | ✅ `pre-commit run --all-files` : 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 3b (à ne pas re-piocher)
+- **i18next v26 renomme `initImmediate` en `initAsync`** : `initImmediate` n'existe plus dans `InitOptions` → `tsc` échoue. Utiliser `initAsync: false`.
+- **`@typescript-eslint/stylistic` impose `interface`** : tout alias d'objet (`export type X = { … }`) est refusé par `consistent-type-definitions` ; garder `type` uniquement pour les unions/utilitaires (`ModuleKey`, `ClassValue`).
+- **react-refresh n'admet que des composants** : exporter une fonction utilitaire (`buttonVariants`) depuis un fichier composant déclenche un avertissement ; l'isoler dans `button-variants.ts`.
+- **`buttonVariants` pour un `<Link>`** : un `<Link>` ne peut pas envelopper un `<button>` (HTML invalide) ; on réapplique les classes de bouton au lien.
+- **Motion + jsdom** : les transitions de page ne bloquent pas les tests (les éléments sont dans le DOM indépendamment de l'opacité), mais les compteurs animés seraient non déterministes → on force `usePrefersReducedMotion` à `true` dans le test de `KpiCard`.
+- **Tailwind v4 : pas de `tailwind.config`** : les tokens vivent dans `index.css` via `@theme inline` ; une couleur sémantique absente de ce bloc n'a pas d'utilitaire (`bg-…`).
+
 ### À faire au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -253,3 +278,13 @@
 - Vérifs : `npm run lint` ✅ · `npm run typecheck` ✅ · `npm test` (1 test) ✅ · `npm run build` ✅ (219 kB js / 68 kB gzip) ; hook eslint de pre-commit actif (config corrigée : `pass_filenames: false`, confirmé sur ce commit).
 - Commit : `1d675ef feat: socle frontend Vite + React + TypeScript strict (sous-phase 3a)`.
 - **Non fait** : push (aucun remote GitHub), merge (sans feu vert) ; design tokens, layout, i18n, client API (sous-phases 3b à 3d).
+
+### 2026-10-09 — Sous-phase 3b livrée (design system & layout)
+- TDD adapté : les tests Vitest des composants ont été écrits avec/avant leur implémentation, puis GREEN (**5 fichiers / 10 tests**) ; pas de RED formel (composants neufs, pas de bug à reproduire).
+- Design tokens : couleurs + rayons en variables CSS (`:root` clair, `.dark` sombre) exposées à Tailwind v4 par `@theme inline` ; les composants n'utilisent que des tokens sémantiques. Mode sombre piloté par la classe `.dark` (hook `useTheme`, `localStorage`), amorcé par un script inline dans `index.html` pour éviter le flash.
+- Layout : `AppShell` (menu latéral gauche, topbar collante thème + langue, overlay mobile avec fermeture Échap, lien d'évitement, `aria-current` actif), `Sidebar`, `Topbar`, `ThemeToggle`, `LanguageSwitcher`, `PageTransition` (Motion, `prefers-reduced-motion` respecté).
+- Composants de base : `Button` (+ `button-variants` pour styler un `<Link>`), `Card`, `KpiCard` (compteur animé, tendance), `ChartCard` (états chargement/vide/prêt), `Skeleton`, `EmptyState`, `ErrorState`.
+- i18n FR/EN (i18next `initAsync:false`, `<html lang>` suivi, aucun texte en dur) ; routing React Router (`createBrowserRouter`, table `app/routes.tsx`) ; pages placeholder à états vides, sans données en dur (AGENTS.md §8).
+- Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ (0 erreur/avertissement) · `npm test` → 10 passed · `npm run build` ✅ (avertissement « chunk > 500 kB » documenté) · `pre-commit run --all-files` → 11 hooks ✅ (gitleaks inclus).
+- Docs : `ARCHITECTURE.md` (structure frontend + design system/layout/i18n), `DECISIONS.md` (6 décisions : Tailwind/tokens, primitives maison vs shadcn/ui, libs, amorçage thème, bundle), `CHANGELOG.md`, `README.md`, ce fichier.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; client API généré, gardes de routes et vraies pages (3c/3d).

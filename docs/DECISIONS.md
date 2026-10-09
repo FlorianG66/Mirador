@@ -145,3 +145,23 @@ Un callback Google sur un compte à TOTP actif délivre le défi `mirador_2fa` (
 ## 2026-10-08 — Règles React Hooks épinglées par nom
 
 ESLint embarque `eslint-plugin-react-hooks` avec `rules-of-hooks` (error) et `exhaustive-deps` (warn) déclarés nommément, et non via `configs.recommended` (dont la clé et le contenu varient entre versions du plugin). Raison : lint stable indépendamment des évolutions du plugin (v7 change ses bundles).
+
+## 2026-10-09 — Tailwind CSS v4, design tokens en variables CSS
+
+`tailwindcss` + `@tailwindcss/vite` 4.3.3 ; couleurs et rayons sont des variables CSS (`:root`/`.dark`) exposées à Tailwind par `@theme inline`, les composants n'utilisent que des tokens sémantiques. Raison : SPEC §7 veut des tokens pour un clair/sombre et un futur branding triviaux ; Tailwind v4 s'intègre au plugin Vite, sans `tailwind.config`.
+
+## 2026-10-09 — Primitives maison plutôt que shadcn/ui à ce stade
+
+Les composants de base (Button, Card, KpiCard, ChartCard, Skeleton, EmptyState, ErrorState) sont écrits en tokens avec `clsx` + `tailwind-merge` (pattern shadcn), sans installer shadcn/ui. Raison : les primitives de la phase 3b sont simples ; shadcn/ui sera adopté quand des composants accessibles non triviaux (dialogue, combobox, menu) seront requis (pages 3d et suivantes), plutôt que de copier du code à l'avance.
+
+## 2026-10-09 — React Router, i18next, lucide-react, motion
+
+`react-router` 8.4.0 (routing client), `i18next` + `react-i18next` (FR défaut, EN ; `initAsync:false`), `lucide-react` (icônes) et `motion` (transitions). Raison : librairies citées par SPEC §5.2 ; `motion` n'est utilisé que pour les transitions de page, la logique d'animation (compteurs) restant en `requestAnimationFrame`. Toutes les autres dépendances ajoutées en 3b (`clsx`, `tailwind-merge`, `@tailwindcss/vite`, `tailwindcss`) servent les tokens et le style.
+
+## 2026-10-09 — Amorçage du thème avant le premier rendu
+
+Un script inline dans `index.html` pose la classe `.dark` depuis `localStorage` (`mirador-theme`) avant le rendu, avec la même logique que le hook `useTheme`, stockage protégé (navigation privée). Raison : éviter un flash de thème inversé au chargement. Une CSP stricte (phase 11) nécessitera un nonce ou un script externe.
+
+## 2026-10-09 — Bundle frontend non gzippé > 500 kB assumé à ce stade
+
+`npm run build` dépasse le seuil d'avertissement Vite (≈ 531 kB, ≈ 169 kB gzip) à cause de React + Router + Motion + i18next. Raison : acceptable pour un dashboard derrière login ; le découpage de code (routes paresseuses, chunks vendeurs) viendra avec les pages réelles (3c/3d, phase 5), pas en avance.
