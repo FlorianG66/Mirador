@@ -2,6 +2,7 @@
 // hors permission (403), accès admin, filtre du menu latéral et état de chargement.
 import { render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '../app/routes.tsx'
 import { json, problem, stubFetch, type FetchRoute } from '../test/mockFetch.ts'
@@ -39,7 +40,14 @@ function sessionRoutes(permissions: typeof ADMIN, email = 'membre@exemple.fr'): 
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return render(<RouterProvider router={router} />)
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
 }
 
 beforeEach(() => {

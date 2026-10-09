@@ -1,15 +1,18 @@
-// Table des routes de la SPA. Extraite d'App.tsx pour �tre r�utilisable dans
-// les tests (createMemoryRouter) sans d�pendre de l'historique du navigateur.
-// L'AuthProvider enveloppe tout ; RequireAuth prot�ge la coquille, puis chaque
-// module est gard� par ses permissions (RequireModule) ou son r�le (RequireAdmin).
+// Table des routes de la SPA. Extraite d'App.tsx pour être réutilisable dans
+// les tests (createMemoryRouter) sans dépendre de l'historique du navigateur.
+// L'AuthProvider enveloppe tout ; RequireAuth protège la coquille, puis chaque
+// module est gardé par ses permissions (RequireModule) ou son rôle (RequireAdmin).
 import type { RouteObject } from 'react-router'
 import { AuthProvider } from '../auth/AuthProvider.tsx'
 import { RequireAdmin, RequireAuth, RequireModule } from '../auth/guards.tsx'
 import { AppShell } from '../components/layout/AppShell.tsx'
 import { DashboardPage } from '../pages/DashboardPage.tsx'
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.tsx'
 import { LoginPage } from '../pages/LoginPage.tsx'
 import { ModulePage } from '../pages/ModulePage.tsx'
 import { NotFoundPage } from '../pages/NotFoundPage.tsx'
+import { RegisterPage } from '../pages/RegisterPage.tsx'
+import { ResetPasswordPage } from '../pages/ResetPasswordPage.tsx'
 import { TeamPage } from '../pages/TeamPage.tsx'
 
 export const routes: RouteObject[] = [
@@ -17,6 +20,9 @@ export const routes: RouteObject[] = [
     element: <AuthProvider />,
     children: [
       { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
       {
         element: <RequireAuth />,
         children: [

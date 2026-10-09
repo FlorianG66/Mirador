@@ -335,3 +335,13 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ · 0 U+FFFD dans `frontend/src`.
 - Docs : `DECISIONS.md` (2026-10-09), `CHANGELOG.md`, ce fichier.
 - **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+
+### 2026-10-09 — Sous-phase 3d-a livrée (TanStack Query + inscription + mot de passe oublié)
+- TanStack Query 5.104.1 installé ; QueryClientProvider dans `main.tsx` (retry false, refetchOnWindowFocus false) ; `AuthProvider` migré de useState/useEffect vers `useQuery` (queries `authKeys.me` et `authKeys.permissions`, invalidation pour reload).
+- Pages `RegisterPage` (POST /auth/register → org + admin), `ForgotPasswordPage` (POST /auth/password/forgot, réponse anti-énumération), `ResetPasswordPage` (POST /auth/password/reset, token en query param) ; routes `/register`, `/forgot-password`, `/reset-password` ajoutées.
+- `LoginPage` migré vers `useMutation` ; liens vers inscription et mot de passe oublié ajoutés.
+- i18n : clés `register.*`, `forgotPassword.*`, `resetPassword.*`, `login.forgotPassword`, `login.noAccount` (FR + EN).
+- Tests : `AuthProvider.test.tsx`, `guards.test.tsx`, `App.test.tsx` mis à jour avec QueryClientProvider ; **30 passed** (8 fichiers).
+- Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ (bundle 600 kB js / 188 kB gzip — TanStack Query inclus).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert).

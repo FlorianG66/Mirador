@@ -55,6 +55,8 @@ const en = {
     error: 'Invalid credentials. Check your email and password.',
     totpUnsupported:
       'Two-factor authentication is not handled in the UI yet (planned for 3d).',
+    forgotPassword: 'Forgot password?',
+    noAccount: 'No account yet? Sign up',
   },
   forbidden: {
     title: 'Access denied',
@@ -79,6 +81,43 @@ const en = {
     description: 'The page you are looking for does not exist or has moved.',
     backHome: 'Back to overview',
   },
+  register: {
+    title: 'Create an account',
+    description: 'Set up your organization in a few seconds.',
+    organizationName: 'Organization name',
+    siren: 'SIREN (optional)',
+    email: 'Email address',
+    password: 'Password',
+    submit: 'Create my account',
+    submitting: 'Creating…',
+    error: 'An error occurred during registration.',
+    backToLogin: 'Already have an account? Sign in',
+  },
+  forgotPassword: {
+    title: 'Forgot password',
+    description: 'Enter your email address to receive a reset link.',
+    email: 'Email address',
+    submit: 'Send link',
+    submitting: 'Sending…',
+    error: 'An error occurred. Please try again in a moment.',
+    sentTitle: 'Email sent',
+    sentDescription: 'If an account exists with this address, you will receive a password reset email.',
+    backToLogin: 'Back to sign in',
+  },
+  resetPassword: {
+    title: 'New password',
+    description: 'Choose a new password.',
+    password: 'New password',
+    confirmPassword: 'Confirm password',
+    submit: 'Reset',
+    submitting: 'Resetting…',
+    error: 'An error occurred.',
+    mismatch: 'Passwords do not match.',
+    invalidTitle: 'Invalid link',
+    invalidDescription: 'The reset link is invalid or has expired.',
+    requestNew: 'Request a new link',
+    backToLogin: 'Back to sign in',
+  }
 }
 
 export default en

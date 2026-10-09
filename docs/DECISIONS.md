@@ -197,3 +197,7 @@ Le backend et le schéma OpenAPI nomment ce module `web` ; le frontend utilisait
 ## 2026-10-09 — Refonte visuelle du frontend (« clair aéré », rail rétractable)
 
 Direction retenue après revue des galeries d'inspiration (kombai, 5sdesign) : palette claire aérée type Linear/Notion, rail d'icônes rétractable (largeur pilotée par `--rail-w`, état mémorisé sous `mirador-rail-collapsed`), topbar riche (fil d'ariane, identité + rôle, langue, thème) et tableau de bord « bento » asymétrique (colonnes 7/5). Raison : refonte esthétique demandée en cours de phase 3, sans aucune donnée inventée (l'accès rapide pointe vers de vrais modules) ; ajouts purement présentationnels (tokens, `PageHeader`, `useRailCollapsed`, `lib/permissions.ts`), le contrat 3c et ses tests restent valides.
+
+## 2026-10-09 — TanStack Query 5.104.1 pour le state management serveur
+
+`@tanstack/react-query@5.104.1` (version stable npm vérifiée) remplace useState/useEffect dans `AuthProvider` et les mutations des formulaires. Configuration : `retry: false`, `refetchOnWindowFocus: false`. Les clés de query sont centralisées dans `src/auth/queries.ts` (`authKeys.me`, `authKeys.permissions(orgId)`). Raison : cache serveur partagé, invalidation déclarative (`reload()` = `invalidateQueries`), et intégration native avec les mutations des formulaires — sans ajouter de bibliothèque de formulaire (les formulaires restent contrôlés avec `useState`).

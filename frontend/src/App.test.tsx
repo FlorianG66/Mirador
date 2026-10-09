@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { routes } from './app/routes.tsx'
 import { json, stubFetch } from './test/mockFetch.ts'
@@ -39,7 +40,14 @@ beforeEach(() => {
 // indépendant de l'historique du navigateur).
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return render(<RouterProvider router={router} />)
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
 }
 
 describe('App (coquille)', () => {

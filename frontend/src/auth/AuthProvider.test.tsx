@@ -2,6 +2,7 @@
 // choix de l'organisation active (mémorisée ou première) et permissions.
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ACTIVE_ORGANIZATION_KEY, AuthProvider } from './AuthProvider.tsx'
 import { useAuth } from './context.ts'
@@ -32,7 +33,14 @@ function renderProvider() {
     [{ path: '/', element: <AuthProvider />, children: [{ index: true, element: <Probe /> }] }],
     { initialEntries: ['/'] },
   )
-  return render(<RouterProvider router={router} />)
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
 }
 
 beforeEach(() => {
