@@ -12,6 +12,8 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { ModuleKey } from '../../api/types.ts'
+import { useAuth } from '../../auth/context.ts'
 import { PROJECT_NAME } from '../../constants.ts'
 import { cn } from '../../lib/utils.ts'
 import { SidebarNavItem } from './SidebarNavItem.tsx'
@@ -21,6 +23,7 @@ interface NavEntry {
   icon: LucideIcon
   label: string
   end?: boolean
+  moduleKey?: ModuleKey
 }
 
 export interface SidebarProps {
@@ -28,21 +31,40 @@ export interface SidebarProps {
   onNavigate?: () => void
 }
 
+// Un module est visible si l'utilisateur a au moins la lecture ; un admin voit
+// tout. La page � �quipe � n'appara�t que pour les admins.
+function canSee(moduleKey: ModuleKey | undefined, permissions: ReturnType<typeof useAuth>['permissions']): boolean {
+  if (!permissions) {
+    return false
+  }
+  if (permissions.role === 'admin') {
+    return true
+  }
+  if (moduleKey === undefined) {
+    return false
+  }
+  return (permissions.modules[moduleKey] ?? 'none') !== 'none'
+}
+
 export function Sidebar({ open, onNavigate }: SidebarProps) {
   const { t } = useTranslation()
+  const { permissions } = useAuth()
+
+  const allModules: NavEntry[] = [
+    { to: '/finance', moduleKey: 'finance', icon: Wallet, label: t('nav.finance') },
+    { to: '/web', moduleKey: 'web', icon: BarChart3, label: t('nav.web') },
+    { to: '/social', moduleKey: 'social', icon: Share2, label: t('nav.social') },
+    { to: '/projects', moduleKey: 'projects', icon: ListChecks, label: t('nav.projects') },
+    { to: '/legal', moduleKey: 'legal', icon: Landmark, label: t('nav.legal') },
+  ]
 
   const modules: NavEntry[] = [
     { to: '/', end: true, icon: LayoutDashboard, label: t('nav.dashboard') },
-    { to: '/finance', icon: Wallet, label: t('nav.finance') },
-    { to: '/analytics', icon: BarChart3, label: t('nav.analytics') },
-    { to: '/social', icon: Share2, label: t('nav.social') },
-    { to: '/projects', icon: ListChecks, label: t('nav.projects') },
-    { to: '/legal', icon: Landmark, label: t('nav.legal') },
+    ...allModules.filter((entry) => canSee(entry.moduleKey, permissions)),
   ]
 
-  const settings: NavEntry[] = [
-    { to: '/team', icon: Users, label: t('nav.team') },
-  ]
+  const settings: NavEntry[] =
+    permissions?.role === 'admin' ? [{ to: '/team', icon: Users, label: t('nav.team') }] : []
 
   return (
     <aside

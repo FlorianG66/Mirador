@@ -1,16 +1,9 @@
-// Page d'un module non encore développé (placeholder 3b). Le libellé vient de
-// l'i18n selon la clé de module ; le contenu réel arrivera en phase 5.
+// Page d'un module non encore d�velopp� (placeholder 3b). Le libell� vient de
+// l'i18n selon la cl� de module ; le contenu r�el arrivera en phase 5.
 import { Hammer } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { ModuleKey } from '../api/types.ts'
 import { EmptyState } from '../components/ui/EmptyState.tsx'
-
-export type ModuleKey =
-  | 'finance'
-  | 'analytics'
-  | 'social'
-  | 'projects'
-  | 'legal'
-  | 'team'
 
 export interface ModulePageProps {
   moduleKey: ModuleKey

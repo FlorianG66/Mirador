@@ -6,7 +6,7 @@ import { ChartCard } from '../components/ui/ChartCard.tsx'
 
 const WIDGETS = [
   { key: 'finance', titleKey: 'nav.finance' },
-  { key: 'analytics', titleKey: 'nav.analytics' },
+  { key: 'web', titleKey: 'nav.web' },
   { key: 'social', titleKey: 'nav.social' },
   { key: 'projects', titleKey: 'nav.projects' },
 ] as const

@@ -9,7 +9,7 @@ const en = {
     primaryAria: 'Primary navigation',
     dashboard: 'Overview',
     finance: 'Finance',
-    analytics: 'Web analytics',
+    web: 'Web analytics',
     social: 'Social media',
     projects: 'Projects & tasks',
     legal: 'Legal identity',
@@ -30,6 +30,14 @@ const en = {
   dashboard: {
     title: 'Overview',
     subtitle: 'The pulse of your company, at a glance.',
+  },
+  login: {
+    title: 'Sign in',
+    description: 'Sign in to access your dashboard.',
+  },
+  forbidden: {
+    title: 'Access denied',
+    description: "You don't have the required permissions to view this page.",
   },
   placeholder: {
     title: 'Module under construction',

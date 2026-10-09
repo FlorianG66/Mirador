@@ -9,7 +9,8 @@ import tseslint from 'typescript-eslint'
 // changent de clé entre versions — on épingle les règles par nom) et
 // react-refresh pour le mode dev.
 export default tseslint.config(
-  { ignores: ['dist'] },
+  // `schema.d.ts` est g�n�r� depuis l'OpenAPI : on ne le lint pas.
+  { ignores: ['dist', 'src/api/schema.d.ts'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

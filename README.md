@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 2 livrée (auth, organisations, permissions, Google OIDC) ; phase 3 en cours (frontend socle & design system) : sous-phases 3a (socle Vite + React + TypeScript strict, Vitest, proxy `/api`) et 3b (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) livrées. Les pages réelles (connexion, inscription, A2F, Équipe) et le client API généré arrivent en 3c/3d.
+> **Statut** : projet en cours de développement — phase 2 livrée (auth, organisations, permissions, Google OIDC) ; phase 3 en cours (frontend socle & design system) : sous-phases 3a (socle Vite + React + TypeScript strict, Vitest, proxy `/api`), 3b (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) et 3c (client API typé généré depuis l'OpenAPI, CSRF, `AuthProvider` et gardes de routes par permissions) livrées. Les pages réelles (connexion, inscription, A2F, Équipe) complètes et l'e2e Playwright arrivent en 3d.
 
 ## Présentation
 

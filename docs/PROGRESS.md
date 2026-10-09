@@ -7,7 +7,7 @@
 - **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
   3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée**),
   3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée**),
-  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions, 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
+  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions (**livrée**), 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
 - **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
 - **Prochaine action** : commit de la sous-phase 3b, puis 3c — client API généré depuis l'OpenAPI + gardes de routes.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
@@ -191,7 +191,32 @@
 - **Motion + jsdom** : les transitions de page ne bloquent pas les tests (les éléments sont dans le DOM indépendamment de l'opacité), mais les compteurs animés seraient non déterministes → on force `usePrefersReducedMotion` à `true` dans le test de `KpiCard`.
 - **Tailwind v4 : pas de `tailwind.config`** : les tokens vivent dans `index.css` via `@theme inline` ; une couleur sémantique absente de ce bloc n'a pas d'utilitaire (`bg-…`).
 
-### À faire au premier push GitHub (réglages de dépôt, hors code)
+### À faire ### Critères de la phase 3c - vérité du terrain
+| Critère | État |
+|---|---|
+| Tests écrits d'abord (RED) puis GREEN | ✓ RED confirmé (imports `client.ts`/`AuthProvider.tsx` introuvables + gardes absentes) ; GREEN : **30 passed** (8 fichiers) |
+| Vitest vert | ✓ `npm test` → 30 passed (client CSRF, AuthProvider, gardes, App) |
+| Lint | ✓ `npm run lint` (ESLint) : 0 erreur (`schema.d.ts` généré exclu) |
+| Types | ✓ `npm run typecheck` (`tsc -b`) : 0 erreur |
+| Build | ✓ `npm run build` : 2443 modules, 544 kB js / 173 kB gzip (avertissement chunk > 500 kB assumé) |
+| Client API typé | ✓ `openapi-typescript` + `openapi-fetch` ; CSRF double-submit sur écritures ; `ApiError` RFC 9457 ; `unwrap` |
+| Schéma OpenAPI | ✓ exporté par `backend/scripts/export_openapi.py` vers `frontend/openapi/schema.json` (commité), types générés |
+| Auth front | ✓ `AuthProvider` (loading/anonymous/authenticated/error), org active mémorisée sinon première, `/permissions` chargées |
+| Gardes | ✓ `RequireAuth` (redirection `/login`), `RequireModule` (403 si `none`), `RequireAdmin` (403 si non-admin) |
+| Menu latéral | ✓ modules filtrés par permission, `Équipe` réservée aux admins ; `analytics` → `web` |
+| i18n | ✓ clés `nav.web`, `login.*`, `forbidden.*` (FR + EN), aucun texte en dur |
+| pre-commit | ✓ hooks passés (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### Pièges rencontrés en phase 3c (à ne pas re-piocher)
+- **`new Request(chemin relatif)` échoue sous Node** : openapi-fetch construit un `Request` ; sans `baseUrl`, une URL relative lève « Failed to parse URL » en test (undici). Solution : `baseUrl: window.location.origin` (same-origin en dev comme en prod).
+- **`fetch` capturé à la création du client** : `openapi-fetch` fige `globalThis.fetch` à l'import, donc `vi.stubGlobal('fetch', …)` ne l'atteint pas. Solution : passer `fetch: (input) => globalThis.fetch(input)` pour résoudre au moment de l'appel.
+- **Réponse 204 avec corps illégal** : `new Response('{}', { status: 204 })` lève ; pour un logout simulé, utiliser `new Response(null, { status: 204 })`.
+- **`U+FFFD` (caractère de remplacement)** : un accent écrit par le mauvais canal devient U+FFFD (`EF BF BD`) et casse les correspondances de texte des tests ; vérifier les points de code des libellés FR.
+- **Texte de chargement i18n** : `common.loading` se termine par un point de suspension (…), pas un point ASCII — matcher par regex, pas par chaîne exacte.
+- **`schema.d.ts` généré fait échouer ESLint** (règles de style sur les index signatures) : l'ajouter aux `ignores` d'`eslint.config.js`.
+- **`consistent-type-definitions`** : `ApiResult<T>` doit être une `interface` (le preset stylistic refuse l'alias d'objet).
+au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
 ## Historique
@@ -289,3 +314,12 @@
 - Docs : `ARCHITECTURE.md` (structure frontend + design system/layout/i18n), `DECISIONS.md` (6 décisions : Tailwind/tokens, primitives maison vs shadcn/ui, libs, amorçage thème, bundle), `CHANGELOG.md`, `README.md`, ce fichier.
 - Commit : `40b9b5a feat: design system, layout avec menu latéral et composants de base (sous-phase 3b)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; client API généré, gardes de routes et vraies pages (3c/3d).
+
+### 2026-10-09 - Sous-phase 3c livrée (client API typé & gardes de routes)
+- TDD : RED d'abord (échecs de résolution d'imports + gardes absentes), puis GREEN (**30 tests** sur 8 fichiers).
+- Client API typé : `backend/scripts/export_openapi.py` → `frontend/openapi/schema.json` ; `openapi-typescript@7.13.0` génère `src/api/schema.d.ts` (script npm `generate:api`, exclu d'ESLint) ; `openapi-fetch@0.17.0` dans `src/api/client.ts` (baseUrl = origine, credentials include, CSRF double-submit `mirador_csrf` → `x-csrf-token`, `ApiError` RFC 9457, `unwrap`).
+- Auth & gardes : `src/auth/context.ts` + `AuthProvider.tsx` (états loading/anonymous/authenticated/error, org active mémorisée sinon première, permissions par org) ; `guards.tsx` (`RequireAuth`/`RequireModule`/`RequireAdmin`, 403 via `ForbiddenPage`) ; pages `LoginPage`, `ForbiddenPage`, `TeamPage` ; `app/routes.tsx` refondu ; `Sidebar` filtrée ; `analytics` → `web` (route, i18n, dashboard).
+- Vérifs : `npm test` 30 passed ; `npm run lint` 0 erreur ; `npm run typecheck` 0 erreur ; `npm run build` OK (avertissement chunk assumé) ; pre-commit (gitleaks inclus).
+- Docs : `ARCHITECTURE.md`, `DECISIONS.md` (7 décisions), `CHANGELOG.md`, `README.md`, ce fichier.
+- Commit : `... (sous-phase 3c)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; pages réelles connexion/inscription/A2F/équipe et e2e Playwright (3d).

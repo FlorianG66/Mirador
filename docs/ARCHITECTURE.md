@@ -61,13 +61,15 @@ frontend/
   src/
     main.tsx            montage React, document.title = PROJECT_NAME, import de l'i18n
     App.tsx             routeur (createBrowserRouter) sur la table de routes
-    app/routes.tsx      table des routes (AppShell + pages)
+    app/routes.tsx      table des routes (AuthProvider > RequireAuth > AppShell + gardes par module)
+    api/                client typé : schema.d.ts (généré), client.ts (CSRF/ApiError), types.ts
+    auth/               context.ts (useAuth), AuthProvider.tsx, guards.tsx (RequireAuth/Module/Admin)
     components/
       layout/           AppShell (menu latéral + topbar), Sidebar, SidebarNavItem,
                         Topbar, ThemeToggle, LanguageSwitcher, PageTransition
       ui/               design system : Button, Card, KpiCard, ChartCard, Skeleton,
                         EmptyState, ErrorState, button-variants
-    pages/              DashboardPage, ModulePage, NotFoundPage (placeholders 3b)
+    pages/              DashboardPage, ModulePage, LoginPage, ForbiddenPage, TeamPage, NotFoundPage
     hooks/              useTheme (clair/sombre), usePrefersReducedMotion, useCountUp
     i18n/               instance i18next (FR défaut, EN) + locales fr/en
     lib/utils.ts        cn() = clsx + tailwind-merge
@@ -82,7 +84,8 @@ frontend/
 - **Animations** : transitions de page via Motion (fondu + glissement), compteurs animés via `requestAnimationFrame` ; toutes neutralisées si `prefers-reduced-motion: reduce`.
 - **Routing** : React Router ; les routes de modules sont des placeholders à états vides, sans données en dur (AGENTS.md §8), en attendant l'API et les pages réelles (3c/3d, phase 5).
 
-Qualité frontend : `npm run lint` (ESLint, aussi en hook pre-commit), `npm run typecheck` (`tsc -b`), `npm test` (Vitest, environnement jsdom), `npm run build` (`tsc -b && vite build` ; bundle non gzippé > 500 kB à ce stade, v. `DECISIONS.md`). En dev, le backend doit tourner sur `127.0.0.1:8000` (uvicorn) et le navigateur ouvre `http://localhost:5173`.
+- **Client API (3c)** : `backend/scripts/export_openapi.py` exporte le schéma (`create_app().openapi()`) vers `frontend/openapi/schema.json` (commité) ; `openapi-typescript` en génère `src/api/schema.d.ts` (script npm `generate:api`, exclu d'ESLint) ; les appels passent par `openapi-fetch` (`src/api/client.ts`, `baseUrl` = origine courante, cookies inclus). Un middleware ajoute `x-csrf-token` (copie du cookie `mirador_csrf`) sur les méthodes non sûres ; un échec HTTP devient `ApiError` (RFC 9457) ; `unwrap` renvoie les données ou lève.
+- **Auth & gardes (3c)** : `AuthProvider` charge `/auth/me` puis les permissions de l'organisation active (mémorisée dans `localStorage`, sinon la première) ; états `loading`/`anonymous`/`authenticated`/`error`. `RequireAuth` redirige vers `/login` si non connecté ; `RequireModule` et `RequireAdmin` rendent `ForbiddenPage` (403) faute de droits ; le menu latéral filtre les modules visibles (un admin voit tout, `Équipe` lui est réservée).Qualité frontend : `npm run lint` (ESLint, aussi en hook pre-commit), `npm run typecheck` (`tsc -b`), `npm test` (Vitest, environnement jsdom), `npm run build` (`tsc -b && vite build` ; bundle non gzippé > 500 kB à ce stade, v. `DECISIONS.md`). En dev, le backend doit tourner sur `127.0.0.1:8000` (uvicorn) et le navigateur ouvre `http://localhost:5173`.
 
 ## Environnements
 

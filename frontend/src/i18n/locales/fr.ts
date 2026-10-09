@@ -10,7 +10,7 @@ const fr = {
     primaryAria: 'Navigation principale',
     dashboard: 'Vue d’ensemble',
     finance: 'Finance',
-    analytics: 'Web analytics',
+    web: 'Web analytics',
     social: 'Réseaux sociaux',
     projects: 'Projets & tâches',
     legal: 'Identité légale',
@@ -31,6 +31,14 @@ const fr = {
   dashboard: {
     title: 'Vue d’ensemble',
     subtitle: 'Le pouls de votre entreprise, en un coup d’œil.',
+  },
+  login: {
+    title: 'Connexion',
+    description: 'Connectez-vous pour accéder à votre tableau de bord.',
+  },
+  forbidden: {
+    title: 'Accès refusé',
+    description: "Vous n'avez pas les droits nécessaires pour voir cette page.",
   },
   placeholder: {
     title: 'Module en construction',

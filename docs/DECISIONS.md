@@ -165,3 +165,31 @@ Un script inline dans `index.html` pose la classe `.dark` depuis `localStorage` 
 ## 2026-10-09 — Bundle frontend non gzippé > 500 kB assumé à ce stade
 
 `npm run build` dépasse le seuil d'avertissement Vite (≈ 531 kB, ≈ 169 kB gzip) à cause de React + Router + Motion + i18next. Raison : acceptable pour un dashboard derrière login ; le découpage de code (routes paresseuses, chunks vendeurs) viendra avec les pages réelles (3c/3d, phase 5), pas en avance.
+
+## 2026-10-09 — Client API typé généré depuis l'OpenAPI
+
+`backend/scripts/export_openapi.py` sérialise le schéma (`create_app().openapi()`) vers `frontend/openapi/schema.json` (commité : il rend les changements d'API visibles dans les diffs) ; `openapi-typescript@7.13.0` en génère `src/api/schema.d.ts` via le script npm `generate:api` (fichier généré, exclu d'ESLint). Les appels passent par `openapi-fetch@0.17.0` (`src/api/client.ts`). Raison : un seul contrat typé de bout en bout, sans maintenir un client complet à la main ; le schéma est régénéré quand l'API change.
+
+## 2026-10-09 — CSRF double submit répliqué côté client
+
+`src/api/client.ts` recopie le cookie `mirador_csrf` dans l'en-tête `x-csrf-token` pour toute méthode non sûre (POST/PUT/PATCH/DELETE), jamais pour GET/HEAD/OPTIONS. Raison : le backend exige ce couple (2b) ; un middleware openapi-fetch évite tout oubli dans les appels.
+
+## 2026-10-09 — Organisation active mémorisée dans `localStorage`
+
+L'organisation active vit sous la clé `mirador.organizationId` : on garde l'id mémorisé s'il figure encore dans les memberships, sinon on retombe sur la première et on persiste. Raison : le sélecteur d'organisation n'existe pas encore, mais les permissions sont toujours lues pour une organisation précise.
+
+## 2026-10-09 — Échec de `/auth/me` = anonyme, échec des permissions = erreur rechargeable
+
+`/auth/me` en échec (401 ou réseau) donne l'état `anonymous` ; un échec de `/permissions` sur une session valide donne l'état `error` avec bouton de réessai. Raison : ne pas déconnecter pour une erreur transitoire, mais ne pas laisser croire non plus qu'il n'y a aucun droit.
+
+## 2026-10-09 — Permission absente : page 403, pas redirection
+
+`RequireModule`/`RequireAdmin` rendent `ForbiddenPage` quand le niveau vaut `none` ou que le rôle n'est pas admin ; seule l'absence de session redirige vers `/login`. Raison : rediriger un utilisateur connecté mais non autorisé boucle ou masque le problème ; un 403 explicite garde l'URL et reste honnête.
+
+## 2026-10-09 — `baseUrl` = origine courante, `fetch` résolu à l'appel
+
+`createClient` reçoit `baseUrl: window.location.origin` (front et API sous le même domaine : proxy en dev, reverse proxy en prod) et un `fetch` qui délègue à `globalThis.fetch` au moment de l'appel. Raison : une URL absolue est nécessaire (le client construit un `Request`), l'hypothèse same-origin rejoint celle de l'URI Google (2e), et les tests remplacent `fetch` via `vi.stubGlobal`.
+
+## 2026-10-09 — Route « analytics » renommée « web »
+
+Le backend et le schéma OpenAPI nomment ce module `web` ; le frontend utilisait `analytics`. Alignement sur `web` (route, clé i18n `nav.web`, widget du dashboard). Raison : une seule nomenclature module↔permission, la garde lit `permissions.modules[moduleKey]` avec la clé du schéma.
