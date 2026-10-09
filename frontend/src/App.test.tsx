@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { routes } from './app/routes.tsx'
@@ -43,9 +43,9 @@ function renderAt(path: string) {
 }
 
 describe('App (coquille)', () => {
-  it("affiche le nom du projet et la navigation principale", async () => {
+  it('affiche le nom du projet et la navigation principale', async () => {
     renderAt('/')
-    expect(await screen.findByText('Mirador')).toBeInTheDocument()
+    expect((await screen.findAllByText('Mirador')).length).toBeGreaterThan(0)
     expect(
       screen.getByRole('navigation', { name: /navigation principale/i }),
     ).toBeInTheDocument()
@@ -58,7 +58,8 @@ describe('App (coquille)', () => {
 
   it('marque le module courant comme actif', async () => {
     renderAt('/finance')
-    expect(await screen.findByRole('link', { name: 'Finance' })).toHaveAttribute(
+    const nav = await screen.findByRole('navigation', { name: /navigation principale/i })
+    expect(within(nav).getByRole('link', { name: 'Finance' })).toHaveAttribute(
       'aria-current',
       'page',
     )

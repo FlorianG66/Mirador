@@ -15,6 +15,8 @@ const fr = {
     projects: 'Projets & tâches',
     legal: 'Identité légale',
     team: 'Équipe',
+    collapse: 'Replier le menu',
+    expand: 'Déplier le menu',
   },
   common: {
     themeToggleDark: 'Basculer en mode sombre',
@@ -28,13 +30,32 @@ const fr = {
     retry: 'Réessayer',
     loading: 'Chargement…',
   },
+  topbar: {
+    breadcrumbAria: 'Fil d’ariane',
+    roleAdmin: 'Admin',
+    roleMember: 'Membre',
+  },
   dashboard: {
     title: 'Vue d’ensemble',
     subtitle: 'Le pouls de votre entreprise, en un coup d’œil.',
+    welcomeTitle: 'Bienvenue sur votre tableau de bord',
+    welcomeText:
+      'Retrouvez ici vos modules et, dès qu’ils seront connectés à vos outils, le pouls de votre activité.',
+    quickAccess: 'Accès rapide',
+    activityTitle: 'Activité récente',
+    activityEmptyTitle: 'Aucune activité pour l’instant',
+    activityEmptyDescription: 'Les événements de vos modules apparaîtront ici.',
   },
   login: {
     title: 'Connexion',
     description: 'Connectez-vous pour accéder à votre tableau de bord.',
+    email: 'Adresse e-mail',
+    password: 'Mot de passe',
+    submit: 'Se connecter',
+    submitting: 'Connexion…',
+    error: 'Identifiants incorrects. Vérifie ton e-mail et ton mot de passe.',
+    totpUnsupported:
+      "La double authentification n'est pas encore gérée côté interface (prévue en 3d).",
   },
   forbidden: {
     title: 'Accès refusé',

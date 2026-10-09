@@ -14,6 +14,8 @@ const en = {
     projects: 'Projects & tasks',
     legal: 'Legal identity',
     team: 'Team',
+    collapse: 'Collapse menu',
+    expand: 'Expand menu',
   },
   common: {
     themeToggleDark: 'Switch to dark mode',
@@ -27,13 +29,32 @@ const en = {
     retry: 'Retry',
     loading: 'Loading…',
   },
+  topbar: {
+    breadcrumbAria: 'Breadcrumb',
+    roleAdmin: 'Admin',
+    roleMember: 'Member',
+  },
   dashboard: {
     title: 'Overview',
     subtitle: 'The pulse of your company, at a glance.',
+    welcomeTitle: 'Welcome to your dashboard',
+    welcomeText:
+      'Find your modules here and, once they are connected to your tools, the pulse of your activity.',
+    quickAccess: 'Quick access',
+    activityTitle: 'Recent activity',
+    activityEmptyTitle: 'No activity yet',
+    activityEmptyDescription: 'Events from your modules will show up here.',
   },
   login: {
     title: 'Sign in',
     description: 'Sign in to access your dashboard.',
+    email: 'Email address',
+    password: 'Password',
+    submit: 'Sign in',
+    submitting: 'Signing in…',
+    error: 'Invalid credentials. Check your email and password.',
+    totpUnsupported:
+      'Two-factor authentication is not handled in the UI yet (planned for 3d).',
   },
   forbidden: {
     title: 'Access denied',

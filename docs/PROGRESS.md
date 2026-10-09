@@ -9,7 +9,7 @@
   3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée**),
   3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions (**livrée**), 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
 - **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
-- **Prochaine action** : commit de la sous-phase 3b, puis 3c — client API généré depuis l'OpenAPI + gardes de routes.
+- **Prochaine action** : documenter puis committer la refonte visuelle (hors feuille de route), puis sous-phase 3d (pages connexion/inscription/A2F/Équipe, formulaires + TanStack Query, e2e Playwright).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -191,7 +191,7 @@
 - **Motion + jsdom** : les transitions de page ne bloquent pas les tests (les éléments sont dans le DOM indépendamment de l'opacité), mais les compteurs animés seraient non déterministes → on force `usePrefersReducedMotion` à `true` dans le test de `KpiCard`.
 - **Tailwind v4 : pas de `tailwind.config`** : les tokens vivent dans `index.css` via `@theme inline` ; une couleur sémantique absente de ce bloc n'a pas d'utilitaire (`bg-…`).
 
-### À faire ### Critères de la phase 3c - vérité du terrain
+### Critères de la phase 3c — vérité du terrain
 | Critère | État |
 |---|---|
 | Tests écrits d'abord (RED) puis GREEN | ✓ RED confirmé (imports `client.ts`/`AuthProvider.tsx` introuvables + gardes absentes) ; GREEN : **30 passed** (8 fichiers) |
@@ -321,5 +321,17 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Auth & gardes : `src/auth/context.ts` + `AuthProvider.tsx` (états loading/anonymous/authenticated/error, org active mémorisée sinon première, permissions par org) ; `guards.tsx` (`RequireAuth`/`RequireModule`/`RequireAdmin`, 403 via `ForbiddenPage`) ; pages `LoginPage`, `ForbiddenPage`, `TeamPage` ; `app/routes.tsx` refondu ; `Sidebar` filtrée ; `analytics` → `web` (route, i18n, dashboard).
 - Vérifs : `npm test` 30 passed ; `npm run lint` 0 erreur ; `npm run typecheck` 0 erreur ; `npm run build` OK (avertissement chunk assumé) ; pre-commit (gitleaks inclus).
 - Docs : `ARCHITECTURE.md`, `DECISIONS.md` (7 décisions), `CHANGELOG.md`, `README.md`, ce fichier.
-- Commit : `... (sous-phase 3c)`.
+- Commit : `0c70367 feat: client API typé et gardes de routes (sous-phase 3c)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; pages réelles connexion/inscription/A2F/équipe et e2e Playwright (3d).
+
+
+### 2026-10-09 — Refonte visuelle du frontend (ajustement hors feuille de route)
+- Demande en cours de phase 3 : « pimper » le dashboard. Direction validée après revue de galeries d'inspiration (kombai, 5sdesign) : clair aéré type Linear/Notion + rail d'icônes rétractable + topbar riche + tableau de bord bento asymétrique.
+- Tokens (`index.css`) : palette claire (`--background #f7f7f8`, `--surface #fff`, `--border`, `--brand #5b5bd6`, `--brand-glow`), variante sombre, rayons `--radius-sm…xl`, élévations `--elevation-1/2` → `--shadow-card`/`--shadow-raised`, halo `radial-gradient` discret sur `body` (fixé), mapping `@theme inline`.
+- Shell : rail rétractable (`Sidebar`, `SidebarNavItem` avec prop `collapsed`, largeur `--rail-w` 16rem/4.75rem, état persisté `mirador-rail-collapsed` via `useRailCollapsed`, libellés masqués + `title`), `Topbar` (fil d'ariane par route, identité + rôle, langue, thème), `AppShell` (`lg:pl-[var(--rail-w)]`, skip-link).
+- Dashboard : grille 12 colonnes asymétrique (WelcomePanel 8 = accès rapide réel vers modules autorisés, ActivityPanel 4 = état vide) + 4 `ChartCard` 7/5 puis 5/7 ; aucune donnée en dur (AGENTS.md §8).
+- Pages : nouvelle primitive `PageHeader` ; `ModulePage`, `TeamPage`, `ForbiddenPage` migrées ; `Card` passe à `border-border bg-surface shadow-card` ; helper `src/lib/permissions.ts` (`canSeeModule`).
+- Tests : liens en double (rail + accès rapide) corrigés, `App.test.tsx` et `auth/guards.test.tsx` réécrits (`within(nav)`, `findAllByText`) ; **30 passed** (8 fichiers).
+- Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ · 0 U+FFFD dans `frontend/src`.
+- Docs : `DECISIONS.md` (2026-10-09), `CHANGELOG.md`, ce fichier.
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert).

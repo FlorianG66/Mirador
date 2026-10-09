@@ -67,19 +67,20 @@ frontend/
     components/
       layout/           AppShell (menu latéral + topbar), Sidebar, SidebarNavItem,
                         Topbar, ThemeToggle, LanguageSwitcher, PageTransition
-      ui/               design system : Button, Card, KpiCard, ChartCard, Skeleton,
-                        EmptyState, ErrorState, button-variants
+      ui/               design system : Button, Card, PageHeader, KpiCard, ChartCard,
+                        Skeleton, EmptyState, ErrorState, button-variants
     pages/              DashboardPage, ModulePage, LoginPage, ForbiddenPage, TeamPage, NotFoundPage
-    hooks/              useTheme (clair/sombre), usePrefersReducedMotion, useCountUp
+    hooks/              useTheme (clair/sombre), usePrefersReducedMotion, useCountUp, useRailCollapsed
     i18n/               instance i18next (FR défaut, EN) + locales fr/en
     lib/utils.ts        cn() = clsx + tailwind-merge
+    lib/permissions.ts   canSeeModule (filtrage des modules par permission)
     constants.ts        PROJECT_NAME centralisé (AGENTS.md §1)
     index.css           design tokens (variables CSS) + mapping @theme inline (Tailwind v4)
     test/setup.ts       Vitest : matchers jest-dom + i18n + nettoyage du DOM
 ```
 
 - **Design system (3b)** : couleurs et rayons en variables CSS (`:root` clair, `.dark` sombre) exposées à Tailwind par `@theme inline` ; les composants n'utilisent que des tokens sémantiques (`bg-surface`, `text-muted`, `text-danger`…). Thème piloté par la classe `.dark` sur `<html>` (hook `useTheme`, préférence dans `localStorage` ; `prefers-color-scheme` seulement à la première visite), amorcé par un script inline pour éviter le flash.
-- **Layout** : `AppShell` = menu latéral gauche + topbar + contenu ; sur desktop la grille est `[16rem_1fr]`, sur mobile le menu coulisse (overlay, fermeture par Échap). Lien d'évitement vers le contenu et `aria-current` actif sur la navigation (WCAG AA).
+- **Layout** : `AppShell` = rail rétractable gauche (`useRailCollapsed`, largeur `--rail-w`) + topbar + contenu ; sur mobile le menu coulisse (overlay, fermeture par Échap). Lien d'évitement vers le contenu et `aria-current` actif sur la navigation (WCAG AA). `PageHeader` = en-tête de page partagé (titre + description).
 - **i18n** : aucun texte en dur (AGENTS.md §7) ; ressources FR/EN embarquées, `initAsync:false` (init synchrone), `<html lang>` suit la langue active.
 - **Animations** : transitions de page via Motion (fondu + glissement), compteurs animés via `requestAnimationFrame` ; toutes neutralisées si `prefers-reduced-motion: reduce`.
 - **Routing** : React Router ; les routes de modules sont des placeholders à états vides, sans données en dur (AGENTS.md §8), en attendant l'API et les pages réelles (3c/3d, phase 5).

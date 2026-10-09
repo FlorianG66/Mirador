@@ -4,6 +4,7 @@ import { ShieldX } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { EmptyState } from '../components/ui/EmptyState.tsx'
+import { PageHeader } from '../components/ui/PageHeader.tsx'
 import { buttonVariants } from '../components/ui/button-variants.ts'
 
 export function ForbiddenPage() {
@@ -11,9 +12,7 @@ export function ForbiddenPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t('forbidden.title')}</h1>
-      </header>
+      <PageHeader title={t('forbidden.title')} />
       <EmptyState
         icon={ShieldX}
         title={t('forbidden.title')}

@@ -1,6 +1,6 @@
 // Tests des gardes de routes (phase 3c) : redirection si non connecté, refus
 // hors permission (403), accès admin, filtre du menu latéral et état de chargement.
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '../app/routes.tsx'
@@ -108,9 +108,10 @@ describe('gardes de routes', () => {
 
     renderAt('/')
 
-    expect(await screen.findByRole('link', { name: 'Finance' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Web analytics' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Équipe' })).not.toBeInTheDocument()
+    const nav = await screen.findByRole('navigation', { name: /navigation principale/i })
+    expect(within(nav).getByRole('link', { name: 'Finance' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Web analytics' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Équipe' })).not.toBeInTheDocument()
   })
 
   it('montre tous les modules et Équipe à l’admin', async () => {
@@ -118,7 +119,8 @@ describe('gardes de routes', () => {
 
     renderAt('/')
 
-    expect(await screen.findByRole('link', { name: 'Web analytics' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Équipe' })).toBeInTheDocument()
+    const nav = await screen.findByRole('navigation', { name: /navigation principale/i })
+    expect(within(nav).getByRole('link', { name: 'Web analytics' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Équipe' })).toBeInTheDocument()
   })
 })

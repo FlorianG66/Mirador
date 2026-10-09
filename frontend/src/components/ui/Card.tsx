@@ -10,7 +10,7 @@ export function Card({ className, ...rest }: DivProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-border bg-surface shadow-sm',
+        'rounded-lg border border-border bg-surface shadow-card',
         className,
       )}
       {...rest}
@@ -28,7 +28,7 @@ export function CardTitle({
   ...rest
 }: HTMLAttributes<HTMLHeadingElement> & { children: ReactNode }) {
   return (
-    <h3 className={cn('text-base font-semibold', className)} {...rest}>
+    <h3 className={cn('text-base font-semibold tracking-tight', className)} {...rest}>
       {children}
     </h3>
   )

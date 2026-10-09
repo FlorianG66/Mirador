@@ -193,3 +193,7 @@ L'organisation active vit sous la clé `mirador.organizationId` : on garde l'id 
 ## 2026-10-09 — Route « analytics » renommée « web »
 
 Le backend et le schéma OpenAPI nomment ce module `web` ; le frontend utilisait `analytics`. Alignement sur `web` (route, clé i18n `nav.web`, widget du dashboard). Raison : une seule nomenclature module↔permission, la garde lit `permissions.modules[moduleKey]` avec la clé du schéma.
+
+## 2026-10-09 — Refonte visuelle du frontend (« clair aéré », rail rétractable)
+
+Direction retenue après revue des galeries d'inspiration (kombai, 5sdesign) : palette claire aérée type Linear/Notion, rail d'icônes rétractable (largeur pilotée par `--rail-w`, état mémorisé sous `mirador-rail-collapsed`), topbar riche (fil d'ariane, identité + rôle, langue, thème) et tableau de bord « bento » asymétrique (colonnes 7/5). Raison : refonte esthétique demandée en cours de phase 3, sans aucune donnée inventée (l'accès rapide pointe vers de vrais modules) ; ajouts purement présentationnels (tokens, `PageHeader`, `useRailCollapsed`, `lib/permissions.ts`), le contrat 3c et ses tests restent valides.
