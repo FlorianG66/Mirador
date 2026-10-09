@@ -6,7 +6,7 @@
 
 - **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
   3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée**),
-  3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée, commit en cours**),
+  3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée**),
   3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions, 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
 - **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
 - **Prochaine action** : commit de la sous-phase 3b, puis 3c — client API généré depuis l'OpenAPI + gardes de routes.
@@ -287,4 +287,5 @@
 - i18n FR/EN (i18next `initAsync:false`, `<html lang>` suivi, aucun texte en dur) ; routing React Router (`createBrowserRouter`, table `app/routes.tsx`) ; pages placeholder à états vides, sans données en dur (AGENTS.md §8).
 - Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ (0 erreur/avertissement) · `npm test` → 10 passed · `npm run build` ✅ (avertissement « chunk > 500 kB » documenté) · `pre-commit run --all-files` → 11 hooks ✅ (gitleaks inclus).
 - Docs : `ARCHITECTURE.md` (structure frontend + design system/layout/i18n), `DECISIONS.md` (6 décisions : Tailwind/tokens, primitives maison vs shadcn/ui, libs, amorçage thème, bundle), `CHANGELOG.md`, `README.md`, ce fichier.
+- Commit : `40b9b5a feat: design system, layout avec menu latéral et composants de base (sous-phase 3b)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; client API généré, gardes de routes et vraies pages (3c/3d).
