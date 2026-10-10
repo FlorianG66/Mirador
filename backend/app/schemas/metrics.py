@@ -57,6 +57,7 @@ class MetricSnapshotIn(BaseModel):
     """Un point prêt à être stocké dans `metric_snapshots` (worker → repository)."""
 
     metric_key: str
+    unit: str = Field(min_length=1, max_length=16)
     period: str = Field(min_length=1, max_length=8)
     value: float
     dimensions: dict[str, Any] = Field(default_factory=dict)

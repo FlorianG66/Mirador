@@ -16,6 +16,7 @@ from sqlalchemy import (
     DateTime,
     Double,
     ForeignKey,
+    String,
     Text,
     UniqueConstraint,
     func,
@@ -46,6 +47,9 @@ class MetricSnapshot(Base):
         ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
     )
     metric_key: Mapped[str] = mapped_column(Text, nullable=False)
+    # Unité canonique de la série (EUR, visites, tâches…) : stockée par point pour
+    # que l'endpoint de lecture soit générique (il ne connaît pas le connecteur).
+    unit: Mapped[str] = mapped_column(String(16), nullable=False, server_default="")
     period: Mapped[str] = mapped_column(Text, nullable=False)
     value: Mapped[float] = mapped_column(Double, nullable=False)
     dimensions: Mapped[dict[str, Any]] = mapped_column(

@@ -69,17 +69,27 @@ def require_module(module: Module, level: PermissionLevel) -> Callable[..., Awai
         session: Annotated[AsyncSession, Depends(get_session)],
         membership: Annotated[Membership, Depends(get_current_tenant)],
     ) -> Membership:
-        if membership.role == Role.ADMIN.value:
-            return membership
-        granted = await module_permissions_repository.get_level(
-            session, membership_id=membership.id, module=module
-        )
-        current = PermissionLevel(granted) if granted is not None else PermissionLevel.NONE
-        if _LEVEL_RANK[current] < _LEVEL_RANK[level]:
-            raise HTTPException(403, f"Accès « {level} » requis pour le module « {module} ».")
-        return membership
+        return await ensure_module_access(session, membership, module, level)
 
     return dependency
+
+
+async def ensure_module_access(
+    session: AsyncSession,
+    membership: Membership,
+    module: Module,
+    level: PermissionLevel,
+) -> Membership:
+    """Vérifie le niveau d'accès d'un membre sur un module (admin : tous les droits)."""
+    if membership.role == Role.ADMIN.value:
+        return membership
+    granted = await module_permissions_repository.get_level(
+        session, membership_id=membership.id, module=module
+    )
+    current = PermissionLevel(granted) if granted is not None else PermissionLevel.NONE
+    if _LEVEL_RANK[current] < _LEVEL_RANK[level]:
+        raise HTTPException(403, f"Accès « {level} » requis pour le module « {module} ».")
+    return membership
 
 
 def modules_for(role: str, choices: dict[Module, PermissionLevel]) -> dict[Module, PermissionLevel]:

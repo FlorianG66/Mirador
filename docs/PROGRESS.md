@@ -8,9 +8,10 @@
   4a métriques canoniques + interface `Connector` + registre + connecteurs de démo déterministes (finance, web, social, projets) (**livrée**),
   4b table `metric_snapshots` (migration 0005, RLS tenant) + repository + service de synchro (**livrée**),
   4c worker de synchro + `JobScheduler` (**livrée**),
-  4d endpoint générique de lecture des métriques (tenant + permissions + période) (**en cours**).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c à venir).
-- **Prochaine action** : livrer 4d (endpoint de lecture des métriques, tenant + permissions + période), puis clôture de la phase.
+  4d endpoint générique de lecture des métriques (tenant + permissions + période) (**livrée**),
+  clôture de la phase (**en cours**).
+- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d à venir).
+- **Prochaine action** : clôturer la phase 4 (tests ↔ schemas, docs, commit final, récap).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -407,6 +408,15 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Tests (9) : `test_scheduler.py` (périodicité, idempotence de `start`/`stop`, échec absorbé, intervalle nul/négatif refusé) et `test_sync_worker.py` (toutes les organisations synchronisées, idempotence, panne d'une organisation n'arrête pas les autres, aucune organisation → rien).
 - Vérifs : suite backend complète **225 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
 - **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4d.
+
+### 2026-10-10 — Sous-phase 4d livrée (endpoint de lecture des métriques)
+- Migration `0006_phase4_metric_units.py` : ajout de la colonne `unit` à `metric_snapshots` (format canonique, SPEC §5.4) — l'endpoint est générique : il ne connaît pas le connecteur, l'unité est stockée par point. `tests/test_alembic.py` : `HEAD_REVISION = 0006`. Base de dev mise à jour (`alembic upgrade head` → `0006`).
+- `app/services/metrics.py` : `get_metric_series` — fenêtre `start`/`end`, `limit`, tri chronologique, série repliée en `MetricSeries` (clé, unité, période, points + dimensions) ; 422 si des bornes inversées, 404 si aucune donnée (`ServiceProblem`).
+- `app/routers/metrics.py` : `GET /api/v1/organizations/{organization_id}/metrics/{metric_key}` — garde `view` du module dérivé de la clé canonique (`require_metric_module`), clé invalide → 422. `app/core/permissions.py` : `ensure_module_access` extrait (partagé avec `require_module`).
+- `app/models/metric_snapshot.py` + `MetricSnapshotIn` + repository + `sync_organization` : l'unité suit le point jusqu'en base.
+- Tests endpoint (9) : lecture admin, fenêtre de dates, limite, membre sans droit → 403, membre avec vue → 200 (et autre module → 403), autre organisation → 403, clé invalide → 422, bornes inversées → 422, série vide → 404.
+- Vérifs : suite backend complète **234 passed** · ruff ✅ · format ✅ · mypy strict ✅ (80 fichiers) · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : commit 4d (à faire), clôture phase (docs, commit final), push, merge (sans feu vert).
 
 ### 2026-10-10 — Sous-phase 4b livrée (table `metric_snapshots`, RLS, service de synchro)
 - `app/models/metric_snapshot.py` : table tenant `metric_snapshots` (SPEC §5.3) — `organization_id`, `metric_key` CHECK `^(finance|legal|projects|social|web)\.[a-z0-9_]+$`, `period` CHECK `^P[0-9]+(D|W|M|Y)$`, `value` (double), `dimensions` JSONB, `captured_at` (indexé), `created_at`.

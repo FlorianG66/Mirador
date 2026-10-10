@@ -6,7 +6,7 @@ from alembic import command
 from tests.conftest import alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
-HEAD_REVISION = "0005"
+HEAD_REVISION = "0006"
 
 # Tables soumises à Row-Level Security : elles portent toutes organization_id.
 TENANT_TABLES = (

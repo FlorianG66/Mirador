@@ -28,6 +28,7 @@ async def upsert_many(
         {
             "organization_id": organization_id,
             "metric_key": snapshot.metric_key,
+            "unit": snapshot.unit,
             "period": snapshot.period,
             "value": snapshot.value,
             "dimensions": snapshot.dimensions,
@@ -38,7 +39,11 @@ async def upsert_many(
     statement = pg_insert(MetricSnapshot).values(rows)
     statement = statement.on_conflict_do_update(
         constraint="metric_snapshots_org_key_at",
-        set_={"value": statement.excluded.value, "dimensions": statement.excluded.dimensions},
+        set_={
+            "unit": statement.excluded.unit,
+            "value": statement.excluded.value,
+            "dimensions": statement.excluded.dimensions,
+        },
     )
     await session.execute(statement)
     return len(rows)

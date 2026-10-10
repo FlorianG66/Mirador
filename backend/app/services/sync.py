@@ -46,6 +46,7 @@ async def sync_organization(session: AsyncSession, organization_id: uuid.UUID) -
                 snapshots.append(
                     MetricSnapshotIn(
                         metric_key=series.key,
+                        unit=series.unit,
                         period=series.period,
                         value=point.value,
                         dimensions=point.dimensions,
