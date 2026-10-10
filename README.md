@@ -2,13 +2,21 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phase 2 livrée (auth, organisations, permissions, Google OIDC) ; phase 3 en cours (frontend socle & design system) : sous-phases 3a (socle Vite + React + TypeScript strict, Vitest, proxy `/api`), 3b (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) et 3c (client API typé généré depuis l'OpenAPI, CSRF, `AuthProvider` et gardes de routes par permissions) livrées. Les pages réelles (connexion, inscription, A2F, Équipe) complètes et l'e2e Playwright arrivent en 3d.
+> **Statut** : projet en cours de développement — phases 0 à 3 livrées et mergées sur `main` (fondations, identité légale, auth & équipe, frontend socle & design system) ; **phase 4 « Connecteurs & données fictives » livrée sur la branche `phase-4-connecteurs`** (métriques canoniques `module.metric`, quatre connecteurs de démo déterministes par seed, stockage RLS + worker de synchro périodique, endpoint de lecture filtré par tenant et permissions). Phase 5 (modules MVP) ensuite.
 
 ## Présentation
 
 Mirador centralise les données de l'entreprise — les dizaines d'outils que le dirigeant ouvre chaque jour — dans un seul tableau de bord : KPI canoniques, widgets personnalisables, alertes. Un admin invite ses collaborateurs et choisit les modules visibles pour chacun.
 
 Le nom est provisoire et le code utilise la constante `PROJECT_NAME`.
+
+## Fonctionnalités (livrées)
+
+- Auth : inscription, connexion, sessions à double jeton (cookies httpOnly), CSRF, rate limiting, Google OIDC, A2F TOTP + codes de secours, réinitialisation de mot de passe par e-mail.
+- Équipe : invitations (7 j), rôles admin/membre, permissions par module (view/edit/none, admin = tout), journal d'audit des actions sensibles.
+- Fondations : SIREN validé (Luhn), multi-tenant PostgreSQL + Row-Level Security, erreurs RFC 9457, health-check.
+- Frontend : design tokens clair/sombre, layout rail + topbar, i18n FR/EN, client API typé généré depuis l'OpenAPI, TanStack Query, gardes de routes par permissions.
+- **Phase 4** : métriques canoniques (clé `module.metric`, unité, période, valeur, dimensions JSONB), quatre connecteurs de démo déterministes et réalistes (finance, web, social, projets), stockage tenant + worker de synchro périodique configurable, l'endpoint `GET /organizations/{id}/metrics/{module.metric}` (fenêtre + limite, garde `view` du module).
 
 ## Stack
 

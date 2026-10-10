@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.organization import Organization
@@ -24,3 +25,9 @@ async def get_organization(
 ) -> Organization | None:
     """Retourne une organisation par son identifiant, ou None si elle est absente."""
     return await session.get(Organization, organization_id)
+
+
+async def list_organization_ids(session: AsyncSession) -> list[uuid.UUID]:
+    """Identifiants de toutes les organisations (alimente le worker de synchro)."""
+    result = await session.execute(select(Organization.id))
+    return list(result.scalars())

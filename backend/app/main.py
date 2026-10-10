@@ -17,17 +17,36 @@ from app.routers.google import router as google_router
 from app.routers.health import router as health_router
 from app.routers.invitations import accept_router as invitation_accept_router
 from app.routers.invitations import router as invitations_router
+from app.routers.metrics import router as metrics_router
 from app.routers.password import router as password_router
 from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
 from app.services.oidc import GoogleOidcProvider
+from app.workers.scheduler import JobScheduler
+from app.workers.sync import sync_all_organizations
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    """Libère le pool de connexions à l'arrêt (le client de test le fait lui-même)."""
+    """Démarre le worker de synchro (phase 4c), puis libère le pool à l'arrêt.
+
+    Le planificateur tourne seulement si `sync_interval_minutes > 0` (0 désactive,
+    choisi dans les tests). Les tests httpx ne déclenchent pas le lifespan :
+    ils libèrent le pool eux-mêmes.
+    """
+    settings: Settings = application.state.settings
+    scheduler: JobScheduler | None = None
+    if settings.sync_interval_minutes > 0:
+        scheduler = JobScheduler(
+            lambda: sync_all_organizations(application.state.session_factory),
+            interval_seconds=settings.sync_interval_minutes * 60,
+            name="sync",
+        )
+        await scheduler.start()
     yield
+    if scheduler is not None:
+        await scheduler.stop()
     engine: AsyncEngine = application.state.engine
     await engine.dispose()
 
@@ -71,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(invitations_router, prefix=API_PREFIX)
     app.include_router(invitation_accept_router, prefix=API_PREFIX)
     app.include_router(team_router, prefix=API_PREFIX)
+    app.include_router(metrics_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)
     register_exception_handlers(app)
     return app

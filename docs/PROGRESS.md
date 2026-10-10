@@ -4,14 +4,10 @@
 
 ## État
 
-- **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
-  3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée**),
-  3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée**),
-  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions (**livrée**),
-  3d pages (connexion, inscription, A2F, Équipe) — 3d-a (**livrée**), 3d-b (**livrée**), 3d-c e2e Playwright du login + vérification a11y de base (**livrée**).
-  **La phase 3 est complète** (tous les critères du ROADMAP sont vérifiés) ; reste le commit de 3d-c.
-- **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
-- **Prochaine action** : committer 3d-c (`feat: e2e Playwright et vérification a11y (sous-phase 3d-c)`), demander le feu vert avant un éventuel merge sur `main`, puis phase 4 (connecteurs & données fictives, ROADMAP ligne 42).
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres.
+  Avant d'attaquer : découper la phase en sous-phases, puis merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis).
+- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d `6baa097`, clôture `94dff58`).
+- **Prochaine action** : merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis), puis découper et démarrer la phase 5 — Modules MVP.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -385,3 +381,51 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ · `npx playwright test` 5 passed.
 - Docs : CHANGELOG, ce fichier.
 - **Non fait** : commit 3d-c (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; phase 4 à venir.
+
+### 2026-10-10 — Phase 3 clôturée et mergée sur `main`
+- Commit de la sous-phase 3d-c : `21f3a69` (11 fichiers, +307/−6 ; nouveaux `frontend/e2e/a11y.spec.ts`, `helpers.ts`, `login.spec.ts`, `frontend/playwright.config.ts`). Vérifs de fin de phase : Vitest 30/30, typecheck/lint 0 erreur, build OK, `npx playwright test` 5/5, pre-commit 11 hooks OK (gitleaks inclus).
+- Correction en route : `"moduleDetection": "force"` restauré dans `frontend/tsconfig.node.json` (suppression accidentelle antérieure, confirmée via `git show HEAD:...`).
+- La branche `main` n'existait pas : créée à la pointe `21f3a69` (`git branch main HEAD`), puis checkout — toutes les phases 0→3 sont des ancêtres linéaires.
+- **Branche actuelle** : `main` (pointe sur `21f3a69`), attente du feu vert pour ouvrir la phase 4.
+
+### 2026-10-10 — Sous-phase 4a livrée (métriques canoniques, interface Connector, mocks déterministes)
+- `app/schemas/metrics.py` : métriques canoniques (SPEC §5.4) — `MetricPoint`, `MetricSeries` (clé `module.metric` validée : module connu, un seul séparateur), `build_metric_key`, `metric_prefix`, constante `PERIOD_DAY` (`P1D`).
+- `app/connectors/base.py` : interface `Connector` (provider, category, auth_type, `connect`, `sync(since)`, `handle_webhook`, `disconnect`, `healthcheck`) + `ConnectorHealth`. Les mocks partagent le seed via l'`__init__` de base.
+- `app/connectors/mock.py` : `MockConnector` déterministe par seed — valeur d'un jour dérivée uniquement de (seed, clé, date) via SHA-256, sans état mutable. Une métrique réaliste par module : `finance.revenue` (EUR, effet week-end 0,55, bruit, anomalies 3 %), `web.visits`, `projects.tasks_done`, et `social.followers` **cumulé** (croissance hebdomadaire stable depuis 2020, indépendante de la fenêtre demandée). Tendance linéaire + saisonnalité annuelle + anomalies (`_daily_value`, `_cumulative_value`, `build_series`).
+- `app/connectors/registry.py` + `__init__.py` : registre par provider, auto-enregistrement des 4 mocks (`mock.finance`, `mock.web`, `mock.social`, `mock.projects`), `make(provider, seed)`, `list_categories()` (ordre trié), `list_connectors(category)`.
+- Tests (`tests/connectors/`) : 31 tests — déterminisme du seed (même seed → séries identiques, seed différent → valeurs différentes), réalisme (week-end < semaine pour le CA, anomalie > 1,5 × médiane, tendance dominante sur 2 ans pleins pour annuler la saisonnalité), format canonique, cumul stable, bornes de l'époque, webhook vide, registre.
+- Vérifs : pytest 31 passed · ruff ✅ · mypy ✅ (artefact coverage coroutines toujours en vigueur, couverture non mesurée sur ce sous-ensemble).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4c/4d.
+
+### 2026-10-10 — Sous-phase 4b livrée (table `metric_snapshots`, RLS, service de synchro)
+- `app/models/metric_snapshot.py` : table tenant `metric_snapshots` (SPEC §5.3) — `organization_id`, `metric_key` CHECK `^(finance|legal|projects|social|web)\.[a-z0-9_]+$`, `period` CHECK `^P[0-9]+(D|W|M|Y)$`, `value` (double), `dimensions` JSONB, `captured_at` (indexé), `created_at`.
+- Migration `0005_phase4_metric_snapshots_and_rls.py` : table + index + unicité `(organization_id, metric_key, captured_at)` + **RLS activée et forcée** avec la politique unique par organisation (même convention que `0002`). `tests/test_alembic.py` mis à jour (`HEAD_REVISION = 0005`, `metric_snapshots` ajoutée aux tables tenant vérifiées — RLS + aller-retour head→base).
+- `app/schemas/metrics.py` : `validate_metric_key` extrait (réutilisé par `MetricSeries` et le nouveau `MetricSnapshotIn`).
+- `app/repositories/metric_snapshots.py` : `upsert_many` (INSERT … ON CONFLICT DO UPDATE sur l'unicité — re-synchro sans doublon) et `get_series` (fenêtre + limite, tri chronologique, filtre explicite par organisation **et** RLS).
+- `app/services/sync.py` : `sync_organization(session, organization_id)` — instancie toutes les démos du registre avec un seed déterministe (`seed_for_organization` = 32 bits faibles de l'UUID), synchronise le lookback (`SYNC_LOOKBACK_DAYS = 365`) et upsert tout en base. Le tenant doit être posé (c'est la RLS qui autorise l'écriture).
+- Tests intégration (`tests/connectors/test_metric_snapshots.py`, 5 tests) : les 4 modules écrits, re-synchro idempotente (même comptage), seed stable, isolation entre deux organisations, lecture filtrée par tenant et par fenêtre.
+- Vérifs : suite backend complète **216 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : push (aucun remote GitHub), merge (sans feu vert).
+
+### 2026-10-10 — Sous-phase 4c livrée (worker de synchro + `JobScheduler`)
+- `app/workers/scheduler.py` : classe `JobScheduler` — boucle asyncio légère, `start`/`stop` idempotents, intervalle en secondes strictement positif, échec du travail journalisé (la boucle continue), propriété `running`.
+- `app/workers/sync.py` : `sync_all_organizations(session_factory)` — liste les organisations (nouveau `list_organization_ids` dans le repository), puis pour chacune : session dédiée, tenant posé (`set_tenant`), `sync_organization`, commit ; un échec par organisation est journalisé sans arrêter le passage.
+- `app/main.py` : le lifespan démarre le planificateur si `sync_interval_minutes > 0` et le stoppe proprement à l'arrêt. Nouveau paramètre `SYNC_INTERVAL_MINUTES` (défaut 5 min, configurable), documenté dans `.env.example`. Les tests httpx ne déclenchent pas le lifespan : aucun planificateur dans la CI.
+- Tests (9) : `test_scheduler.py` (périodicité, idempotence de `start`/`stop`, échec absorbé, intervalle nul/négatif refusé) et `test_sync_worker.py` (toutes les organisations synchronisées, idempotence, panne d'une organisation n'arrête pas les autres, aucune organisation → rien).
+- Vérifs : suite backend complète **225 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4d.
+
+### 2026-10-10 — Sous-phase 4d livrée (endpoint de lecture des métriques)
+- Migration `0006_phase4_metric_units.py` : ajout de la colonne `unit` à `metric_snapshots` (format canonique, SPEC §5.4) — l'endpoint est générique : il ne connaît pas le connecteur, l'unité est stockée par point. `tests/test_alembic.py` : `HEAD_REVISION = 0006`. Base de dev mise à jour (`alembic upgrade head` → `0006`).
+- `app/services/metrics.py` : `get_metric_series` — fenêtre `start`/`end`, `limit`, tri chronologique, série repliée en `MetricSeries` (clé, unité, période, points + dimensions) ; 422 si des bornes inversées, 404 si aucune donnée (`ServiceProblem`).
+- `app/routers/metrics.py` : `GET /api/v1/organizations/{organization_id}/metrics/{metric_key}` — garde `view` du module dérivé de la clé canonique (`require_metric_module`), clé invalide → 422. `app/core/permissions.py` : `ensure_module_access` extrait (partagé avec `require_module`).
+- `app/models/metric_snapshot.py` + `MetricSnapshotIn` + repository + `sync_organization` : l'unité suit le point jusqu'en base.
+- Tests endpoint (9) : lecture admin, fenêtre de dates, limite, membre sans droit → 403, membre avec vue → 200 (et autre module → 403), autre organisation → 403, clé invalide → 422, bornes inversées → 422, série vide → 404.
+- Vérifs : suite backend complète **234 passed** · ruff ✅ · format ✅ · mypy strict ✅ (80 fichiers) · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : commit 4d (à faire), clôture phase (docs, commit final), push, merge (sans feu vert).
+
+### 2026-10-10 — Clôture de la phase 4 (connecteurs & données fictives)
+- Critères AGENTS.md §3 remplis : suite backend **234 tests verts**, ruff + ruff format + mypy strict OK, pre-commit 11 hooks OK (dont gitleaks — aucun secret), docs à jour (README, ARCHITECTURE, DECISIONS, PROGRESS, CHANGELOG).
+- Décisions notées dans `docs/DECISIONS.md` (seed par UUID, re-synchro idempotente 365 j, unité par point, planificateur in-process désactivé en test).
+- Base de dev à jour (`alembic upgrade head` → `0006`), worker actif toutes les 5 min par défaut au prochain démarrage de l'API.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (en attente d'un feu vert).
