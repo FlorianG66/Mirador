@@ -7,10 +7,10 @@
 - **Phase en cours** : 4 — Connecteurs & données fictives (ROADMAP ligne 42). Découpage en sous-phases :
   4a métriques canoniques + interface `Connector` + registre + connecteurs de démo déterministes (finance, web, social, projets) (**livrée**),
   4b table `metric_snapshots` (migration 0005, RLS tenant) + repository + service de synchro (**livrée**),
-  4c worker + `JobScheduler` (synchro périodique configurable) (**en cours**),
-  4d endpoint générique de lecture des métriques (tenant + permissions + période).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b à venir).
-- **Prochaine action** : livrer 4c (worker + `JobScheduler` : synchro toutes les ~5 min, intervalle configurable), puis 4d (endpoint de lecture).
+  4c worker de synchro + `JobScheduler` (**livrée**),
+  4d endpoint générique de lecture des métriques (tenant + permissions + période) (**en cours**).
+- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c à venir).
+- **Prochaine action** : livrer 4d (endpoint de lecture des métriques, tenant + permissions + période), puis clôture de la phase.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -398,7 +398,15 @@ au premier push GitHub (réglages de dépôt, hors code)
 - `app/connectors/registry.py` + `__init__.py` : registre par provider, auto-enregistrement des 4 mocks (`mock.finance`, `mock.web`, `mock.social`, `mock.projects`), `make(provider, seed)`, `list_categories()` (ordre trié), `list_connectors(category)`.
 - Tests (`tests/connectors/`) : 31 tests — déterminisme du seed (même seed → séries identiques, seed différent → valeurs différentes), réalisme (week-end < semaine pour le CA, anomalie > 1,5 × médiane, tendance dominante sur 2 ans pleins pour annuler la saisonnalité), format canonique, cumul stable, bornes de l'époque, webhook vide, registre.
 - Vérifs : pytest 31 passed · ruff ✅ · mypy ✅ (artefact coverage coroutines toujours en vigueur, couverture non mesurée sur ce sous-ensemble).
-- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4b/4c/4d.
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4c/4d.
+
+### 2026-10-10 — Sous-phase 4c livrée (worker de synchro + `JobScheduler`)
+- `app/workers/scheduler.py` : classe `JobScheduler` — boucle asyncio légère, `start`/`stop` idempotents, intervalle en secondes strictement positif, échec du travail journalisé (la boucle continue), propriété `running`.
+- `app/workers/sync.py` : `sync_all_organizations(session_factory)` — liste les organisations (nouveau `list_organization_ids` dans le repository), puis pour chacune : session dédiée, tenant posé (`set_tenant`), `sync_organization`, commit ; un échec par organisation est journalisé sans arrêter le passage.
+- `app/main.py` : le lifespan démarre le planificateur si `sync_interval_minutes > 0` et le stoppe proprement à l'arrêt. Nouveau paramètre `SYNC_INTERVAL_MINUTES` (défaut 5 min, configurable), documenté dans `.env.example`. Les tests httpx ne déclenchent pas le lifespan : aucun planificateur dans la CI.
+- Tests (9) : `test_scheduler.py` (périodicité, idempotence de `start`/`stop`, échec absorbé, intervalle nul/négatif refusé) et `test_sync_worker.py` (toutes les organisations synchronisées, idempotence, panne d'une organisation n'arrête pas les autres, aucune organisation → rien).
+- Vérifs : suite backend complète **225 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4d.
 
 ### 2026-10-10 — Sous-phase 4b livrée (table `metric_snapshots`, RLS, service de synchro)
 - `app/models/metric_snapshot.py` : table tenant `metric_snapshots` (SPEC §5.3) — `organization_id`, `metric_key` CHECK `^(finance|legal|projects|social|web)\.[a-z0-9_]+$`, `period` CHECK `^P[0-9]+(D|W|M|Y)$`, `value` (double), `dimensions` JSONB, `captured_at` (indexé), `created_at`.

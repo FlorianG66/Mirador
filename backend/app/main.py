@@ -22,12 +22,30 @@ from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
 from app.services.oidc import GoogleOidcProvider
+from app.workers.scheduler import JobScheduler
+from app.workers.sync import sync_all_organizations
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    """Libère le pool de connexions à l'arrêt (le client de test le fait lui-même)."""
+    """Démarre le worker de synchro (phase 4c), puis libère le pool à l'arrêt.
+
+    Le planificateur tourne seulement si `sync_interval_minutes > 0` (0 désactive,
+    choisi dans les tests). Les tests httpx ne déclenchent pas le lifespan :
+    ils libèrent le pool eux-mêmes.
+    """
+    settings: Settings = application.state.settings
+    scheduler: JobScheduler | None = None
+    if settings.sync_interval_minutes > 0:
+        scheduler = JobScheduler(
+            lambda: sync_all_organizations(application.state.session_factory),
+            interval_seconds=settings.sync_interval_minutes * 60,
+            name="sync",
+        )
+        await scheduler.start()
     yield
+    if scheduler is not None:
+        await scheduler.stop()
     engine: AsyncEngine = application.state.engine
     await engine.dispose()
 

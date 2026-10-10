@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Connexion Google (phase 2e) : vide = fournisseur non branché (404 sur les routes).
     google_client_id: str = ""
     google_client_secret: str = ""
+    # Worker de données fictives (phase 4) : intervalle de synchronisation des
+    # connecteurs, en minutes. 0 = planificateur désactivé (ex. tests).
+    sync_interval_minutes: int = 5
 
     @property
     def google_redirect_uri(self) -> str:
