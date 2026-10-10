@@ -7,9 +7,11 @@
 - **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
   3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée**),
   3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée**),
-  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions (**livrée**), 3d pages (connexion, inscription, A2F, Équipe) + e2e Playwright + a11y.
+  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions (**livrée**),
+  3d pages (connexion, inscription, A2F, Équipe) — 3d-a (**livrée**), 3d-b (**livrée**), 3d-c e2e Playwright du login + vérification a11y de base (**livrée**).
+  **La phase 3 est complète** (tous les critères du ROADMAP sont vérifiés) ; reste le commit de 3d-c.
 - **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
-- **Prochaine action** : documenter puis committer la refonte visuelle (hors feuille de route), puis sous-phase 3d (pages connexion/inscription/A2F/Équipe, formulaires + TanStack Query, e2e Playwright).
+- **Prochaine action** : committer 3d-c (`feat: e2e Playwright et vérification a11y (sous-phase 3d-c)`), demander le feu vert avant un éventuel merge sur `main`, puis phase 4 (connecteurs & données fictives, ROADMAP ligne 42).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -216,6 +218,21 @@
 - **Texte de chargement i18n** : `common.loading` se termine par un point de suspension (…), pas un point ASCII — matcher par regex, pas par chaîne exacte.
 - **`schema.d.ts` généré fait échouer ESLint** (règles de style sur les index signatures) : l'ajouter aux `ignores` d'`eslint.config.js`.
 - **`consistent-type-definitions`** : `ApiResult<T>` doit être une `interface` (le preset stylistic refuse l'alias d'objet).
+
+### Critères de la phase 3d-c (e2e Playwright + a11y) — vérité du terrain
+| Critère | État |
+|---|---|
+| Playwright e2e : accès à app | ✅ installation `@playwright/test@1.64.0` épinglée, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` + `channel: 'msedge'` (pas de téléchargement Chromium) |
+| e2e parcours connexion | ✅ **3 passed** (`login.spec.ts`) : identifiants valides → dashboard, incorrects → erreur sans navigation, compte A2F → redirection `/2fa` |
+| Mocks API fictifs | ✅ `installApiMocks` (helpers.ts) : `me`, `login`, `permissions` interceptés, données fictives (AGENTS.md §5), backend FastAPI volontairement absent |
+| Vérification a11y de base | ✅ **axe-core 4.13.0** (`@axe-core/playwright@4.13.0`) : scan `/login` + dashboard authentifié, seuil = zéro violation `serious`/`critical` (WCAG AA), **2 passed** |
+| `prefers-reduced-motion` en e2e | ✅ audit exécuté en `reducedMotion: 'reduce'` : neutralise les fondus `PageTransition` (sinon axe mesure le contraste *pendant* l'animation) et vérifie le respect de la réduction |
+| Vitest / typecheck / lint / build | ✅ 30 passed · `tsc -b` 0 erreur · `eslint .` 0 erreur · `npm run build` OK |
+| pre-commit | ✅ en attente au commit (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### Piège rencontré en phase 3d-c (à ne pas re-piocher)
+- **Axe mesure le contraste *pendant* les animations d'entrée** : le `PageTransition` (Motion) fait un fondu ~0,2 s ; scanné en plein vol, axe mélange les couleurs du token avec le fond via l'opacité partielle et signale un faux échec `color-contrast` (ex. `--text` mesuré `#c1c1c3` au lieu de `#16161a`). Les couleurs calculées (`getComputedStyle`) étaient pourtant correctes. Solution : lancer l'audit avec `contextOptions: { reducedMotion: 'reduce' }` (état final stable) — en test comme en phase 11 (audit automatisé).
 au premier push GitHub (réglages de dépôt, hors code)
 - Secret scanning + push protection, protection de la branche `main`, Dependabot actif.
 
@@ -355,4 +372,16 @@ au premier push GitHub (réglages de dépôt, hors code)
 - i18n : clés `twoFactor.*`, `settings.*`, `nav.settings` (FR + EN).
 - Tests : **30 passed** (8 fichiers) — pas de nouveaux tests pour 2FA (pas de backend disponible pour les tests d'intégration).
 - Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ (bundle 608 kB js / 189 kB gzip).
-- **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert).
+- Commit : `4fc2422 feat: pages A2F et paramètres (sous-phase 3d-b)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### 2026-10-10 — Sous-phase 3d-c livrée (e2e Playwright du login + vérification a11y de base)
+- Playwright : `@playwright/test@1.64.0` épinglé, installé avec `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`, navigateur = Edge installé (`channel: 'msedge'`, pas de Chromium téléchargé). `playwright.config.ts` : `testDir ./e2e`, `webServer` Vite dev (reuseExistingServer), baseURL `http://localhost:5173`.
+- Mocks (AGENTS.md §5, données fictives) : `e2e/helpers.ts` intercepte `/api/v1/auth/me`, `/api/v1/auth/login`, `/api/v1/organizations/*/permissions` (org et user fictifs `1111…/2222…`) ; état pilotable par les tests (connecté / défi A2F / rejet du login) ; le backend FastAPI ne tourne pas.
+- `e2e/login.spec.ts` : 3 tests passent — identifiants valides → dashboard (nom de l'org affiché), mauvais identifiants → `Alert` d'erreur sans navigation (reste sur `/login`), compte A2F → redirection `/2fa`.
+- A11y : `@axe-core/playwright@4.13.0` ; `e2e/a11y.spec.ts` scanne `/login` et le dashboard authentifié avec le seuil « zéro violation serious/critical » (WCAG AA) ; les 2 tests passent.
+- **Piège résolu** : axe levait un faux `color-contrast` sur le dashboard — le scan tombait pendant le fondu d'apparition du `PageTransition` (opacité ~0,3) et mélangeait les couleurs. Fix : `test.use({ contextOptions: { reducedMotion: 'reduce' } })` → animation neutralisée (état final stable) et réduction des animations vérifiée au passage (SPEC §7).
+- Config : script `test:e2e` (package.json), Vitest exclut `e2e/**` (vite.config.ts), override ESLint `globals: node` pour `e2e/**` + `playwright.config.ts`, `tsconfig.node.json` inclut `playwright.config.ts` + `e2e` (`allowImportingTsExtensions`).
+- Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ · `npx playwright test` 5 passed.
+- Docs : CHANGELOG, ce fichier.
+- **Non fait** : commit 3d-c (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; phase 4 à venir.

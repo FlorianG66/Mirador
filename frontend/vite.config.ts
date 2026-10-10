@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 // Configuration Vite du frontend.
 // En dev, les appels /api/* sont proxifiés vers le backend FastAPI (uvicorn
@@ -20,5 +20,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Les specs Playwright vivent dans e2e/ : Vitest ne doit pas les exécuter.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
   },
 })

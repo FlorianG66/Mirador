@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 // changent de clé entre versions — on épingle les règles par nom) et
 // react-refresh pour le mode dev.
 export default tseslint.config(
-  // `schema.d.ts` est g�n�r� depuis l'OpenAPI : on ne le lint pas.
+  // `schema.d.ts` est généré depuis l'OpenAPI : on ne le lint pas.
   { ignores: ['dist', 'src/api/schema.d.ts'] },
   {
     files: ['**/*.{ts,tsx}'],
@@ -34,5 +34,10 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
+  },
+  // Les tests e2e Playwright et sa config tournent en Node (collapse `process`).
+  {
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    languageOptions: { globals: globals.node },
   },
 )
