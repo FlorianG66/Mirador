@@ -4,14 +4,10 @@
 
 ## État
 
-- **Phase en cours** : 4 — Connecteurs & données fictives (ROADMAP ligne 42). Découpage en sous-phases :
-  4a métriques canoniques + interface `Connector` + registre + connecteurs de démo déterministes (finance, web, social, projets) (**livrée**),
-  4b table `metric_snapshots` (migration 0005, RLS tenant) + repository + service de synchro (**livrée**),
-  4c worker de synchro + `JobScheduler` (**livrée**),
-  4d endpoint générique de lecture des métriques (tenant + permissions + période) (**livrée**),
-  clôture de la phase (**en cours**).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d à venir).
-- **Prochaine action** : clôturer la phase 4 (tests ↔ schemas, docs, commit final, récap).
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres.
+  Avant d'attaquer : découper la phase en sous-phases, puis merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis).
+- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d `6baa097`, clôture à venir).
+- **Prochaine action** : clôturer la phase 4 (commit final des docs), présenter le récap, puis merger sur `main` après feu vert et démarrer la phase 5.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -401,6 +397,16 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Vérifs : pytest 31 passed · ruff ✅ · mypy ✅ (artefact coverage coroutines toujours en vigueur, couverture non mesurée sur ce sous-ensemble).
 - **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4c/4d.
 
+### 2026-10-10 — Sous-phase 4b livrée (table `metric_snapshots`, RLS, service de synchro)
+- `app/models/metric_snapshot.py` : table tenant `metric_snapshots` (SPEC §5.3) — `organization_id`, `metric_key` CHECK `^(finance|legal|projects|social|web)\.[a-z0-9_]+$`, `period` CHECK `^P[0-9]+(D|W|M|Y)$`, `value` (double), `dimensions` JSONB, `captured_at` (indexé), `created_at`.
+- Migration `0005_phase4_metric_snapshots_and_rls.py` : table + index + unicité `(organization_id, metric_key, captured_at)` + **RLS activée et forcée** avec la politique unique par organisation (même convention que `0002`). `tests/test_alembic.py` mis à jour (`HEAD_REVISION = 0005`, `metric_snapshots` ajoutée aux tables tenant vérifiées — RLS + aller-retour head→base).
+- `app/schemas/metrics.py` : `validate_metric_key` extrait (réutilisé par `MetricSeries` et le nouveau `MetricSnapshotIn`).
+- `app/repositories/metric_snapshots.py` : `upsert_many` (INSERT … ON CONFLICT DO UPDATE sur l'unicité — re-synchro sans doublon) et `get_series` (fenêtre + limite, tri chronologique, filtre explicite par organisation **et** RLS).
+- `app/services/sync.py` : `sync_organization(session, organization_id)` — instancie toutes les démos du registre avec un seed déterministe (`seed_for_organization` = 32 bits faibles de l'UUID), synchronise le lookback (`SYNC_LOOKBACK_DAYS = 365`) et upsert tout en base. Le tenant doit être posé (c'est la RLS qui autorise l'écriture).
+- Tests intégration (`tests/connectors/test_metric_snapshots.py`, 5 tests) : les 4 modules écrits, re-synchro idempotente (même comptage), seed stable, isolation entre deux organisations, lecture filtrée par tenant et par fenêtre.
+- Vérifs : suite backend complète **216 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : push (aucun remote GitHub), merge (sans feu vert).
+
 ### 2026-10-10 — Sous-phase 4c livrée (worker de synchro + `JobScheduler`)
 - `app/workers/scheduler.py` : classe `JobScheduler` — boucle asyncio légère, `start`/`stop` idempotents, intervalle en secondes strictement positif, échec du travail journalisé (la boucle continue), propriété `running`.
 - `app/workers/sync.py` : `sync_all_organizations(session_factory)` — liste les organisations (nouveau `list_organization_ids` dans le repository), puis pour chacune : session dédiée, tenant posé (`set_tenant`), `sync_organization`, commit ; un échec par organisation est journalisé sans arrêter le passage.
@@ -418,12 +424,8 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Vérifs : suite backend complète **234 passed** · ruff ✅ · format ✅ · mypy strict ✅ (80 fichiers) · pre-commit ✅ (gitleaks inclus).
 - **Non fait** : commit 4d (à faire), clôture phase (docs, commit final), push, merge (sans feu vert).
 
-### 2026-10-10 — Sous-phase 4b livrée (table `metric_snapshots`, RLS, service de synchro)
-- `app/models/metric_snapshot.py` : table tenant `metric_snapshots` (SPEC §5.3) — `organization_id`, `metric_key` CHECK `^(finance|legal|projects|social|web)\.[a-z0-9_]+$`, `period` CHECK `^P[0-9]+(D|W|M|Y)$`, `value` (double), `dimensions` JSONB, `captured_at` (indexé), `created_at`.
-- Migration `0005_phase4_metric_snapshots_and_rls.py` : table + index + unicité `(organization_id, metric_key, captured_at)` + **RLS activée et forcée** avec la politique unique par organisation (même convention que `0002`). `tests/test_alembic.py` mis à jour (`HEAD_REVISION = 0005`, `metric_snapshots` ajoutée aux tables tenant vérifiées — RLS + aller-retour head→base).
-- `app/schemas/metrics.py` : `validate_metric_key` extrait (réutilisé par `MetricSeries` et le nouveau `MetricSnapshotIn`).
-- `app/repositories/metric_snapshots.py` : `upsert_many` (INSERT … ON CONFLICT DO UPDATE sur l'unicité — re-synchro sans doublon) et `get_series` (fenêtre + limite, tri chronologique, filtre explicite par organisation **et** RLS).
-- `app/services/sync.py` : `sync_organization(session, organization_id)` — instancie toutes les démos du registre avec un seed déterministe (`seed_for_organization` = 32 bits faibles de l'UUID), synchronise le lookback (`SYNC_LOOKBACK_DAYS = 365`) et upsert tout en base. Le tenant doit être posé (c'est la RLS qui autorise l'écriture).
-- Tests intégration (`tests/connectors/test_metric_snapshots.py`, 5 tests) : les 4 modules écrits, re-synchro idempotente (même comptage), seed stable, isolation entre deux organisations, lecture filtrée par tenant et par fenêtre.
-- Vérifs : suite backend complète **216 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
-- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4c/4d.
+### 2026-10-10 — Clôture de la phase 4 (connecteurs & données fictives)
+- Critères AGENTS.md §3 remplis : suite backend **234 tests verts**, ruff + ruff format + mypy strict OK, pre-commit 11 hooks OK (dont gitleaks — aucun secret), docs à jour (README, ARCHITECTURE, DECISIONS, PROGRESS, CHANGELOG).
+- Décisions notées dans `docs/DECISIONS.md` (seed par UUID, re-synchro idempotente 365 j, unité par point, planificateur in-process désactivé en test).
+- Base de dev à jour (`alembic upgrade head` → `0006`), worker actif toutes les 5 min par défaut au prochain démarrage de l'API.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (en attente d'un feu vert).

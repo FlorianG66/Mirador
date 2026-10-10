@@ -205,3 +205,19 @@ Direction retenue après revue des galeries d'inspiration (kombai, 5sdesign) : p
 ## 2026-10-09 — A2F : pages dédiées plutôt que modale
 
 La double authentification utilise deux routes dédiées : `/2fa` (publique, défi après `totp_required` au login) et `/settings` (protégée, activation/désactivation TOTP). Raison : le défi 2FA est un flux à part entière (redirection depuis le login, cookie `mirador_2fa`), pas une simple modale ; la page paramètres centralise la gestion du compte sans surcharger le dashboard.
+
+## 2026-10-10 — Seed des données fictives = 32 bits faibles de l'UUID d'organisation
+
+`seed_for_organization(org_id) = org_id.int & 0xFFFFFFFF` produit les séries de démo de chaque organisation. Raison : déterminisme total (mêmes données à chaque synchro, tests stables) sans stocker de seed, et différenciation suffisante entre organisations de démo.
+
+## 2026-10-10 — Re-synchronisation idempotente sur 365 jours, pas de « dernière synchro »
+
+Le worker range/remplace les ~365 derniers jours à chaque passage (upsert sur `(organization_id, metric_key, captured_at)`), sans borne « dernière synchro » à tenir en base. Raison : il n'y a pas de vrai connecteur ni de volume avant la phase 9, et un recul dans l'historique reste toujours possible ; la montée en charge imposera une vraie borne.
+
+## 2026-10-10 — Unité stockée par point de métrique (migration 0006)
+
+`metric_snapshots.unit` est écrit à chaque point, pas seulement dans les métadonnées du connecteur. Raison : l'endpoint de lecture doit rester générique (il ignore quel connecteur a produit la série) et le format canonique (SPEC §5.4) porte une unité obligatoire.
+
+## 2026-10-10 — Planificateur in-process, désactivé en test
+
+Le worker tourne dans la boucle asyncio de l'application (lifespan, intervalle `SYNC_INTERVAL_MINUTES`, 0 = éteint), ni processus ni queue dédiés. Raison : un seul processus et des volumes de démo rendent un orchestrateur (APScheduler, Celery…) prématuré ; les tests httpx ne déclenchent pas le lifespan, donc rien ne tourne dans la CI.
