@@ -2,13 +2,14 @@
 // Aucun texte visible n'est écrit en dur dans les composants (AGENTS.md §7).
 const fr = {
   app: {
-    tagline: 'Tableau de bord d’entreprise',
+    tagline: "Tableau de bord d'entreprise",
   },
   nav: {
     moduleLabel: 'Modules',
     settingsLabel: 'Paramètres',
+    settings: 'Paramètres',
     primaryAria: 'Navigation principale',
-    dashboard: 'Vue d’ensemble',
+    dashboard: "Vue d'ensemble",
     finance: 'Finance',
     web: 'Web analytics',
     social: 'Réseaux sociaux',
@@ -31,19 +32,18 @@ const fr = {
     loading: 'Chargement…',
   },
   topbar: {
-    breadcrumbAria: 'Fil d’ariane',
+    breadcrumbAria: "Fil d'ariane",
     roleAdmin: 'Admin',
     roleMember: 'Membre',
   },
   dashboard: {
-    title: 'Vue d’ensemble',
-    subtitle: 'Le pouls de votre entreprise, en un coup d’œil.',
+    title: "Vue d'ensemble",
+    subtitle: "Le pouls de votre entreprise, en un coup d'œil.",
     welcomeTitle: 'Bienvenue sur votre tableau de bord',
-    welcomeText:
-      'Retrouvez ici vos modules et, dès qu’ils seront connectés à vos outils, le pouls de votre activité.',
+    welcomeText: "Retrouvez ici vos modules et, dès qu'ils seront connectés à vos outils, le pouls de votre activité.",
     quickAccess: 'Accès rapide',
     activityTitle: 'Activité récente',
-    activityEmptyTitle: 'Aucune activité pour l’instant',
+    activityEmptyTitle: "Aucune activité pour l'instant",
     activityEmptyDescription: 'Les événements de vos modules apparaîtront ici.',
   },
   login: {
@@ -54,44 +54,19 @@ const fr = {
     submit: 'Se connecter',
     submitting: 'Connexion…',
     error: 'Identifiants incorrects. Vérifie ton e-mail et ton mot de passe.',
-    totpUnsupported:
-      "La double authentification n'est pas encore gérée côté interface (prévue en 3d).",
     forgotPassword: 'Mot de passe oublié ?',
-    noAccount: 'Pas encore de compte ? S\'inscrire',
-  },
-  forbidden: {
-    title: 'Accès refusé',
-    description: "Vous n'avez pas les droits nécessaires pour voir cette page.",
-  },
-  placeholder: {
-    title: 'Module en construction',
-    description:
-      'Ce module arrivera dans une prochaine phase — le backend est déjà prêt.',
-  },
-  emptyState: {
-    title: 'Rien à afficher pour l’instant',
-    description:
-      'Les données apparaîtront ici une fois le module connecté à un outil.',
-  },
-  errorState: {
-    title: 'Impossible de charger les données',
-    description: 'Une erreur est survenue. Réessayez dans un instant.',
-  },
-  notFound: {
-    title: 'Page introuvable',
-    description: 'La page que vous cherchez n’existe pas ou a été déplacée.',
-    backHome: 'Retour à la vue d’ensemble',
+    noAccount: "Pas encore de compte ? S'inscrire",
   },
   register: {
     title: 'Créer un compte',
     description: 'Inscrivez votre organisation en quelques secondes.',
-    organizationName: 'Nom de l’organisation',
+    organizationName: "Nom de l'organisation",
     siren: 'SIREN (optionnel)',
     email: 'Adresse e-mail',
     password: 'Mot de passe',
     submit: 'Créer mon compte',
     submitting: 'Création…',
-    error: 'Une erreur est survenue lors de l’inscription.',
+    error: "Une erreur est survenue lors de l'inscription.",
     backToLogin: 'Déjà inscrit ? Se connecter',
   },
   forgotPassword: {
@@ -102,7 +77,7 @@ const fr = {
     submitting: 'Envoi…',
     error: 'Une erreur est survenue. Réessayez dans un instant.',
     sentTitle: 'E-mail envoyé',
-    sentDescription: 'Si un compte existe avec cette adresse, vous recevrez un e-mail de réinitialisation.',
+    sentDescription: "Si un compte existe avec cette adresse, vous recevrez un e-mail de réinitialisation.",
     backToLogin: 'Retour à la connexion',
   },
   resetPassword: {
@@ -118,7 +93,52 @@ const fr = {
     invalidDescription: 'Le lien de réinitialisation est invalide ou a expiré.',
     requestNew: 'Demander un nouveau lien',
     backToLogin: 'Retour à la connexion',
-  }
+  },
+  twoFactor: {
+    title: 'Double authentification',
+    description: "Entrez le code à 6 chiffres de votre application d'authentification.",
+    settingsDescription: 'Protégez votre compte avec un second facteur.',
+    code: 'Code',
+    submit: 'Vérifier',
+    submitting: 'Vérification…',
+    error: 'Code incorrect. Réessayez.',
+    backupCodeHint: 'Vous pouvez aussi utiliser un code de secours.',
+    enable: 'Activer la double authentification',
+    enabling: 'Activation…',
+    disable: 'Désactiver',
+    disabling: 'Désactivation…',
+    password: 'Mot de passe actuel',
+    setupInstructions: "Scannez ce QR code avec votre application d'authentification, puis entrez le code généré.",
+    secret: 'Secret',
+    otpauthUrl: 'URL otpauth',
+    backupCodes: 'Codes de secours',
+    backupCodesHint: 'Conservez ces codes en lieu sûr. Ils ne seront plus affichés.',
+  },
+  settings: {
+    title: 'Paramètres',
+    description: 'Gérez les paramètres de votre compte.',
+  },
+  forbidden: {
+    title: 'Accès refusé',
+    description: "Vous n'avez pas les droits nécessaires pour voir cette page.",
+  },
+  placeholder: {
+    title: 'Module en construction',
+    description: 'Ce module arrivera dans une prochaine phase — le backend est déjà prêt.',
+  },
+  emptyState: {
+    title: "Rien à afficher pour l'instant",
+    description: 'Les données apparaîtront ici une fois le module connecté à un outil.',
+  },
+  errorState: {
+    title: 'Impossible de charger les données',
+    description: 'Une erreur est survenue. Réessayez dans un instant.',
+  },
+  notFound: {
+    title: 'Page introuvable',
+    description: "La page que vous cherchez n'existe pas ou a été déplacée.",
+    backHome: "Retour à la vue d'ensemble",
+  },
 }
 
 export default fr

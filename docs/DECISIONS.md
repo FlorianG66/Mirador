@@ -201,3 +201,7 @@ Direction retenue après revue des galeries d'inspiration (kombai, 5sdesign) : p
 ## 2026-10-09 — TanStack Query 5.104.1 pour le state management serveur
 
 `@tanstack/react-query@5.104.1` (version stable npm vérifiée) remplace useState/useEffect dans `AuthProvider` et les mutations des formulaires. Configuration : `retry: false`, `refetchOnWindowFocus: false`. Les clés de query sont centralisées dans `src/auth/queries.ts` (`authKeys.me`, `authKeys.permissions(orgId)`). Raison : cache serveur partagé, invalidation déclarative (`reload()` = `invalidateQueries`), et intégration native avec les mutations des formulaires — sans ajouter de bibliothèque de formulaire (les formulaires restent contrôlés avec `useState`).
+
+## 2026-10-09 — A2F : pages dédiées plutôt que modale
+
+La double authentification utilise deux routes dédiées : `/2fa` (publique, défi après `totp_required` au login) et `/settings` (protégée, activation/désactivation TOTP). Raison : le défi 2FA est un flux à part entière (redirection depuis le login, cookie `mirador_2fa`), pas une simple modale ; la page paramètres centralise la gestion du compte sans surcharger le dashboard.

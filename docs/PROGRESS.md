@@ -345,3 +345,14 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Tests : `AuthProvider.test.tsx`, `guards.test.tsx`, `App.test.tsx` mis à jour avec QueryClientProvider ; **30 passed** (8 fichiers).
 - Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ (bundle 600 kB js / 188 kB gzip — TanStack Query inclus).
 - **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+
+### 2026-10-09 — Sous-phase 3d-b livrée (A2F complet)
+- Page `TwoFactorPage` (`/2fa`) : défi 2FA après `totp_required` au login → `POST /auth/2fa/verify` (code TOTP ou code de secours).
+- Page `SettingsPage` (`/settings`) : activation TOTP (`POST /auth/2fa/enable` → secret, otpauth_url, backup_codes), désactivation (`POST /auth/2fa/disable`).
+- `LoginPage` : redirection vers `/2fa` au lieu du message `totpUnsupported` ; `totp_required` géré via `useMutation`.
+- Routes `/2fa` (publique) et `/settings` (protégée) ajoutées ; lien Paramètres dans la sidebar.
+- i18n : clés `twoFactor.*`, `settings.*`, `nav.settings` (FR + EN).
+- Tests : **30 passed** (8 fichiers) — pas de nouveaux tests pour 2FA (pas de backend disponible pour les tests d'intégration).
+- Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ (bundle 608 kB js / 189 kB gzip).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert).

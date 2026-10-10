@@ -6,6 +6,7 @@ const en = {
   nav: {
     moduleLabel: 'Modules',
     settingsLabel: 'Settings',
+    settings: 'Settings',
     primaryAria: 'Primary navigation',
     dashboard: 'Overview',
     finance: 'Finance',
@@ -38,8 +39,7 @@ const en = {
     title: 'Overview',
     subtitle: 'The pulse of your company, at a glance.',
     welcomeTitle: 'Welcome to your dashboard',
-    welcomeText:
-      'Find your modules here and, once they are connected to your tools, the pulse of your activity.',
+    welcomeText: 'Find your modules here and, once they are connected to your tools, the pulse of your activity.',
     quickAccess: 'Quick access',
     activityTitle: 'Recent activity',
     activityEmptyTitle: 'No activity yet',
@@ -53,33 +53,8 @@ const en = {
     submit: 'Sign in',
     submitting: 'Signing in…',
     error: 'Invalid credentials. Check your email and password.',
-    totpUnsupported:
-      'Two-factor authentication is not handled in the UI yet (planned for 3d).',
     forgotPassword: 'Forgot password?',
     noAccount: 'No account yet? Sign up',
-  },
-  forbidden: {
-    title: 'Access denied',
-    description: "You don't have the required permissions to view this page.",
-  },
-  placeholder: {
-    title: 'Module under construction',
-    description:
-      'This module is coming in a later phase — the backend is already ready.',
-  },
-  emptyState: {
-    title: 'Nothing to show yet',
-    description:
-      'Data will appear here once the module is connected to a tool.',
-  },
-  errorState: {
-    title: 'Could not load the data',
-    description: 'Something went wrong. Please try again in a moment.',
-  },
-  notFound: {
-    title: 'Page not found',
-    description: 'The page you are looking for does not exist or has moved.',
-    backHome: 'Back to overview',
   },
   register: {
     title: 'Create an account',
@@ -117,7 +92,52 @@ const en = {
     invalidDescription: 'The reset link is invalid or has expired.',
     requestNew: 'Request a new link',
     backToLogin: 'Back to sign in',
-  }
+  },
+  twoFactor: {
+    title: 'Two-factor authentication',
+    description: 'Enter the 6-digit code from your authenticator app.',
+    settingsDescription: 'Secure your account with a second factor.',
+    code: 'Code',
+    submit: 'Verify',
+    submitting: 'Verifying…',
+    error: 'Invalid code. Please try again.',
+    backupCodeHint: 'You can also use a backup code.',
+    enable: 'Enable two-factor authentication',
+    enabling: 'Enabling…',
+    disable: 'Disable',
+    disabling: 'Disabling…',
+    password: 'Current password',
+    setupInstructions: 'Scan this QR code with your authenticator app, then enter the generated code.',
+    secret: 'Secret',
+    otpauthUrl: 'otpauth URL',
+    backupCodes: 'Backup codes',
+    backupCodesHint: 'Keep these codes safe. They will not be shown again.',
+  },
+  settings: {
+    title: 'Settings',
+    description: 'Manage your account settings.',
+  },
+  forbidden: {
+    title: 'Access denied',
+    description: "You don't have the required permissions to view this page.",
+  },
+  placeholder: {
+    title: 'Module under construction',
+    description: 'This module is coming in a later phase — the backend is already ready.',
+  },
+  emptyState: {
+    title: 'Nothing to show yet',
+    description: 'Data will appear here once the module is connected to a tool.',
+  },
+  errorState: {
+    title: 'Could not load the data',
+    description: 'Something went wrong. Please try again in a moment.',
+  },
+  notFound: {
+    title: 'Page not found',
+    description: 'The page you are looking for does not exist or has moved.',
+    backHome: 'Back to overview',
+  },
 }
 
 export default en

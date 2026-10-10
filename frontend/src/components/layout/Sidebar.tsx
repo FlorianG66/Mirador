@@ -10,6 +10,7 @@ import {
   ListChecks,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
   Share2,
   Users,
   Wallet,
@@ -60,8 +61,10 @@ export function Sidebar({
     ...allModules.filter((entry) => entry.moduleKey && canSeeModule(entry.moduleKey, permissions)),
   ]
 
-  const settings: NavEntry[] =
-    permissions?.role === 'admin' ? [{ to: '/team', icon: Users, label: t('nav.team') }] : []
+  const settings: NavEntry[] = [
+    { to: '/settings', icon: Settings, label: t('nav.settings') },
+    ...(permissions?.role === 'admin' ? [{ to: '/team', icon: Users, label: t('nav.team') }] : []),
+  ]
 
   const toggleLabel = collapsed ? t('nav.expand') : t('nav.collapse')
 

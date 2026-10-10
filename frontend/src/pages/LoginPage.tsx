@@ -15,20 +15,30 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  const [totpRequired, setTotpRequired] = useState(false)
+
   const mutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
       return unwrap(
         api.POST('/api/v1/auth/login', { body: data }),
       )
     },
-    onSuccess: async () => {
-      await reload()
+    onSuccess: (data) => {
+      if (data.totp_required) {
+        setTotpRequired(true)
+      } else {
+        void reload()
+      }
     },
   })
 
   if (status === 'authenticated') {
     const from = (location.state as { from?: string } | null)?.from ?? '/'
     return <Navigate to={from} replace />
+  }
+
+  if (totpRequired) {
+    return <Navigate to="/2fa" replace />
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

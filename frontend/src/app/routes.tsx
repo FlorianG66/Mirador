@@ -12,8 +12,10 @@ import { LoginPage } from '../pages/LoginPage.tsx'
 import { ModulePage } from '../pages/ModulePage.tsx'
 import { NotFoundPage } from '../pages/NotFoundPage.tsx'
 import { RegisterPage } from '../pages/RegisterPage.tsx'
+import { SettingsPage } from '../pages/SettingsPage.tsx'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage.tsx'
 import { TeamPage } from '../pages/TeamPage.tsx'
+import { TwoFactorPage } from '../pages/TwoFactorPage.tsx'
 
 export const routes: RouteObject[] = [
   {
@@ -23,6 +25,7 @@ export const routes: RouteObject[] = [
       { path: '/register', element: <RegisterPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
       { path: '/reset-password', element: <ResetPasswordPage /> },
+      { path: '/2fa', element: <TwoFactorPage /> },
       {
         element: <RequireAuth />,
         children: [
@@ -70,6 +73,10 @@ export const routes: RouteObject[] = [
                     <ModulePage moduleKey="legal" />
                   </RequireModule>
                 ),
+              },
+              {
+                path: 'settings',
+                element: <SettingsPage />,
               },
               {
                 path: 'team',
