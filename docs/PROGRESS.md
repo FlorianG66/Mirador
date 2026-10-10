@@ -4,14 +4,13 @@
 
 ## État
 
-- **Phase en cours** : 3 — Frontend socle & design system. Découpage en sous-phases :
-  3a socle frontend (Vite + React + TS strict, ESLint, Vitest, proxy `/api`) (**livrée**),
-  3b design system (design tokens clair/sombre, layout + menu latéral gauche, composants de base, i18n FR/EN, routing) (**livrée**),
-  3c client API typé généré depuis l'OpenAPI + gardes de routes selon permissions (**livrée**),
-  3d pages (connexion, inscription, A2F, Équipe) — 3d-a (**livrée**), 3d-b (**livrée**), 3d-c e2e Playwright du login + vérification a11y de base (**livrée**).
-  **La phase 3 est complète** (tous les critères du ROADMAP sont vérifiés) ; reste le commit de 3d-c.
-- **Branche** : `phase-3-frontend-socle` (créée depuis le bout de `phase-2-auth-organisations`).
-- **Prochaine action** : committer 3d-c (`feat: e2e Playwright et vérification a11y (sous-phase 3d-c)`), demander le feu vert avant un éventuel merge sur `main`, puis phase 4 (connecteurs & données fictives, ROADMAP ligne 42).
+- **Phase en cours** : 4 — Connecteurs & données fictives (ROADMAP ligne 42). Découpage en sous-phases :
+  4a métriques canoniques + interface `Connector` + registre + connecteurs de démo déterministes (finance, web, social, projets) (**livrée**),
+  4b table `metric_snapshots` (migration 0005, RLS tenant) + repository + service de synchro (**en cours**),
+  4c worker + `JobScheduler` (synchro périodique configurable),
+  4d endpoint générique de lecture des métriques (tenant + permissions + période).
+- **Branche** : `phase-4-connecteurs` (créée depuis `main`, qui pointe sur `21f3a69` = clôture de la phase 3).
+- **Prochaine action** : livrer 4b (table `metric_snapshots`, migration 0005 avec RLS, service de synchro qui range les séries mock en base), puis 4c et 4d.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -385,3 +384,18 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Vérifs : `npm run typecheck` ✅ · `npm run lint` ✅ · `npm test` 30 passed · `npm run build` ✅ · `npx playwright test` 5 passed.
 - Docs : CHANGELOG, ce fichier.
 - **Non fait** : commit 3d-c (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; phase 4 à venir.
+
+### 2026-10-10 — Phase 3 clôturée et mergée sur `main`
+- Commit de la sous-phase 3d-c : `21f3a69` (11 fichiers, +307/−6 ; nouveaux `frontend/e2e/a11y.spec.ts`, `helpers.ts`, `login.spec.ts`, `frontend/playwright.config.ts`). Vérifs de fin de phase : Vitest 30/30, typecheck/lint 0 erreur, build OK, `npx playwright test` 5/5, pre-commit 11 hooks OK (gitleaks inclus).
+- Correction en route : `"moduleDetection": "force"` restauré dans `frontend/tsconfig.node.json` (suppression accidentelle antérieure, confirmée via `git show HEAD:...`).
+- La branche `main` n'existait pas : créée à la pointe `21f3a69` (`git branch main HEAD`), puis checkout — toutes les phases 0→3 sont des ancêtres linéaires.
+- **Branche actuelle** : `main` (pointe sur `21f3a69`), attente du feu vert pour ouvrir la phase 4.
+
+### 2026-10-10 — Sous-phase 4a livrée (métriques canoniques, interface Connector, mocks déterministes)
+- `app/schemas/metrics.py` : métriques canoniques (SPEC §5.4) — `MetricPoint`, `MetricSeries` (clé `module.metric` validée : module connu, un seul séparateur), `build_metric_key`, `metric_prefix`, constante `PERIOD_DAY` (`P1D`).
+- `app/connectors/base.py` : interface `Connector` (provider, category, auth_type, `connect`, `sync(since)`, `handle_webhook`, `disconnect`, `healthcheck`) + `ConnectorHealth`. Les mocks partagent le seed via l'`__init__` de base.
+- `app/connectors/mock.py` : `MockConnector` déterministe par seed — valeur d'un jour dérivée uniquement de (seed, clé, date) via SHA-256, sans état mutable. Une métrique réaliste par module : `finance.revenue` (EUR, effet week-end 0,55, bruit, anomalies 3 %), `web.visits`, `projects.tasks_done`, et `social.followers` **cumulé** (croissance hebdomadaire stable depuis 2020, indépendante de la fenêtre demandée). Tendance linéaire + saisonnalité annuelle + anomalies (`_daily_value`, `_cumulative_value`, `build_series`).
+- `app/connectors/registry.py` + `__init__.py` : registre par provider, auto-enregistrement des 4 mocks (`mock.finance`, `mock.web`, `mock.social`, `mock.projects`), `make(provider, seed)`, `list_categories()` (ordre trié), `list_connectors(category)`.
+- Tests (`tests/connectors/`) : 31 tests — déterminisme du seed (même seed → séries identiques, seed différent → valeurs différentes), réalisme (week-end < semaine pour le CA, anomalie > 1,5 × médiane, tendance dominante sur 2 ans pleins pour annuler la saisonnalité), format canonique, cumul stable, bornes de l'époque, webhook vide, registre.
+- Vérifs : pytest 31 passed · ruff ✅ · mypy ✅ (artefact coverage coroutines toujours en vigueur, couverture non mesurée sur ce sous-ensemble).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4b/4c/4d.
