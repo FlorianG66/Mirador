@@ -17,6 +17,20 @@ PERIOD_DAY = "P1D"
 METRIC_KEY_SEPARATOR = "."
 
 
+def validate_metric_key(value: str) -> str:
+    """Exige la forme `module.metric` avec un module connu (SPEC §5.4)."""
+    module, sep, metric = value.partition(METRIC_KEY_SEPARATOR)
+    if not sep:
+        raise ValueError("Clé non canonique : « module.metric » attendu (ex. finance.revenue)")
+    if not metric or METRIC_KEY_SEPARATOR in metric or METRIC_KEY_SEPARATOR in module:
+        raise ValueError("Clé non canonique : un seul séparateur « . » autorisé")
+    try:
+        Module(module)
+    except ValueError as exc:
+        raise ValueError(f"Module inconnu dans la clé : « {module} »") from exc
+    return value
+
+
 class MetricPoint(BaseModel):
     """Un point d'une série : un instant, une valeur, éventuellement des dimensions."""
 
@@ -36,17 +50,22 @@ class MetricSeries(BaseModel):
     @field_validator("key")
     @classmethod
     def _key_is_canonical(cls, value: str) -> str:
-        """Exige la forme `module.metric` avec un module connu (SPEC §5.4)."""
-        module, sep, metric = value.partition(METRIC_KEY_SEPARATOR)
-        if not sep:
-            raise ValueError("Clé non canonique : « module.metric » attendu (ex. finance.revenue)")
-        if not metric or METRIC_KEY_SEPARATOR in metric or METRIC_KEY_SEPARATOR in module:
-            raise ValueError("Clé non canonique : un seul séparateur « . » autorisé")
-        try:
-            Module(module)
-        except ValueError as exc:
-            raise ValueError(f"Module inconnu dans la clé : « {module} »") from exc
-        return value
+        return validate_metric_key(value)
+
+
+class MetricSnapshotIn(BaseModel):
+    """Un point prêt à être stocké dans `metric_snapshots` (worker → repository)."""
+
+    metric_key: str
+    period: str = Field(min_length=1, max_length=8)
+    value: float
+    dimensions: dict[str, Any] = Field(default_factory=dict)
+    captured_at: datetime
+
+    @field_validator("metric_key")
+    @classmethod
+    def _key_is_canonical(cls, value: str) -> str:
+        return validate_metric_key(value)
 
 
 def metric_prefix(key: str) -> str:

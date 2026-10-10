@@ -11,6 +11,7 @@ from app.models.base import Base
 from app.models.enums import Module, PermissionLevel, Role
 from app.models.invitation import Invitation
 from app.models.membership import Membership
+from app.models.metric_snapshot import MetricSnapshot
 from app.models.module_permission import ModulePermission
 from app.models.organization import Organization
 from app.models.password_reset_token import PasswordResetToken
@@ -24,6 +25,7 @@ __all__ = [
     "Base",
     "Invitation",
     "Membership",
+    "MetricSnapshot",
     "Module",
     "ModulePermission",
     "Organization",

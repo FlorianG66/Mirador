@@ -18,6 +18,7 @@ from app.connectors.registry import (
     list_categories,
     list_connectors,
     make,
+    make_all,
     register,
     reset,
 )
@@ -37,6 +38,7 @@ __all__ = [
     "list_categories",
     "list_connectors",
     "make",
+    "make_all",
     "register",
     "reset",
 ]

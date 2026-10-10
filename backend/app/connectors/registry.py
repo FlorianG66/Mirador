@@ -46,6 +46,11 @@ def make(provider: str, seed: int | None = None) -> Connector:
     return cls(seed)
 
 
+def make_all(seed: int | None = None) -> list[Connector]:
+    """Instancie tous les connecteurs enregistrés (même seed pour les mocks)."""
+    return [cls(seed) for cls in _connector_classes.values()]
+
+
 def reset() -> None:
     """Vide le registre (utile aux tests qui réenregistrent des connecteurs)."""
     _connector_classes.clear()

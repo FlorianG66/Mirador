@@ -6,11 +6,11 @@
 
 - **Phase en cours** : 4 — Connecteurs & données fictives (ROADMAP ligne 42). Découpage en sous-phases :
   4a métriques canoniques + interface `Connector` + registre + connecteurs de démo déterministes (finance, web, social, projets) (**livrée**),
-  4b table `metric_snapshots` (migration 0005, RLS tenant) + repository + service de synchro (**en cours**),
-  4c worker + `JobScheduler` (synchro périodique configurable),
+  4b table `metric_snapshots` (migration 0005, RLS tenant) + repository + service de synchro (**livrée**),
+  4c worker + `JobScheduler` (synchro périodique configurable) (**en cours**),
   4d endpoint générique de lecture des métriques (tenant + permissions + période).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main`, qui pointe sur `21f3a69` = clôture de la phase 3).
-- **Prochaine action** : livrer 4b (table `metric_snapshots`, migration 0005 avec RLS, service de synchro qui range les séries mock en base), puis 4c et 4d.
+- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b à venir).
+- **Prochaine action** : livrer 4c (worker + `JobScheduler` : synchro toutes les ~5 min, intervalle configurable), puis 4d (endpoint de lecture).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -399,3 +399,13 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Tests (`tests/connectors/`) : 31 tests — déterminisme du seed (même seed → séries identiques, seed différent → valeurs différentes), réalisme (week-end < semaine pour le CA, anomalie > 1,5 × médiane, tendance dominante sur 2 ans pleins pour annuler la saisonnalité), format canonique, cumul stable, bornes de l'époque, webhook vide, registre.
 - Vérifs : pytest 31 passed · ruff ✅ · mypy ✅ (artefact coverage coroutines toujours en vigueur, couverture non mesurée sur ce sous-ensemble).
 - **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4b/4c/4d.
+
+### 2026-10-10 — Sous-phase 4b livrée (table `metric_snapshots`, RLS, service de synchro)
+- `app/models/metric_snapshot.py` : table tenant `metric_snapshots` (SPEC §5.3) — `organization_id`, `metric_key` CHECK `^(finance|legal|projects|social|web)\.[a-z0-9_]+$`, `period` CHECK `^P[0-9]+(D|W|M|Y)$`, `value` (double), `dimensions` JSONB, `captured_at` (indexé), `created_at`.
+- Migration `0005_phase4_metric_snapshots_and_rls.py` : table + index + unicité `(organization_id, metric_key, captured_at)` + **RLS activée et forcée** avec la politique unique par organisation (même convention que `0002`). `tests/test_alembic.py` mis à jour (`HEAD_REVISION = 0005`, `metric_snapshots` ajoutée aux tables tenant vérifiées — RLS + aller-retour head→base).
+- `app/schemas/metrics.py` : `validate_metric_key` extrait (réutilisé par `MetricSeries` et le nouveau `MetricSnapshotIn`).
+- `app/repositories/metric_snapshots.py` : `upsert_many` (INSERT … ON CONFLICT DO UPDATE sur l'unicité — re-synchro sans doublon) et `get_series` (fenêtre + limite, tri chronologique, filtre explicite par organisation **et** RLS).
+- `app/services/sync.py` : `sync_organization(session, organization_id)` — instancie toutes les démos du registre avec un seed déterministe (`seed_for_organization` = 32 bits faibles de l'UUID), synchronise le lookback (`SYNC_LOOKBACK_DAYS = 365`) et upsert tout en base. Le tenant doit être posé (c'est la RLS qui autorise l'écriture).
+- Tests intégration (`tests/connectors/test_metric_snapshots.py`, 5 tests) : les 4 modules écrits, re-synchro idempotente (même comptage), seed stable, isolation entre deux organisations, lecture filtrée par tenant et par fenêtre.
+- Vérifs : suite backend complète **216 passed** · ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅ (gitleaks inclus).
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge (sans feu vert) ; 4c/4d.

@@ -6,10 +6,16 @@ from alembic import command
 from tests.conftest import alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
-HEAD_REVISION = "0004"
+HEAD_REVISION = "0005"
 
 # Tables soumises à Row-Level Security : elles portent toutes organization_id.
-TENANT_TABLES = ("memberships", "module_permissions", "invitations", "audit_logs")
+TENANT_TABLES = (
+    "memberships",
+    "module_permissions",
+    "invitations",
+    "audit_logs",
+    "metric_snapshots",
+)
 # Globals d'identité (comme `users` et `sessions`) : hors RLS, phase 2c.
 IDENTITY_TABLES = ("auth_challenges", "backup_codes", "password_reset_tokens")
 
@@ -71,7 +77,13 @@ def test_tenant_tables_enforce_row_level_security(alembic_test_database_url: str
 def test_phase2_tables_created_by_migration(alembic_test_database_url: str) -> None:
     upgrade_to_head(alembic_test_database_url)
 
-    for table in (*TENANT_TABLES, *IDENTITY_TABLES, "organizations", "users", "sessions"):
+    for table in (
+        *TENANT_TABLES,
+        *IDENTITY_TABLES,
+        "organizations",
+        "users",
+        "sessions",
+    ):
         exists = fetch_scalar(alembic_test_database_url, f"SELECT to_regclass('{table}')")
         assert exists is not None, f"table {table} absente du schéma"
 
