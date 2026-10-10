@@ -6,8 +6,8 @@
 
 - **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres.
   Avant d'attaquer : découper la phase en sous-phases, puis merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d `6baa097`, clôture à venir).
-- **Prochaine action** : clôturer la phase 4 (commit final des docs), présenter le récap, puis merger sur `main` après feu vert et démarrer la phase 5.
+- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d `6baa097`, clôture `94dff58`).
+- **Prochaine action** : merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis), puis découper et démarrer la phase 5 — Modules MVP.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
