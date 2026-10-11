@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale (en cours — 5e-a socle backend livré).
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`).
-- **Prochaine action** : sous-phase 5e-b — persistance de la fiche légale (`legal_profiles` + `legal_identifiers`, migration `0007` RLS), service « fiche légale » (source/date par champ, saisie manuelle prime, écart → alerte), endpoints `legal` + permission.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale (en cours — 5e-a socle backend ✅, 5e-b persistance + endpoints ✅).
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4`).
+- **Prochaine action** : sous-phase 5e-c — page frontend `/legal` (fiche légale : identité, fiscalité, provenance par champ, dirigeants admin, rafraîchissement registre), types `LegalProfileOut`/`LegalMetricKey` ?, régénération du client OpenAPI (`export_openapi.py` puis `npm run generate:api`), i18n `legal.*` FR/EN, tests Vitest.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -570,5 +570,35 @@ Découpage de la 5e (volumineuse) : **5e-a** socle backend (validation + service
 | Validation légale | ✅ SIRET (Luhn) + clé/n° de TVA calculés ; exception La Poste documentée, non traitée |
 | Service registre | ✅ `RechercheEntreprisesRegistry` à transport injectable, cache TTL, timeout, backoff ; aucun appel réseau en test |
 | Non diffusible | ✅ dirigeants et adresse masqués (`diffusable=False`) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5e-b livrée (persistance et endpoints du module Identité légale)
+Persistance :
+- `app/models/legal_profile.py` : `LegalProfile` (1:1 avec l'organisation, `unique(organization_id)`), colonnes d'identité (`raison_sociale`, `forme_juridique`, `siren`, `siret`, `tva`, `code_naf`, `activite_principale`, `date_creation`, `adresse`, `code_postal`, `ville`, `pays`), adresse/ville, JSONB `dirigeants` (liste) et `field_sources` (provenance par champ), horodatage `synced_at`/`updated_at`. Constantes `LEGAL_PROFILE_TEXT_FIELDS`/`LEGAL_PROFILE_FIELDS`.
+- `app/models/legal_identifier.py` : `LegalIdentifier` (unique `(organization_id, pays, schema)`), `IDENTIFIER_SCHEMA_VAT = "vat"` — la TVA étant une donnée d'identifiant (pays + schéma), elle vit ici. `app/models/__init__.py` : exports ajoutés.
+- Migration `0007_phase5_legal_profiles_and_rls.py` : 2 tables + index `organization_id` + **RLS** (`ENABLE`/`FORCE` + policy tenant) comme les autres tables métier.
+- `app/repositories/legal_profiles.py` (`get_by_organization`, `create`) et `app/repositories/legal_identifiers.py` (`list_for_organization`, `upsert` `pg_insert ... on_conflict_do_update`).
+Service et endpoints :
+- `app/schemas/legal.py` : `FieldSourceOut`, `LegalDirectorOut`, `LegalIdentifierOut`, `LegalProfileOut`, `LegalDirectorUpdate`, `LegalProfileUpdate` (validators → 422 sur SIREN/SIRET invalides). Le champ JSON `schema` impose un renommage Python `schema_name` + `serialization_alias="schema"` (conflit avec `BaseModel.schema`).
+- `app/services/legal.py` : `get_profile` (404 si absente), `update_profile` (saisie manuelle → source `manual` par champ, recalcul de la TVA), `refresh_profile` (interroge le registre par SIREN, fusionne via `_merge_registry_value`, marque la source `registry` + `synced_at`, **le manuel prime** et un écart est consigné ; déduit la TVA depuis le SIREN, dirigeants/adresse masqués si non diffusible). Actions d'audit : `legal.profile.updated`, `legal.profile.refreshed`, `legal.profile.diverged`. Erreurs : 400 (SIREN manquant), 404 (inconnu), 502 (registre injoignable).
+- `app/routers/legal.py` : `GET .../legal` (vue), `PUT .../legal` (édition), `POST .../legal/refresh` (édition, rafraîchit depuis le registre). Les **dirigeants ne sont exposés qu'à l'admin**. `app/core/deps.py` : `get_legal_registry`. `app/main.py` : `RechercheEntreprisesRegistry` posé sur `app.state.legal_registry` et router monté.
+Tests :
+- `tests/test_legal.py` (19) : lecture admin/membre, `view` lit mais n'écrit pas → 403, `edit` écrit, saisie manuelle → source `manual`, NAF/TVA calculés, validation 422, rafraîchissement qui pré-remplit, sans SIREN → 400, inconnu → 404, registre indisponible → 502, le manuel prime + `legal.profile.diverged`, changement du registre → champ mis à jour + 2 × `legal.profile.refreshed`, non diffusible masque adresse et dirigeants, dirigeants masqués hors admin, autre organisation → 403, isolation RLS directe (db_session).
+- `tests/conftest.py` : `TRUNCATE` étendu. `tests/helpers.py` : `SIREN_VALIDE`/`SIRET_VALIDE`, `sample_company`, `FakeLegalRegistry`, `install_legal_registry`. `tests/test_alembic.py` : `HEAD_REVISION = "0007"`, `TENANT_TABLES` += 2.
+- **Pièges résolus** : conflit Pydantic `schema` (renommage `schema_name`) ; corruption UTF-8 de `test_legal.py` par PowerShell (réécriture via l'outil d'écriture, BOM retiré par `ruff format`) — leçon : ne pas éditer les sources accentuées avec `Set-Content`/`Get-Content`.
+- Vérifs : ruff check + format ✅ · mypy strict ✅ (92 fichiers) · `pytest tests/test_legal.py tests/test_alembic.py` **26 passed** · suite backend complète **316 passed** (+18 vs 5e-a) — un test *flaky* préexistant (`tests/connectors/test_scheduler.py`) vert en exécution isolée.
+- OpenAPI : non régénéré ici, reporté à la 5e-c (couplé au frontend).
+- Commit : `eb821a4 feat: add legal identity persistence and endpoints (phase 5e-b)` (15 fichiers, +1378/−2).
+- **Non fait** : page frontend (5e-c) ; push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### Critères de la sous-phase 5e-b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **316 passed** (+18 vs 5e-a) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (92 fichiers) |
+| Persistance | ✅ `legal_profiles` + `legal_identifiers`, migration `0007` RLS (tenant isolé, test dédié) |
+| Endpoints | ✅ `GET`/`PUT`/`POST refresh` sous `/organizations/{id}/legal`, gardes `view`/`edit`, dirigeants admin only |
+| Provenance par champ | ✅ source `registry`/`manual` + date, le manuel prime et l'écart est journalisé |
 | pre-commit | ⏳ à lancer avant commit |
 | CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

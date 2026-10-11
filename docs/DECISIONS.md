@@ -325,3 +325,27 @@ Le registre produit une structure interne `LegalCompany`/`LegalLeader` indépend
 ## 2026-10-11 — Exception de la clé de Luhn (La Poste) documentée, non traitée (5e-a)
 
 `is_valid_siret`/`is_valid_siren` appliquent la clé de Luhn standard ; l'exception connue (certains établissements de La Poste) n'est pas traitée. Raison : la règle exacte n'a pas été vérifiée sur une source officielle — mieux vaut un faux négatif documenté qu'une règle inventée (AGENTS.md §2).
+
+## 2026-10-11 — Fiche légale : une table d'identité + une table d'identifiants (5e-b)
+
+`legal_profiles` (1:1 avec l'organisation) porte les champs d'identité textuels et `legal_identifiers` (unique `organization_id, pays, schema`) porte les identifiants structurés, la TVA vivant ici sous `schema="vat"`, `pays="FR"`. Raison : la TVA est un identifiant calculé (pas un champ de saisie parmi d'autres) et la clé `(pays, schema)` prépare l'extension à d'autres pays/schémas sans migrer `legal_profiles`.
+
+## 2026-10-11 — Provenance stockée par champ dans un JSONB `field_sources` (5e-b)
+
+Chaque champ de la fiche légale a une entrée `field_sources[champ] = {source: "registry"|"manual", synced_at}`. Raison : l'UI doit afficher d'où vient chaque valeur et quand elle a été synchronisée (SPEC §3) ; un JSONB évite une table de provenance par champ pour un besoin purement informatif.
+
+## 2026-10-11 — La saisie manuelle prime, l'écart avec le registre est journalisé (5e-b)
+
+Lors d'un `refresh`, une valeur saisie à la main (`source="manual"`) n'est jamais écrasée par le registre ; si le registre renvoie une valeur différente, un audit `legal.profile.diverged` est consigné. Raison : une correction humaine est intentionnelle et ne doit pas être perdue par une resynchronisation ; l'écart reste traçable plutôt que silencieux.
+
+## 2026-10-11 — Dirigeants et adresse masqués hors admin ; non-diffusable respecté (5e-b)
+
+Les dirigeants ne sont exposés qu'à l'administrateur (`Role.ADMIN`) et, si l'entreprise est « non diffusible » au registre, adresse et dirigeants sortent masqués. Raison : données potentiellement personnelles (AGENTS.md §5) et exigence de l'annuaire des entreprises ; la même règle qu'en 5e-a est donc appliquée jusqu'à l'API.
+
+## 2026-10-11 — `schema_name` côté Python, alias JSON `schema` (5e-b)
+
+Le champ JSON `schema` de `LegalIdentifierOut` impose un attribut Python `schema_name` avec `serialization_alias="schema"`. Raison : `schema` entre en collision avec `BaseModel.schema` (déprécié mais résolu par Pydantic) ; l'alias préserve le contrat d'API attendu (`GET .../legal` renvoie `schema`).
+
+## 2026-10-11 — Régénération OpenAPI différée à la 5e-c (5e-b)
+
+L'export `frontend/openapi/schema.json` (donc `src/api/schema.d.ts`) n'est pas régénéré en 5e-b : il est couplé à l'écriture de la page frontend et sera produit une fois les endpoints figés par les tests. Raison : éviter deux régénérations pour un même contrat.
