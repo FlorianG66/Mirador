@@ -235,7 +235,8 @@ async def clean_tables(session_factory: async_sessionmaker[AsyncSession]) -> Asy
             text(
                 "TRUNCATE users, organizations, memberships, module_permissions,"
                 " invitations, audit_logs, sessions, auth_challenges, backup_codes,"
-                " password_reset_tokens, metric_snapshots CASCADE"
+                " password_reset_tokens, metric_snapshots, legal_profiles,"
+                " legal_identifiers CASCADE"
             )
         )
         await session.commit()

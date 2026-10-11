@@ -16,6 +16,7 @@ from app.core.tenancy import set_tenant
 from app.models.session import UserSession
 from app.models.user import User
 from app.repositories import sessions as sessions_repository
+from app.services.legal_registry import LegalRegistry
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
@@ -43,6 +44,12 @@ def get_request_settings(request: Request) -> Settings:
     """Récupère les settings portés par l'application (permet de les injecter en test)."""
     settings: Settings = request.app.state.settings
     return settings
+
+
+def get_legal_registry(request: Request) -> LegalRegistry:
+    """Registre d'identité légale porté par l'application (transport injectable en test)."""
+    registry: LegalRegistry = request.app.state.legal_registry
+    return registry
 
 
 async def get_current_session(

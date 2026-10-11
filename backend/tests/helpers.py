@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from datetime import date
 from urllib.parse import urlencode
 
 import httpx
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.constants import API_PREFIX, CSRF_COOKIE
 from app.core.tenancy import set_tenant
+from app.services.legal_registry import LegalCompany, LegalLeader, LegalRegistryError
 from app.services.oidc import OidcIdentity, OidcProviderError
 from tests.conftest import register_client
 
@@ -96,6 +98,65 @@ def install_oidc(
     provider = FakeOidcProvider(identity, error=error)
     app.state.oidc_provider = provider
     return provider
+
+
+# SIREN et SIRET valides (clé de Luhn) servant d'exemples dans les tests légaux.
+SIREN_VALIDE = "732829320"
+SIRET_VALIDE = "73282932000017"
+
+
+def sample_company(**overrides: object) -> LegalCompany:
+    """Fiche d'entreprise fictive, surchargeable champ par champ pour les tests."""
+    defaults: dict[str, object] = {
+        "siren": SIREN_VALIDE,
+        "source": "registry",
+        "diffusable": True,
+        "siret_siege": SIRET_VALIDE,
+        "raison_sociale": "ACME FICTIVE",
+        "nom_commercial": "Acme",
+        "forme_juridique": "5710",
+        "date_creation": date(2010, 1, 1),
+        "code_naf": "62.01Z",
+        "libelle_naf": "Programmation informatique",
+        "adresse": "1 rue Fictive, 75001 Paris",
+        "tranche_effectif": "11",
+        "dirigeants": (LegalLeader(nom="Ada Fictive", qualite="Présidente"),),
+    }
+    return LegalCompany(**{**defaults, **overrides})  # type: ignore[arg-type]
+
+
+class FakeLegalRegistry:
+    """Registre d'identité légale de test : aucun réseau, résultats pilotés en mémoire."""
+
+    def __init__(
+        self,
+        *,
+        companies: list[LegalCompany] | None = None,
+        error: LegalRegistryError | None = None,
+    ) -> None:
+        self.error = error
+        self.companies: dict[str, LegalCompany] = {
+            company.siren: company for company in (companies or [])
+        }
+        self.calls: list[str] = []
+
+    async def fetch_by_siren(self, siren: str) -> LegalCompany | None:
+        self.calls.append(siren)
+        if self.error is not None:
+            raise self.error
+        return self.companies.get(siren)
+
+
+def install_legal_registry(
+    app: FastAPI,
+    *,
+    companies: list[LegalCompany] | None = None,
+    error: LegalRegistryError | None = None,
+) -> FakeLegalRegistry:
+    """Branche un registre légal factice sur l'application sous test."""
+    registry = FakeLegalRegistry(companies=companies, error=error)
+    app.state.legal_registry = registry
+    return registry
 
 
 def csrf_headers(client: httpx.AsyncClient) -> dict[str, str]:
