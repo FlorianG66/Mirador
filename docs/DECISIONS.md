@@ -289,3 +289,23 @@ Le frontend charge exactement 9 séries (`social.followers|followers_growth|impr
 ## 2026-10-11 — Réseaux stockés en clés canoniques, traduits par i18n (5c)
 
 Le connecteur nomme les réseaux (`linkedin`, `instagram`, `facebook`, `x`, `youtube`) comme clés brutes, traduites côté UI par `social.network.*`. Raison : aucun texte en dur dans les données (AGENTS.md §7) et l'affichage suit la langue active ; `x` est affiché « X (Twitter) » sans stocker le libellé.
+
+## 2026-10-11 — Panneau projets = 10 clés canoniques fixes (5d)
+
+Le frontend charge exactement 10 séries (`projects.tasks_done|tasks_created|open_tasks|overdue_tasks|avg_completion_time|avg_progress|active_projects|tasks_by_status|person_load|upcoming_milestones`), interrogées ensemble (`Promise.all`, polling 5 min). Raison : même contrat de page dédiée que 5a/5b/5c — colonne vertébrale « stock de tâches ouvertes », pas de découverte dynamique de clés avant la phase 6 ; `tasks_created` complète `tasks_done` pour visualiser le rythme créées vs terminées qui alimente le stock.
+
+## 2026-10-11 — Tâches ouvertes = stock cumulé, retards et répartitions en dérivent (5d)
+
+`projects.open_tasks` est le cumul `INITIAL_BACKLOG + Σ(créées − terminées)` depuis `CREATION_EPOCH` (jamais négatif, indépendant de la fenêtre, comme `finance.cash`/`social.followers`) ; `overdue_tasks` (≤ stock), `tasks_by_status` et `person_load` en sont des fractions qui somment **exactement** le stock. Raison : un backlog de tâches est un état, pas un flux ; les widgets de répartition doivent rester cohérents avec le KPI d'ouvertes du dessus (même principe qu'en 5b/5c).
+
+## 2026-10-11 — Jalons à venir = somme des jours restants, pas un compte (5d)
+
+`projects.upcoming_milestones` porte `dimensions.items = [{name, value}]` où `value` est le nombre de jours restant jusqu'au jalon (jalons triés du plus proche au plus lointain) et la valeur de la série est la somme de ces délais. Raison : le widget `RankedList` affiche une intensité par jalon ; une somme de jours reste une métrique agrégée utile, là où un simple compte « 6 jalons » n'apporterait rien de plus que le nombre d'items.
+
+## 2026-10-11 — Statuts et personnes en clés canoniques, traduits par i18n (5d)
+
+Le connecteur nomme les 4 statuts (`todo`, `in_progress`, `review`, `blocked`) et les 6 personnes comme clés brutes, traduites côté UI par `projects.status.*` (les noms de personnes sont fictifs, aucun salarié réel — AGENTS.md §5). Raison : aucun texte en dur dans les données (AGENTS.md §7), l'affichage suit la langue active.
+
+## 2026-10-11 — `mock.py` purgé du module projets, `sync` de base en erreur explicite (5d)
+
+`MockProjectsConnector` et la clé `projects.tasks_done` quittent `mock.py` (le module a son panneau comme finance/web/social) et `MockConnector.sync` de base lève désormais `NotImplementedError` au lieu de retourner un stub. Raison : `mock.py` ne garde que les helpers partagés (`CREATION_EPOCH`, `MockMetricConfig`, `build_series`, `daily_value`, `cumulative_value`, `hash01`) ; un `sync` hérité par erreur doit échouer bruyamment plutôt que renvoyer des données muettes.

@@ -74,11 +74,12 @@ frontend/
                         Skeleton, EmptyState, ErrorState, button-variants
       metrics/          widgets de données : MultiSeriesChart (Recharts), RankedList
     metrics/            panneaux de module : queries.ts (clés/helpers communs),
-                        finance.ts (8 clés), web.ts (10 clés) et social.ts (9 clés),
-                        format.ts (Intl)
-    pages/              DashboardPage, FinancePage, WebPage, SocialPage, ModulePage,
-                        LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage,
-                        TwoFactorPage, SettingsPage, TeamPage, ForbiddenPage, NotFoundPage
+                        finance.ts (8 clés), web.ts (10 clés), social.ts (9 clés) et
+                        projects.ts (10 clés), format.ts (Intl)
+    pages/              DashboardPage, FinancePage, WebPage, SocialPage, ProjectsPage,
+                        ModulePage, LoginPage, RegisterPage, ForgotPasswordPage,
+                        ResetPasswordPage, TwoFactorPage, SettingsPage, TeamPage,
+                        ForbiddenPage, NotFoundPage
     hooks/              useTheme (clair/sombre), usePrefersReducedMotion, useCountUp, useRailCollapsed
     i18n/               instance i18next (FR défaut, EN) + locales fr/en
     lib/utils.ts        cn() = clsx + tailwind-merge
@@ -92,8 +93,8 @@ frontend/
 - **Layout** : `AppShell` = rail rétractable gauche (`useRailCollapsed`, largeur `--rail-w`) + topbar + contenu ; sur mobile le menu coulisse (overlay, fermeture par Échap). Lien d'évitement vers le contenu et `aria-current` actif sur la navigation (WCAG AA). `PageHeader` = en-tête de page partagé (titre + description).
 - **i18n** : aucun texte en dur (AGENTS.md §7) ; ressources FR/EN embarquées, `initAsync:false` (init synchrone), `<html lang>` suit la langue active.
 - **Animations** : transitions de page via Motion (fondu + glissement), compteurs animés via `requestAnimationFrame` ; toutes neutralisées si `prefers-reduced-motion: reduce`.
-- **Routing** : React Router ; les routes de modules non encore traités (`projects`, `legal`) restent des placeholders à états vides, sans données en dur (AGENTS.md §8).
-- **Panneaux de module (5a/5b/5c)** : `src/metrics/*` charge les clés canoniques d'un module en `Promise.all` (polling 5 min) — un 404 signifie « module pas encore connecté » (`isNotFound`), toute autre erreur affiche l'état d'erreur avec réessai. `FinancePage` (`/finance`, 8 clés), `WebPage` (`/web`, 10 clés pilotées par les sessions) et `SocialPage` (`/social`, 9 clés pilotées par les abonnés cumulés) partagent `MultiSeriesChart` (Recharts, couleurs par tokens) et `RankedList` (répartitions construites sur `dimensions.items`) ; les valeurs sont formatées par `format.ts` (`Intl`, dont `formatCountry` via `Intl.DisplayNames`), jamais à la main.
+- **Routing** : React Router ; la route du module non encore traité (`legal`) reste un placeholder à états vides, sans données en dur (AGENTS.md §8).
+- **Panneaux de module (5a/5b/5c/5d)** : `src/metrics/*` charge les clés canoniques d'un module en `Promise.all` (polling 5 min) — un 404 signifie « module pas encore connecté » (`isNotFound`), toute autre erreur affiche l'état d'erreur avec réessai. `FinancePage` (`/finance`, 8 clés), `WebPage` (`/web`, 10 clés pilotées par les sessions), `SocialPage` (`/social`, 9 clés pilotées par les abonnés cumulés) et `ProjectsPage` (`/projects`, 10 clés pilotées par le stock de tâches ouvertes) partagent `MultiSeriesChart` (Recharts, couleurs par tokens) et `RankedList` (répartitions construites sur `dimensions.items`) ; les valeurs sont formatées par `format.ts` (`Intl`, dont `formatCountry` via `Intl.DisplayNames` et `formatDays` en unité `day`), jamais à la main.
 
 - **Client API (3c)** : `backend/scripts/export_openapi.py` exporte le schéma (`create_app().openapi()`) vers `frontend/openapi/schema.json` (commité) ; `openapi-typescript` en génère `src/api/schema.d.ts` (script npm `generate:api`, exclu d'ESLint) ; les appels passent par `openapi-fetch` (`src/api/client.ts`, `baseUrl` = origine courante, cookies inclus). Un middleware ajoute `x-csrf-token` (copie du cookie `mirador_csrf`) sur les méthodes non sûres ; un échec HTTP devient `ApiError` (RFC 9457) ; `unwrap` renvoie les données ou lève.
 - **2FA (3d-b)** : route publique `/2fa` (défi après `totp_required` au login, `POST /auth/2fa/verify`) ; route protégée `/settings` (activation `POST /auth/2fa/enable`, désactivation `POST /auth/2fa/disable`) ; lien Paramètres dans la sidebar.

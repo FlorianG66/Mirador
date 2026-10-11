@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, puis projects, legal.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`).
-- **Prochaine action** : sous-phase 5d — module Projets/tâches (projects), puis 5e Legal.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, puis 5e Legal.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d à compléter).
+- **Prochaine action** : sous-phase 5e — module Identité légale (legal), dernière sous-phase de la phase 5.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -520,5 +520,34 @@ Frontend (page `/social`, remplace le placeholder) :
 | Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
 | Backend Social | ✅ `MockSocialConnector` : 9 séries cohérentes, abonnés par réseau et top posts sommant leur métrique parente, croissance = variation |
 | Frontend Social | ✅ 4 KPI + 8 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5d livrée (module Projets & tâches — backend + frontend)
+Backend :
+- `app/connectors/projects.py` : nouveau `MockProjectsConnector` (provider `mock.projects`, `category = Module.PROJECTS`) — 10 séries cohérentes pilotées par le stock de tâches ouvertes : `projects.tasks_created`/`projects.tasks_done` (rythme quotidien, week-end plus calme), `projects.open_tasks` (stock = différence cumulée créées − terminées depuis `CREATION_EPOCH`, jamais négatif), `projects.overdue_tasks` (≤ stock ouvert), `projects.avg_completion_time` (jours, 1 décimale), `projects.avg_progress` (0-100 %), `projects.active_projects`, et trois répartitions (`projects.tasks_by_status` = stock sur 4 statuts canoniques, `projects.person_load` = stock sur 6 personnes fictives, `projects.upcoming_milestones` = délai restant de 6 jalons génériques) au format `dimensions.items = [{name, value}]` sommant exactement la métrique parente. Helpers `_milestones_point`/`_days_until`/`_distribution_point`/`_days`, `STATUSES`/`PERSONS`/`MILESTONES`, `INITIAL_BACKLOG = 40` (aucun salarié ni client réel, AGENTS.md §5).
+- `app/connectors/mock.py` : `projects.tasks_done` et `MockProjectsConnector` retirés (le module projets a désormais son panneau comme les autres) ; `MOCK_METRICS`/`metric_configs()`/`MOCK_CONNECTORS` supprimés, `MockConnector.sync` de base lève `NotImplementedError`. `app/connectors/__init__.py` : `MockProjectsConnector` importé depuis `projects`, `ALL_CONNECTORS = (MockFinanceConnector, MockWebConnector, MockSocialConnector, MockProjectsConnector)`.
+- Tests : `tests/connectors/test_projects_mock.py` (12 — les 10 séries + tz UTC, créées en moyenne > terminées, stock ouvert = différence cumulée au quotidien, retards ≤ stock, avancement dans 0-100, délai de livraison raisonnable, projets actifs ≥ 1, statuts/personnes sommant le stock, jalons à venir triés et sommant leur total, déterminisme du seed, suite vide, registre) ; `test_metric_snapshots.py` (`EXPECTED_KEYS` → 10 clés projets).
+- Vérifs : ruff check + format ✅ · mypy strict ✅ (84 fichiers) · suite backend complète **280 passed** (+12 vs 5c).
+Frontend (page `/projects`, remplace le placeholder) :
+- `src/metrics/projects.ts` : les 10 clés canoniques, `fetchProjectsPanel` en `Promise.all` (404 → « pas encore connecté », erreurs réelles propagées), `useProjectsPanel` (polling 5 min).
+- `src/metrics/queries.ts` : `metricsKeys.panel` étendu à `'finance' | 'web' | 'social' | 'projects'` ; `src/api/types.ts` : union `ProjectMetricKey` (10 clés) ; `src/metrics/format.ts` : ajout de `formatDays` (unité `day` via `Intl`, sans texte en dur).
+- `src/pages/ProjectsPage.tsx` : 4 KPI (tâches terminées, tâches ouvertes, avancement moyen, délai moyen de livraison) + grille de 8 widgets (créées vs terminées 8, tâches par statut, retards, charge par personne, avancement, délai de livraison, jalons à venir, projets actifs) ; états chargement/vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives ». Route `/projects` branchée sur `RequireModule`.
+- i18n `projects.*` FR/EN (`projects.status.*` pour les 4 statuts) ; `src/pages/ProjectsPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau).
+- Vérifs : Vitest **42 passed** (12 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant).
+- Docs : `DECISIONS.md` (décisions 5d), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `c767cdf`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phase legal.
+
+### Critères de la phase 5d — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **280 passed** (+12 vs 5c) |
+| Tests frontend | ✅ Vitest **42 passed** (12 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (84 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Backend Projets | ✅ `MockProjectsConnector` : 10 séries cohérentes, stock ouvert = différence cumulée, répartitions sommant la métrique parente |
+| Frontend Projets | ✅ 4 KPI + 8 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
