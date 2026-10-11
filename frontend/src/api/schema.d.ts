@@ -438,6 +438,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Legal Profile
+         * @description Fiche légale de l'organisation ; dirigeants masqués pour un membre non-admin.
+         */
+        get: operations["read_legal_profile_api_v1_organizations__organization_id__legal_get"];
+        /**
+         * Update Legal Profile
+         * @description Écrit la saisie manuelle (source `manual`) : ces valeurs priment sur le registre.
+         */
+        put: operations["update_legal_profile_api_v1_organizations__organization_id__legal_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/legal/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Legal Profile
+         * @description Recharge la fiche depuis le registre, sans écraser la saisie manuelle.
+         */
+        post: operations["refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -577,6 +621,16 @@ export interface components {
             /** Current Password */
             current_password: string;
         };
+        /**
+         * FieldSourceOut
+         * @description Provenance d'un champ : registre ou saisie manuelle, à une date donnée.
+         */
+        FieldSourceOut: {
+            /** Source */
+            source: string;
+            /** Synced At */
+            synced_at?: string | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -659,6 +713,120 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /**
+         * LegalDirectorOut
+         * @description Dirigeant publié au registre ou saisi : nom et qualité (donnée personnelle).
+         */
+        LegalDirectorOut: {
+            /** Nom */
+            nom: string;
+            /** Qualite */
+            qualite?: string | null;
+        };
+        /**
+         * LegalDirectorUpdate
+         * @description Dirigeant saisi à la main (utile quand le registre ne le publie pas).
+         */
+        LegalDirectorUpdate: {
+            /** Nom */
+            nom: string;
+            /** Qualite */
+            qualite?: string | null;
+        };
+        /**
+         * LegalIdentifierOut
+         * @description Identifiant légal générique (pays + schéma), ex. le numéro de TVA.
+         *
+         *     Le champ est exposé en JSON sous `schema` ; en Python il porte `schema_name`
+         *     car `schema` entre en conflit avec une méthode de `BaseModel`.
+         */
+        LegalIdentifierOut: {
+            /** Pays */
+            pays: string;
+            /** Schema */
+            schema: string;
+            /** Valeur */
+            valeur: string;
+            /** Source */
+            source: string;
+            /** Verified At */
+            verified_at: string | null;
+        };
+        /**
+         * LegalProfileOut
+         * @description Fiche légale complète : identité, fiscalité, provenance et dirigeants.
+         */
+        LegalProfileOut: {
+            /** Siren */
+            siren: string | null;
+            /** Siret Siege */
+            siret_siege: string | null;
+            /** Raison Sociale */
+            raison_sociale: string | null;
+            /** Nom Commercial */
+            nom_commercial: string | null;
+            /** Forme Juridique */
+            forme_juridique: string | null;
+            /** Date Creation */
+            date_creation: string | null;
+            /** Code Naf */
+            code_naf: string | null;
+            /** Libelle Naf */
+            libelle_naf: string | null;
+            /** Adresse Siege */
+            adresse_siege: string | null;
+            /** Tranche Effectif */
+            tranche_effectif: string | null;
+            /** Capital Social */
+            capital_social: string | null;
+            /** Rcs Greffe */
+            rcs_greffe: string | null;
+            /** Dirigeants */
+            dirigeants?: components["schemas"]["LegalDirectorOut"][];
+            /** Sources */
+            sources?: {
+                [key: string]: components["schemas"]["FieldSourceOut"];
+            };
+            /** Identifiers */
+            identifiers?: components["schemas"]["LegalIdentifierOut"][];
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * LegalProfileUpdate
+         * @description Champs de saisie manuelle : seuls ceux fournis sont écrits (SPEC §5.4).
+         *
+         *     Tous optionnels ; un champ absent du corps est inchangé. Le SIREN et le SIRET
+         *     sont validés (Luhn) dès qu'ils sont fournis ; un SIREN valide recalcule la TVA.
+         */
+        LegalProfileUpdate: {
+            /** Siren */
+            siren?: string | null;
+            /** Siret Siege */
+            siret_siege?: string | null;
+            /** Raison Sociale */
+            raison_sociale?: string | null;
+            /** Nom Commercial */
+            nom_commercial?: string | null;
+            /** Forme Juridique */
+            forme_juridique?: string | null;
+            /** Date Creation */
+            date_creation?: string | null;
+            /** Code Naf */
+            code_naf?: string | null;
+            /** Libelle Naf */
+            libelle_naf?: string | null;
+            /** Adresse Siege */
+            adresse_siege?: string | null;
+            /** Tranche Effectif */
+            tranche_effectif?: string | null;
+            /** Capital Social */
+            capital_social?: string | null;
+            /** Rcs Greffe */
+            rcs_greffe?: string | null;
+            /** Dirigeants */
+            dirigeants?: components["schemas"]["LegalDirectorUpdate"][] | null;
         };
         /**
          * LoginRequest
@@ -1558,6 +1726,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetricSeries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_legal_profile_api_v1_organizations__organization_id__legal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_legal_profile_api_v1_organizations__organization_id__legal_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalProfileOut"];
                 };
             };
             /** @description Validation Error */

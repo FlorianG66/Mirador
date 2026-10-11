@@ -9,8 +9,8 @@ import { AppShell } from '../components/layout/AppShell.tsx'
 import { DashboardPage } from '../pages/DashboardPage.tsx'
 import { FinancePage } from '../pages/FinancePage.tsx'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.tsx'
+import { LegalPage } from '../pages/LegalPage.tsx'
 import { LoginPage } from '../pages/LoginPage.tsx'
-import { ModulePage } from '../pages/ModulePage.tsx'
 import { NotFoundPage } from '../pages/NotFoundPage.tsx'
 import { ProjectsPage } from '../pages/ProjectsPage.tsx'
 import { RegisterPage } from '../pages/RegisterPage.tsx'
@@ -74,7 +74,7 @@ export const routes: RouteObject[] = [
                 path: 'legal',
                 element: (
                   <RequireModule moduleKey="legal">
-                    <ModulePage moduleKey="legal" />
+                    <LegalPage />
                   </RequireModule>
                 ),
               },

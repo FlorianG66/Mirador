@@ -10,6 +10,11 @@ export type PermissionLevel = components['schemas']['PermissionLevel']
 export type Role = components['schemas']['Role']
 export type MetricPoint = components['schemas']['MetricPoint']
 export type MetricSeries = components['schemas']['MetricSeries']
+export type LegalProfile = components['schemas']['LegalProfileOut']
+export type LegalProfileUpdate = components['schemas']['LegalProfileUpdate']
+export type LegalDirector = components['schemas']['LegalDirectorOut']
+export type LegalIdentifier = components['schemas']['LegalIdentifierOut']
+export type LegalFieldSource = components['schemas']['FieldSourceOut']
 
 /**
  * Les clés canoniques du panneau financier (sous-phase 5a). Sert à décrire le
