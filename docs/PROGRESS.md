@@ -4,10 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres.
-  Avant d'attaquer : découper la phase en sous-phases, puis merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d `6baa097`, clôture `94dff58`).
-- **Prochaine action** : merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis), puis découper et démarrer la phase 5 — Modules MVP.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics (en cours), puis social, projects, legal.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`).
+- **Prochaine action** : finaliser et committer la sous-phase 5b (module Web analytics), puis enchaîner les sous-phases des modules restants.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -445,4 +444,51 @@ Frontend (page `/finance`, remplace le placeholder) :
 - Tests : `FinancePage.test.tsx` (3 — panneau complet, module non connecté, panne réseau), `guards.test.tsx` adapté (la route finance affiche maintenant la vraie page), doublons de texte (KPI « Marge » = titre de graphique) gérés via `getAllByText`.
 - Vérifs : Vitest **33 passed** · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant) · `npx playwright test` rejoué **5/5** (login + a11y inchangés).
 - Docs : `ARCHITECTURE.md` (structure frontend + point 5a), `DECISIONS.md` (7 décisions : Recharts, 8 clés du panneau, 404 = non connecté, parts tops, marge négative, lookback cumul, formatage Intl), `CHANGELOG.md`, ce fichier.
-- **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 5b Web analytics.
+- Commit : `92f2b11 feat: module Finance (page, KPI et connecteur de démo) (sous-phase 5a)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 5b Web analytics.
+
+### Critères de la phase 5a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **245 passed** |
+| Tests frontend | ✅ Vitest **33 passed** (9 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (81 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Backend Finance | ✅ `MockFinanceConnector` : 8 séries cohérentes (marge = CA − dépenses, trésorerie dérivée, ancienneté, tops) |
+| Frontend Finance | ✅ 4 KPI + grille asymétrique, états chargement/vide/erreur, note « données fictives » |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5b livrée (module Web analytics — backend + frontend)
+Backend :
+- `app/connectors/web.py` : nouveau `MockWebConnector` (provider `mock.web`, `category = Module.WEB`) — 10 séries web cohérentes pilotées par les sessions : `web.sessions` (saisonnalité + week-end + bruit), `web.visitors` (fraction des sessions), `web.pageviews` (sessions × pages/session ≥ sessions), `web.engagement_rate` (%), `web.avg_session_duration` (s), `web.conversions`, et quatre répartitions (`web.traffic_sources` = sessions, `web.top_pages` = 60 % des pages vues sur 5 pages, `web.devices` = visiteurs, `web.countries` = visiteurs) au format `dimensions.items = [{name, value}]` sommant exactement la métrique parente. Chemins de pages fictifs ; sources/appareils = clés canoniques traduites côté UI ; pays = codes ISO nommés par `Intl.DisplayNames`.
+- `app/connectors/mock.py` : `web.visits` retiré ; `MOCK_CONNECTORS = (MockSocialConnector, MockProjectsConnector)`. `app/connectors/__init__.py` : `ALL_CONNECTORS = (MockFinanceConnector, MockWebConnector, *MOCK_CONNECTORS)`.
+- Registre : le connecteur web enregistre les 10 clés (remplace l'ancienne `web.visits`).
+- **Piège résolu** : `upsert_many` dépassait la limite asyncpg de 32 767 paramètres par requête (20 séries × 365 jours × 7 colonnes) → découpage en lots (`_MAX_ROWS_PER_STATEMENT = 2 000`), test de non-régression ajouté.
+- Tests : `tests/connectors/test_web_mock.py` (12 — 10 séries, cohérences visitors ≤ sessions ≤ pageviews, conversions ≤ sessions, somme exacte des répartitions, week-end, déterminisme du seed, futur vide, registre) ; `test_metric_snapshots.py` (`EXPECTED_KEYS` → 10 clés web).
+- Vérifs : connecteurs + registry + snapshots **34 passed** · ruff check + format ✅ · mypy strict ✅ (82 fichiers).
+Frontend (page `/web`, remplace le placeholder) :
+- `src/metrics/web.ts` : les 10 clés canoniques, `fetchWebPanel` en `Promise.all` (404 → « pas encore connecté », erreurs réelles propagées), `useWebPanel` (polling 5 min).
+- `src/metrics/queries.ts` : `isNotFound` déplacé ici (partagé finance/web) et `metricsKeys.panel` étendu à `'finance' | 'web'` ; `finance.ts` importe depuis `queries.ts`.
+- `src/metrics/format.ts` : ajout de `formatInteger`, `formatPercent` (ratio 0→1), `formatDuration` (unités `minute`/`second` via `Intl`, sans texte en dur) et `formatCountry` (`Intl.DisplayNames`).
+- `src/pages/WebPage.tsx` : 4 KPI (visiteurs, sessions, pages vues, taux de conversion) + grille 9 widgets (sessions vs visiteurs, sources, pages vues, top pages, durée, appareils, pays, engagement) ; états chargement/vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives ». Route `/web` branchée sur `RequireModule`.
+- `src/api/types.ts` : union `WebMetricKey` (10 clés) ; i18n `web.*` FR/EN (libellés sources/appareils + note fictive).
+- Tests : `WebPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau, calqués sur `FinancePage.test.tsx`).
+- Vérifs : Vitest **36 passed** (10 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅.
+- Docs : `DECISIONS.md` (décisions 5b), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- **Non fait** : commit 5b (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases social/projects/legal.
+
+### Critères de la phase 5b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **256 passed** (un lancement concurrent avec Vitest a fait échouer le test *flaky* `test_scheduler` par timing, vert en exécution isolée — sans lien avec la 5b) |
+| Tests frontend | ✅ Vitest **36 passed** (10 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (82 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Bug corrigé | ✅ limite asyncpg 32 767 paramètres (`upsert_many` par lots) + test de non-régression |
+| Backend Web | ✅ `MockWebConnector` : 10 séries cohérentes, répartitions sommant la métrique parente |
+| Frontend Web | ✅ 4 KPI + 9 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
+| pre-commit | ⏳ à exécuter au commit (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

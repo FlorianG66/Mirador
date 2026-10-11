@@ -12,11 +12,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.metric_snapshot import MetricSnapshot
 from app.schemas.metrics import MetricSnapshotIn
 
+# Un INSERT … VALUES est limité à 32 767 arguments par asyncpg. Chaque ligne en
+# pose 7 (hors valeurs par défaut) : on découpe par lots largement sous la limite,
+# sinon la synchronisation d'un panneau riche (web + finance) échoue d'un bloc.
+_MAX_ROWS_PER_STATEMENT = 2_000
+
 
 async def upsert_many(
     session: AsyncSession, organization_id: uuid.UUID, snapshots: list[MetricSnapshotIn]
 ) -> int:
-    """Écrit les points en une seule instruction, sans doublon (idempotent).
+    """Écrit les points par lots, sans doublon (idempotent).
 
     La contrainte (organization_id, metric_key, captured_at) sert de cible de
     conflit : une re-synchronisation remplace la valeur au lieu d'ajouter une
@@ -36,16 +41,18 @@ async def upsert_many(
         }
         for snapshot in snapshots
     ]
-    statement = pg_insert(MetricSnapshot).values(rows)
-    statement = statement.on_conflict_do_update(
-        constraint="metric_snapshots_org_key_at",
-        set_={
-            "unit": statement.excluded.unit,
-            "value": statement.excluded.value,
-            "dimensions": statement.excluded.dimensions,
-        },
-    )
-    await session.execute(statement)
+    for start in range(0, len(rows), _MAX_ROWS_PER_STATEMENT):
+        chunk = rows[start : start + _MAX_ROWS_PER_STATEMENT]
+        statement = pg_insert(MetricSnapshot).values(chunk)
+        statement = statement.on_conflict_do_update(
+            constraint="metric_snapshots_org_key_at",
+            set_={
+                "unit": statement.excluded.unit,
+                "value": statement.excluded.value,
+                "dimensions": statement.excluded.dimensions,
+            },
+        )
+        await session.execute(statement)
     return len(rows)
 
 

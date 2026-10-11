@@ -25,3 +25,20 @@ export type FinanceMetricKey =
   | 'finance.invoices_outstanding'
   | 'finance.top_clients'
   | 'finance.top_suppliers'
+
+/**
+ * Les clés canoniques du panneau web analytics (sous-phase 5b). Même contrat que
+ * la finance : chaque clé est un suffixe `module.metric` du schéma, pas une
+ * invention du frontend.
+ */
+export type WebMetricKey =
+  | 'web.sessions'
+  | 'web.visitors'
+  | 'web.pageviews'
+  | 'web.engagement_rate'
+  | 'web.avg_session_duration'
+  | 'web.conversions'
+  | 'web.traffic_sources'
+  | 'web.top_pages'
+  | 'web.devices'
+  | 'web.countries'

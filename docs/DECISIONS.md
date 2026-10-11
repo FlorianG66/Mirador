@@ -253,3 +253,23 @@ Dans `fetchFinancePanel`, un 404 se traduit par une clé `missing` ; seule une c
 ## 2026-10-10 — Couleurs des graphiques = tokens de thème, pas de palette fixe (5a)
 
 Les séries de `MultiSeriesChart` reçoivent des couleurs écrites en variables CSS (`var(--brand)`, `--danger`, `--warning`, `--success`). Raison : le clair/sombre bascule sans re-configurer les graphiques, et la charte reste contrôlée au seul endroit où sont définis les tokens.
+
+## 2026-10-11 — Panneau web = 10 clés canoniques fixes (5b)
+
+Le frontend charge exactement 10 séries (`web.sessions|visitors|pageviews|engagement_rate|avg_session_duration|conversions|traffic_sources|top_pages|devices|countries`), interrogées ensemble (`Promise.all`, polling 5 min). Raison : même contrat de page dédiée que la finance (5a) — colonne vertébrale `sessions`, pas de découverte dynamique de clés avant la phase 6.
+
+## 2026-10-11 — Répartitions web : `dimensions.items` sommant la métrique parente (5b)
+
+`web.traffic_sources`, `web.top_pages`, `web.devices` et `web.countries` portent `dimensions.items = [{name, value}]` trié décroissant, dont la somme vaut **exactement** la métrique parente (sessions, 60 % des pages vues, visiteurs, visiteurs). Raison : un widget de répartition ne doit pas contredire le KPI du dessus ; la dernière entrée absorbe l'arrondi.
+
+## 2026-10-11 — Sources/appareils en clés canoniques, pays en codes ISO (5b)
+
+Le connecteur stocke les sources (`direct`, `organic_search`, …) et appareils (`desktop`, `mobile`, `tablet`) comme clés canoniques traduites par i18n (`web.source.*`, `web.device.*`), et les pays comme codes ISO 3166-1 alpha-2 nommés côté UI via `Intl.DisplayNames`. Raison : aucun texte en dur dans les données (AGENTS.md §7), et l'affichage suit la langue active sans stocker de libellé.
+
+## 2026-10-11 — `upsert_many` par lots (limite de paramètres asyncpg) (5b)
+
+`metric_snapshots.upsert_many` découpe l'insertion en lots de 2 000 lignes (`_MAX_ROWS_PER_STATEMENT`) au lieu d'un unique `INSERT`. Raison : asyncpg refuse plus de 32 767 arguments par requête ; le module web (20 séries × 365 jours × 7 colonnes) dépassait la limite, un test de non-régression verrouille le découpage.
+
+## 2026-10-11 — Formatage web centralisé dans `format.ts` (5b)
+
+Compteurs (`formatInteger`, `formatPercent` sur ratio 0→1), durées (`formatDuration` : unités `minute`/`second` via `Intl.NumberFormat`) et pays (`formatCountry` via `Intl.DisplayNames`) rejoignent les formatages finance, sans aucun libellé d'unité codé en dur. Raison : FR/EN corrects et maintenus à un seul endroit, comme la décision 5a sur `Intl`.

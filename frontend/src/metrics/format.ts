@@ -56,3 +56,38 @@ export function lastValueTrend(points: MetricPoint[]): number | undefined {
   }
   return ((current.value - previous.value) / Math.abs(previous.value)) * 100
 }
+
+/** Entier localisé (compteurs de visites, sessions, pages vues…). */
+export function formatInteger(value: number, language: string): string {
+  return new Intl.NumberFormat(language, { maximumFractionDigits: 0 }).format(value)
+}
+
+/** Ratio (0→1) affiché en pourcentage localisé (ex. 0.042 → « 4,2 % »). */
+export function formatPercent(ratio: number, language: string): string {
+  return new Intl.NumberFormat(language, {
+    style: 'percent',
+    maximumFractionDigits: 1,
+  }).format(ratio)
+}
+
+/** Durée en secondes, localisée (ex. « 3 min 12 s »), sans texte en dur. */
+export function formatDuration(seconds: number, language: string): string {
+  const minutes = Math.floor(seconds / 60)
+  const rest = Math.round(seconds % 60)
+  const minuteUnit = new Intl.NumberFormat(language, {
+    style: 'unit',
+    unit: 'minute',
+    unitDisplay: 'short',
+  }).format(minutes)
+  const secondUnit = new Intl.NumberFormat(language, {
+    style: 'unit',
+    unit: 'second',
+    unitDisplay: 'short',
+  }).format(rest)
+  return `${minuteUnit} ${secondUnit}`
+}
+
+/** Nom d'un pays (code ISO 3166-1 alpha-2) localisé via `Intl.DisplayNames`. */
+export function formatCountry(code: string, language: string): string {
+  return new Intl.DisplayNames([language], { type: 'region' }).of(code) ?? code
+}

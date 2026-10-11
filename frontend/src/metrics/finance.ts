@@ -2,12 +2,12 @@
 // ensemble, avec polling 5 minutes. Une série absente du registre (404) compte
 // comme « pas encore connectée » ; toute autre erreur remonte à la page.
 import { useQuery } from '@tanstack/react-query'
-import type { ApiError } from '../api/client'
 import type { FinanceMetricKey, MetricSeries } from '../api/types'
 import {
   DEFAULT_LIMIT,
   POLLING_INTERVAL_MS,
   fetchMetricSeries,
+  isNotFound,
   metricsKeys,
 } from './queries.ts'
 
@@ -27,16 +27,6 @@ export interface FinancePanel {
   series: Partial<Record<FinanceMetricKey, MetricSeries>>
   /** Les séries sans donnée (404 pour l'organisation active). */
   missing: FinanceMetricKey[]
-}
-
-/** Distingue une série inexistante (404) d'une vraie panne. */
-export function isNotFound(error: unknown): error is ApiError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'status' in error &&
-    (error as ApiError).status === 404
-  )
 }
 
 export async function fetchFinancePanel(

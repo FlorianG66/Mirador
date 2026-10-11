@@ -28,8 +28,18 @@ EXPECTED_KEYS = {
     "finance.invoices_outstanding",
     "finance.top_clients",
     "finance.top_suppliers",
+    # Panneau web analytics (sous-phase 5b).
+    "web.sessions",
+    "web.visitors",
+    "web.pageviews",
+    "web.engagement_rate",
+    "web.avg_session_duration",
+    "web.conversions",
+    "web.traffic_sources",
+    "web.top_pages",
+    "web.devices",
+    "web.countries",
     # Mocks « simple » des autres modules.
-    "web.visits",
     "social.followers",
     "projects.tasks_done",
 }

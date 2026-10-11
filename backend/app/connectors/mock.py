@@ -54,18 +54,9 @@ class MockMetricConfig:
     anomalies: bool = True
 
 
-# Une métrique de démonstration par module « simple » (SPÉC §5.4, §3). Finance
-# produit un écosystème plus riche dans `finance.py` (marge, trésorerie, top…).
+# Une métrique de démonstration par module « simple » (SPÉC §5.4, §3). Finance et
+# web produisent un écosystème plus riche dans `finance.py` / `web.py`.
 MOCK_METRICS: tuple[MockMetricConfig, ...] = (
-    MockMetricConfig(
-        key="web.visits",
-        unit="visits",
-        base=3_400,
-        trend=0.18,
-        seasonality=0.10,
-        weekend_factor=0.95,
-        noise=0.12,
-    ),
     MockMetricConfig(
         key="social.followers",
         unit="followers",
@@ -190,13 +181,6 @@ class MockConnector(Connector):
         return [series for series in series if series.points]
 
 
-class MockWebConnector(MockConnector):
-    """Démo web : visites quotidiennes (premier réel : Google Analytics 4)."""
-
-    provider = "mock.web"
-    category = Module.WEB
-
-
 class MockSocialConnector(MockConnector):
     """Démo réseaux sociaux : abonnés cumulés (premier réel : un réseau social)."""
 
@@ -211,10 +195,9 @@ class MockProjectsConnector(MockConnector):
     category = Module.PROJECTS
 
 
-# Les mocks « simple » (une série par module) ; la finance a son panneau dédié
-# dans `finance.py` (MockFinanceConnector, enregistré dans `app/connectors`).
+# Les mocks « simple » (une série par module) ; la finance et le web ont leur
+# panneau dédié dans `finance.py` / `web.py` (enregistrés dans `app/connectors`).
 MOCK_CONNECTORS: tuple[type[MockConnector], ...] = (
-    MockWebConnector,
     MockSocialConnector,
     MockProjectsConnector,
 )

@@ -17,6 +17,7 @@ import { SettingsPage } from '../pages/SettingsPage.tsx'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage.tsx'
 import { TeamPage } from '../pages/TeamPage.tsx'
 import { TwoFactorPage } from '../pages/TwoFactorPage.tsx'
+import { WebPage } from '../pages/WebPage.tsx'
 
 export const routes: RouteObject[] = [
   {
@@ -47,7 +48,7 @@ export const routes: RouteObject[] = [
                 path: 'web',
                 element: (
                   <RequireModule moduleKey="web">
-                    <ModulePage moduleKey="web" />
+                    <WebPage />
                   </RequireModule>
                 ),
               },

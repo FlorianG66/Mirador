@@ -6,7 +6,7 @@ import type { MetricSeries } from '../api/types'
 export const metricsKeys = {
   metric: (organizationId: string, metricKey: string) =>
     ['metrics', organizationId, metricKey] as const,
-  panel: (organizationId: string, panel: 'finance') =>
+  panel: (organizationId: string, panel: 'finance' | 'web') =>
     ['metrics', organizationId, 'panel', panel] as const,
 }
 
@@ -15,6 +15,19 @@ export const POLLING_INTERVAL_MS = 5 * 60 * 1000
 
 /** Nombre de points demandés par défaut pour les widgets (fenêtre glissante). */
 export const DEFAULT_LIMIT = 60
+
+/**
+ * Distingue une série inexistante (404, module non connecté) d'une vraie panne.
+ * Le panneau s'en sert pour marquer une clé « absente » sans échouer l'ensemble.
+ */
+export function isNotFound(error: unknown): error is ApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as ApiError).status === 404
+  )
+}
 
 export async function fetchMetricSeries(
   organizationId: string,
