@@ -309,3 +309,19 @@ Le connecteur nomme les 4 statuts (`todo`, `in_progress`, `review`, `blocked`) e
 ## 2026-10-11 — `mock.py` purgé du module projets, `sync` de base en erreur explicite (5d)
 
 `MockProjectsConnector` et la clé `projects.tasks_done` quittent `mock.py` (le module a son panneau comme finance/web/social) et `MockConnector.sync` de base lève désormais `NotImplementedError` au lieu de retourner un stub. Raison : `mock.py` ne garde que les helpers partagés (`CREATION_EPOCH`, `MockMetricConfig`, `build_series`, `daily_value`, `cumulative_value`, `hash01`) ; un `sync` hérité par erreur doit échouer bruyamment plutôt que renvoyer des données muettes.
+
+## 2026-10-11 — Découpage de la 5e en trois sous-phases (5e)
+
+La 5e est scindée en **5e-a** socle backend (validation SIREN/SIRET/TVA + service de registre), **5e-b** persistance (`legal_profiles`/`legal_identifiers`, migration RLS) + endpoints `legal` + permission, **5e-c** page frontend `/legal`. Raison : la 5e couvre à elle seule validation, appel à des registres externes, nouveau schéma, endpoints et UI — trop pour une session (AGENTS.md §2 : découper si ça dépasse).
+
+## 2026-10-11 — Registre légal : transport httpx injectable, jamais d'appel réel en CI (5e-a)
+
+`RechercheEntreprisesRegistry` reçoit un `httpx.AsyncBaseTransport` (même schéma que `GoogleOidcProvider`) et un `sleep` injectables ; les tests fournissent un `httpx.MockTransport` à réponses simulées. Raison : la CI ne doit jamais dépendre d'un service public externe (ROADMAP 5e), et le backoff doit être testable sans attente réelle.
+
+## 2026-10-11 — Modèle `LegalCompany` canonique, parsing tolérant et mapping à confirmer (5e-a)
+
+Le registre produit une structure interne `LegalCompany`/`LegalLeader` indépendante du fournisseur ; `parse_recherche_entreprise` lit chaque champ de façon tolérante (absent → `None`) et masque dirigeants/adresse d'une entreprise non diffusible (`diffusable=False`). Le mapping (endpoint et noms de clés de l'API Recherche d'entreprises) est explicitement marqué « à confirmer sur la documentation officielle » avant production. Raison : ne rien deviner (AGENTS.md §2) ; un futur repli INSEE/pays doit produire la même structure.
+
+## 2026-10-11 — Exception de la clé de Luhn (La Poste) documentée, non traitée (5e-a)
+
+`is_valid_siret`/`is_valid_siren` appliquent la clé de Luhn standard ; l'exception connue (certains établissements de La Poste) n'est pas traitée. Raison : la règle exacte n'a pas été vérifiée sur une source officielle — mieux vaut un faux négatif documenté qu'une règle inventée (AGENTS.md §2).

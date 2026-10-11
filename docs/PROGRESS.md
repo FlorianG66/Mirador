@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, puis 5e Legal.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d à compléter).
-- **Prochaine action** : sous-phase 5e — module Identité légale (legal), dernière sous-phase de la phase 5.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale (en cours — 5e-a socle backend livré).
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`).
+- **Prochaine action** : sous-phase 5e-b — persistance de la fiche légale (`legal_profiles` + `legal_identifiers`, migration `0007` RLS), service « fiche légale » (source/date par champ, saisie manuelle prime, écart → alerte), endpoints `legal` + permission.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -551,3 +551,24 @@ Frontend (page `/projects`, remplace le placeholder) :
 | Frontend Projets | ✅ 4 KPI + 8 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5e-a livrée (socle backend du module Identité légale)
+Découpage de la 5e (volumineuse) : **5e-a** socle backend (validation + service de registre), **5e-b** persistance et endpoints `legal`, **5e-c** page frontend `/legal`.
+- `app/core/siren.py` étendu : `is_valid_siret` (14 chiffres + Luhn) et calcul du numéro de TVA (`french_vat_key` = `(12 + 3 × (SIREN mod 97)) mod 97`, `french_vat_number` = `FR` + clé + SIREN), factorisation d'un `_luhn_is_valid` partagé. L'exception connue de la clé de Luhn (certains établissements de La Poste) est **documentée mais non traitée** faute de règle officielle vérifiée (AGENTS.md §2 : ne rien deviner).
+- `app/services/legal_registry.py` : modèle canonique `LegalCompany` (+ `LegalLeader`), contrat `LegalRegistry` (`fetch_by_siren`), et client `RechercheEntreprisesRegistry` de l'API Recherche d'entreprises — `httpx` à **transport injectable** (la CI ne fait jamais d'appel réel), cache mémoire TTL (24 h), timeout 10 s, backoff borné sur 429/5xx (en-tête `Retry-After` respecté, `sleep` injectable). Parsing **tolérant** (`parse_recherche_entreprise`) : champ absent → `None`, entreprise « non diffusible » → dirigeants et adresse masqués (`diffusable=False`). Le mapping des champs (endpoint et noms de clés) est explicitement marqué « à confirmer » sur la documentation officielle avant production.
+- Tests : `tests/test_legal_registry.py` (18) — Luhn SIREN/SIRET (cas valides, mauvaise clé, mauvaise longueur, non-chiffres), formule TVA sur exemple figé, parsing complet, SIREN inconnu → `None`, cache (1 seul appel HTTP), non-diffusible, champs optionnels absents, retentative 429 → succès, abandon sur 5xx répétés, erreur cliente définitive, JSON invalide, panne réseau, résultat sans SIREN.
+- Vérifs : ruff check + format ✅ · mypy strict ✅ (85 fichiers) · suite backend complète **298 passed** (+18 vs 5d).
+- Docs : `DECISIONS.md`, `CHANGELOG.md`, ce fichier.
+- Commit : `fcb1c92`.
+- **Non fait** : persistance/endpoints (5e-b), page frontend (5e-c) ; push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### Critères de la sous-phase 5e-a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **298 passed** (+18 vs 5d) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (85 fichiers) |
+| Validation légale | ✅ SIRET (Luhn) + clé/n° de TVA calculés ; exception La Poste documentée, non traitée |
+| Service registre | ✅ `RechercheEntreprisesRegistry` à transport injectable, cache TTL, timeout, backoff ; aucun appel réseau en test |
+| Non diffusible | ✅ dirigeants et adresse masqués (`diffusable=False`) |
+| pre-commit | ⏳ à lancer avant commit |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
