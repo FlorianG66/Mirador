@@ -6,7 +6,7 @@ import type { MetricSeries } from '../api/types'
 export const metricsKeys = {
   metric: (organizationId: string, metricKey: string) =>
     ['metrics', organizationId, metricKey] as const,
-  panel: (organizationId: string, panel: 'finance' | 'web') =>
+  panel: (organizationId: string, panel: 'finance' | 'web' | 'social') =>
     ['metrics', organizationId, 'panel', panel] as const,
 }
 

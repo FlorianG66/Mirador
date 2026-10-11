@@ -15,6 +15,7 @@ import { NotFoundPage } from '../pages/NotFoundPage.tsx'
 import { RegisterPage } from '../pages/RegisterPage.tsx'
 import { SettingsPage } from '../pages/SettingsPage.tsx'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage.tsx'
+import { SocialPage } from '../pages/SocialPage.tsx'
 import { TeamPage } from '../pages/TeamPage.tsx'
 import { TwoFactorPage } from '../pages/TwoFactorPage.tsx'
 import { WebPage } from '../pages/WebPage.tsx'
@@ -56,7 +57,7 @@ export const routes: RouteObject[] = [
                 path: 'social',
                 element: (
                   <RequireModule moduleKey="social">
-                    <ModulePage moduleKey="social" />
+                    <SocialPage />
                   </RequireModule>
                 ),
               },

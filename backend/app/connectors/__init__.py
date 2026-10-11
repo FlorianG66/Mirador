@@ -10,7 +10,6 @@ from app.connectors.mock import (
     MOCK_CONNECTORS,
     MockConnector,
     MockProjectsConnector,
-    MockSocialConnector,
 )
 from app.connectors.registry import (
     get_class,
@@ -21,11 +20,13 @@ from app.connectors.registry import (
     register,
     reset,
 )
+from app.connectors.social import MockSocialConnector, build_social_series
 from app.connectors.web import MockWebConnector, build_web_series
 
 ALL_CONNECTORS: tuple[type[Connector], ...] = (
     MockFinanceConnector,
     MockWebConnector,
+    MockSocialConnector,
     *MOCK_CONNECTORS,
 )
 for _connector_cls in ALL_CONNECTORS:
@@ -41,6 +42,7 @@ __all__ = [
     "MockProjectsConnector",
     "build_finance_series",
     "build_web_series",
+    "build_social_series",
     "get_class",
     "list_categories",
     "list_connectors",

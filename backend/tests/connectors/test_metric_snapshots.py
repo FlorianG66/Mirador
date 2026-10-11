@@ -39,8 +39,17 @@ EXPECTED_KEYS = {
     "web.top_pages",
     "web.devices",
     "web.countries",
-    # Mocks « simple » des autres modules.
+    # Panneau réseaux sociaux (sous-phase 5c).
     "social.followers",
+    "social.followers_growth",
+    "social.impressions",
+    "social.reach",
+    "social.engagements",
+    "social.engagement_rate",
+    "social.mentions",
+    "social.posts",
+    "social.top_posts",
+    # Mock « simple » du module projets.
     "projects.tasks_done",
 }
 

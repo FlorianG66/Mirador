@@ -42,3 +42,18 @@ export type WebMetricKey =
   | 'web.top_pages'
   | 'web.devices'
   | 'web.countries'
+
+/**
+ * Les clés canoniques du panneau réseaux sociaux (sous-phase 5c). Même contrat
+ * que la finance et le web : chaque clé est un suffixe `module.metric` du schéma.
+ */
+export type SocialMetricKey =
+  | 'social.followers'
+  | 'social.followers_growth'
+  | 'social.impressions'
+  | 'social.reach'
+  | 'social.engagements'
+  | 'social.engagement_rate'
+  | 'social.mentions'
+  | 'social.posts'
+  | 'social.top_posts'
