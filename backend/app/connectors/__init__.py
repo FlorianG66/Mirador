@@ -6,11 +6,8 @@ L'import de `app.connectors` enregistre les connecteurs du dépôt dans le regis
 
 from app.connectors.base import Connector, ConnectorHealth
 from app.connectors.finance import MockFinanceConnector, build_finance_series
-from app.connectors.mock import (
-    MOCK_CONNECTORS,
-    MockConnector,
-    MockProjectsConnector,
-)
+from app.connectors.mock import MockConnector
+from app.connectors.projects import MockProjectsConnector, build_projects_series
 from app.connectors.registry import (
     get_class,
     list_categories,
@@ -27,7 +24,7 @@ ALL_CONNECTORS: tuple[type[Connector], ...] = (
     MockFinanceConnector,
     MockWebConnector,
     MockSocialConnector,
-    *MOCK_CONNECTORS,
+    MockProjectsConnector,
 )
 for _connector_cls in ALL_CONNECTORS:
     register(_connector_cls)
@@ -43,6 +40,7 @@ __all__ = [
     "build_finance_series",
     "build_web_series",
     "build_social_series",
+    "build_projects_series",
     "get_class",
     "list_categories",
     "list_connectors",

@@ -49,8 +49,17 @@ EXPECTED_KEYS = {
     "social.mentions",
     "social.posts",
     "social.top_posts",
-    # Mock « simple » du module projets.
+    # Panneau projets & tâches (sous-phase 5d).
     "projects.tasks_done",
+    "projects.tasks_created",
+    "projects.open_tasks",
+    "projects.overdue_tasks",
+    "projects.avg_completion_time",
+    "projects.avg_progress",
+    "projects.active_projects",
+    "projects.tasks_by_status",
+    "projects.person_load",
+    "projects.upcoming_milestones",
 }
 
 

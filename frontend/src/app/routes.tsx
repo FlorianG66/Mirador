@@ -12,6 +12,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.tsx'
 import { LoginPage } from '../pages/LoginPage.tsx'
 import { ModulePage } from '../pages/ModulePage.tsx'
 import { NotFoundPage } from '../pages/NotFoundPage.tsx'
+import { ProjectsPage } from '../pages/ProjectsPage.tsx'
 import { RegisterPage } from '../pages/RegisterPage.tsx'
 import { SettingsPage } from '../pages/SettingsPage.tsx'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage.tsx'
@@ -65,7 +66,7 @@ export const routes: RouteObject[] = [
                 path: 'projects',
                 element: (
                   <RequireModule moduleKey="projects">
-                    <ModulePage moduleKey="projects" />
+                    <ProjectsPage />
                   </RequireModule>
                 ),
               },

@@ -57,3 +57,20 @@ export type SocialMetricKey =
   | 'social.mentions'
   | 'social.posts'
   | 'social.top_posts'
+
+/**
+ * Les clés canoniques du panneau projets & tâches (sous-phase 5d). Même contrat
+ * que les autres modules : chaque clé est un suffixe `module.metric` du schéma,
+ * jamais une invention du frontend.
+ */
+export type ProjectMetricKey =
+  | 'projects.tasks_done'
+  | 'projects.tasks_created'
+  | 'projects.open_tasks'
+  | 'projects.overdue_tasks'
+  | 'projects.avg_completion_time'
+  | 'projects.avg_progress'
+  | 'projects.active_projects'
+  | 'projects.tasks_by_status'
+  | 'projects.person_load'
+  | 'projects.upcoming_milestones'

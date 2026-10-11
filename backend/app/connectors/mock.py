@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 
 from app.connectors.base import Connector, ConnectorHealth
-from app.models.enums import Module
 from app.schemas.metrics import PERIOD_DAY, MetricPoint, MetricSeries
 
 # Époque de référence des séries : aucun point avant cette date (Les données
@@ -55,19 +54,8 @@ class MockMetricConfig:
 
 
 # Une métrique de démonstration par module « simple » (SPÉC §5.4, §3). Finance,
-# web et réseaux sociaux produisent un écosystème plus riche dans `finance.py`,
-# `web.py` et `social.py`.
-MOCK_METRICS: tuple[MockMetricConfig, ...] = (
-    MockMetricConfig(
-        key="projects.tasks_done",
-        unit="tasks",
-        base=18,
-        trend=0.08,
-        seasonality=0.08,
-        weekend_factor=0.20,
-        noise=0.25,
-    ),
-)
+# web, réseaux sociaux et projets/tâches produisent un écosystème plus riche
+# dans `finance.py`, `web.py`, `social.py` et `projects.py`.
 
 
 def hash01(seed: int, *parts: object) -> float:
@@ -141,13 +129,6 @@ class MockConnector(Connector):
 
     auth_type = "none"
 
-    @classmethod
-    def metric_configs(cls) -> tuple[MockMetricConfig, ...]:
-        """Les configurations des métriques de démonstration du module."""
-        return tuple(
-            config for config in MOCK_METRICS if config.key.startswith(f"{cls.category.value}.")
-        )
-
     async def connect(self) -> None:
         """Rien à ouvrir pour une simulation."""
 
@@ -162,27 +143,9 @@ class MockConnector(Connector):
         return []
 
     async def sync(self, since: datetime) -> list[MetricSeries]:
-        """Séries quotidiennes du module, du jour de `since` (au plus tôt à l'époque
-        de référence) au jour courant. Vides si `since` est dans le futur."""
-        seed = self.seed
-        if seed is None:
-            # Défense : un connecteur de démonstration n'a de sens que seedé.
-            raise RuntimeError("Un connecteur de démonstration doit être instancié avec un seed.")
-        series = [build_series(seed, config, since) for config in self.metric_configs()]
-        return [series for series in series if series.points]
-
-
-class MockProjectsConnector(MockConnector):
-    """Démo projets/tâches : tâches terminées par jour."""
-
-    provider = "mock.projects"
-    category = Module.PROJECTS
-
-
-# Le mock « simple » (une série par module) : la finance, le web et les réseaux
-# sociaux ont leur panneau dédié dans `finance.py` / `web.py` / `social.py`
-# (enregistrés dans `app/connectors`).
-MOCK_CONNECTORS: tuple[type[MockConnector], ...] = (MockProjectsConnector,)
+        """Chaque connecteur de démonstration produit son propre panneau (finance,
+        web, réseaux sociaux, projets/tâches) : le connecteur de base ne l'est pas."""
+        raise NotImplementedError(f"{type(self).__name__} doit redéfinir `sync`.")
 
 
 def _daterange(start: date, end: date) -> Iterator[date]:

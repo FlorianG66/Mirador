@@ -91,3 +91,12 @@ export function formatDuration(seconds: number, language: string): string {
 export function formatCountry(code: string, language: string): string {
   return new Intl.DisplayNames([language], { type: 'region' }).of(code) ?? code
 }
+
+/** Durée en jours, localisée (ex. « 6 jours »), sans texte en dur. */
+export function formatDays(days: number, language: string): string {
+  return new Intl.NumberFormat(language, {
+    style: 'unit',
+    unit: 'day',
+    unitDisplay: 'short',
+  }).format(days)
+}
