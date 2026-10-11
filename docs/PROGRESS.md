@@ -5,7 +5,7 @@
 ## État
 
 - **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, puis projects, legal.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c à venir au commit).
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`).
 - **Prochaine action** : sous-phase 5d — module Projets/tâches (projects), puis 5e Legal.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
@@ -507,7 +507,7 @@ Frontend (page `/social`, remplace le placeholder) :
 - i18n `social.*` FR/EN (`social.network.*` pour les 5 réseaux) ; `src/pages/SocialPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau).
 - Vérifs : Vitest **39 passed** (11 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant).
 - Docs : `DECISIONS.md` (décisions 5c), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
-- Commit : _(à faire)_ `feat: module Réseaux sociaux (page, KPI et connecteur de demo) (sous-phase 5c)`.
+- Commit : `3b27329 feat: module Réseaux sociaux (page, KPI et connecteur de demo) (sous-phase 5c)` (13 fichiers, +1156/−29) ; docs `442c6af`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases projects/legal.
 
 ### Critères de la phase 5c — vérité du terrain
