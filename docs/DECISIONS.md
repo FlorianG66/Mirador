@@ -273,3 +273,19 @@ Le connecteur stocke les sources (`direct`, `organic_search`, …) et appareils 
 ## 2026-10-11 — Formatage web centralisé dans `format.ts` (5b)
 
 Compteurs (`formatInteger`, `formatPercent` sur ratio 0→1), durées (`formatDuration` : unités `minute`/`second` via `Intl.NumberFormat`) et pays (`formatCountry` via `Intl.DisplayNames`) rejoignent les formatages finance, sans aucun libellé d'unité codé en dur. Raison : FR/EN corrects et maintenus à un seul endroit, comme la décision 5a sur `Intl`.
+
+## 2026-10-11 — Panneau social = 9 clés canoniques fixes (5c)
+
+Le frontend charge exactement 9 séries (`social.followers|followers_growth|impressions|reach|engagements|engagement_rate|mentions|posts|top_posts`), interrogées ensemble (`Promise.all`, polling 5 min). Raison : même contrat de page dédiée que finance (5a) et web (5b) — colonne vertébrale `followers`, pas de découverte dynamique de clés avant la phase 6.
+
+## 2026-10-11 — Abonnés cumulés depuis l'époque, croissance = variation positive (5c)
+
+`social.followers` cumule depuis `CREATION_EPOCH` et reste monotone croissant ; `social.followers_growth` est la variation quotidienne du total (différence des points), donc **toujours ≥ 0**. Raison : un nombre d'abonnés ne baisse pas dans une démo crédible, et garder la croissance positive évite de relâcher l'assertion générique « espérance ≥ 0 » des séries (seule `finance.margin` y échappe).
+
+## 2026-10-11 — Répartitions sociales : `dimensions.items` sommant la métrique parente (5c)
+
+`social.followers` porte `dimensions.items = [{name, value}]` (abonnés par réseau, trié décroissant) sommant **exactement** le total, et `social.top_posts` porte les 4 meilleurs posts dont la somme vaut `engagements × 0.45` (`TOP_POSTS_SHARE`). Raison : cohérence visible avec les KPI du dessus (même principe qu'en 5b) ; les titres de posts sont fictifs (dépôt public) et 45 % évite de prétendre l'exhaustivité.
+
+## 2026-10-11 — Réseaux stockés en clés canoniques, traduits par i18n (5c)
+
+Le connecteur nomme les réseaux (`linkedin`, `instagram`, `facebook`, `x`, `youtube`) comme clés brutes, traduites côté UI par `social.network.*`. Raison : aucun texte en dur dans les données (AGENTS.md §7) et l'affichage suit la langue active ; `x` est affiché « X (Twitter) » sans stocker le libellé.

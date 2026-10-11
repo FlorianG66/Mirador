@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, puis social, projects, legal.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`).
-- **Prochaine action** : sous-phase 5c — module Réseaux sociaux (social), puis 5d Projects et 5e Legal.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, puis projects, legal.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c à venir au commit).
+- **Prochaine action** : sous-phase 5d — module Projets/tâches (projects), puis 5e Legal.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -491,5 +491,34 @@ Frontend (page `/web`, remplace le placeholder) :
 | Bug corrigé | ✅ limite asyncpg 32 767 paramètres (`upsert_many` par lots) + test de non-régression |
 | Backend Web | ✅ `MockWebConnector` : 10 séries cohérentes, répartitions sommant la métrique parente |
 | Frontend Web | ✅ 4 KPI + 9 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5c livrée (module Réseaux sociaux — backend + frontend)
+Backend :
+- `app/connectors/social.py` : nouveau `MockSocialConnector` (provider `mock.social`, `category = Module.SOCIAL`) — 9 séries cohérentes pilotées par les abonnés cumulés : `social.followers` (total cumulé depuis `CREATION_EPOCH`, `dimensions.items` = abonnés par réseau LinkedIn/Instagram/Facebook/X/YouTube sommant le total), `social.followers_growth` (variation quotidienne du total, ≥ 0), `social.impressions`, `social.reach` (≤ impressions), `social.engagements` (≤ impressions), `social.engagement_rate` (= interactions/impressions × 100, 2 décimales), `social.mentions`, `social.posts` (nb de publications/jour, week-end plus calme) et `social.top_posts` (`dimensions.items` = 4 meilleurs posts fictifs, interactions, sommant 45 % des interactions). Helpers `followers_by_network`/`posts_for_day`/`ranked_names`/`_followers_point`/`_distribution_point`/`_days`, `TOP_POSTS_COUNT = 4`, `TOP_POSTS_SHARE = 0.45`, 12 titres de posts fictifs.
+- `app/connectors/mock.py` : `social.followers` retiré (le module social a désormais son panneau comme finance/web) ; `MOCK_CONNECTORS = (MockProjectsConnector,)`. `app/connectors/__init__.py` : `MockSocialConnector` importé depuis `social`, `ALL_CONNECTORS = (MockFinanceConnector, MockWebConnector, MockSocialConnector, *MOCK_CONNECTORS)`.
+- Tests : `tests/connectors/test_social_mock.py` (13 — les 9 séries + tz UTC, abonnés par réseau sommant le total, abonnés cumulés croissants, croissance = variation des abonnés, portée ≤ impressions, interactions ≤ impressions, taux = interactions/impressions, top_posts = 4 items sommant 45 % des interactions, mentions ≥ 0, week-end plus calme, déterminisme du seed, suite vide, registre) ; `test_metric_snapshots.py` (`EXPECTED_KEYS` → 9 clés social).
+- Vérifs : connecteurs **89 passed** · ruff check + format ✅ · mypy strict ✅ (83 fichiers) · suite backend complète **268 passed**.
+Frontend (page `/social`, remplace le placeholder) :
+- `src/metrics/social.ts` : les 9 clés canoniques, `fetchSocialPanel` en `Promise.all` (404 → « pas encore connecté », erreurs réelles propagées), `useSocialPanel` (polling 5 min).
+- `src/metrics/queries.ts` : `metricsKeys.panel` étendu à `'finance' | 'web' | 'social'` ; `src/api/types.ts` : union `SocialMetricKey` (9 clés).
+- `src/pages/SocialPage.tsx` : 4 KPI (abonnés, impressions, portée, taux d'engagement) + grille de 8 widgets (impressions vs portée, abonnés par réseau, croissance, taux d'engagement, mentions, meilleurs posts, interactions, publications) ; états chargement/vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives ». Route `/social` branchée sur `RequireModule`.
+- i18n `social.*` FR/EN (`social.network.*` pour les 5 réseaux) ; `src/pages/SocialPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau).
+- Vérifs : Vitest **39 passed** (11 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant).
+- Docs : `DECISIONS.md` (décisions 5c), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : _(à faire)_ `feat: module Réseaux sociaux (page, KPI et connecteur de demo) (sous-phase 5c)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases projects/legal.
+
+### Critères de la phase 5c — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **268 passed** (+12 vs 5b) |
+| Tests frontend | ✅ Vitest **39 passed** (11 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (83 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Backend Social | ✅ `MockSocialConnector` : 9 séries cohérentes, abonnés par réseau et top posts sommant leur métrique parente, croissance = variation |
+| Frontend Social | ✅ 4 KPI + 8 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

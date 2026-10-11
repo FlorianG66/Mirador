@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phases 0 à 3 livrées et mergées sur `main` (fondations, identité légale, auth & équipe, frontend socle & design system) ; **phase 4 « Connecteurs & données fictives »** mergée (métriques canoniques `module.metric`, connecteurs de démo déterministes par seed, stockage RLS + worker de synchro périodique, endpoint de lecture filtré par tenant et permissions) ; **phase 5 « Modules MVP » sur la branche `phase-5-modules-mvp`** — sous-phases 5a « Finance » et 5b « Web analytics » livrées (connecteurs à séries cohérentes + pages `/finance` et `/web` complètes : KPI, graphiques Recharts, classements, états chargement/vide/erreur, i18n FR/EN).
+> **Statut** : projet en cours de développement — phases 0 à 3 livrées et mergées sur `main` (fondations, identité légale, auth & équipe, frontend socle & design system) ; **phase 4 « Connecteurs & données fictives »** mergée (métriques canoniques `module.metric`, connecteurs de démo déterministes par seed, stockage RLS + worker de synchro périodique, endpoint de lecture filtré par tenant et permissions) ; **phase 5 « Modules MVP » sur la branche `phase-5-modules-mvp`** — sous-phases 5a « Finance », 5b « Web analytics » et 5c « Réseaux sociaux » livrées (connecteurs à séries cohérentes + pages `/finance`, `/web` et `/social` complètes : KPI, graphiques Recharts, classements, états chargement/vide/erreur, i18n FR/EN).
 
 ## Présentation
 
@@ -17,7 +17,7 @@ Le nom est provisoire et le code utilise la constante `PROJECT_NAME`.
 - Fondations : SIREN validé (Luhn), multi-tenant PostgreSQL + Row-Level Security, erreurs RFC 9457, health-check.
 - Frontend : design tokens clair/sombre, layout rail + topbar, i18n FR/EN, client API typé généré depuis l'OpenAPI, TanStack Query, gardes de routes par permissions.
 - **Phase 4** : métriques canoniques (clé `module.metric`, unité, période, valeur, dimensions JSONB), quatre connecteurs de démo déterministes et réalistes (finance, web, social, projets), stockage tenant + worker de synchro périodique configurable, l'endpoint `GET /organizations/{id}/metrics/{module.metric}` (fenêtre + limite, garde `view` du module).
-- **Phase 5 — Modules MVP** : 5a Finance (`MockFinanceConnector`, 8 séries cohérentes, page `/finance`) et 5b Web analytics (`MockWebConnector`, 10 séries pilotées par les sessions — visiteurs, pages vues, engagement, durée, conversions, sources, top pages, appareils, pays — page `/web` avec 4 KPI + 9 widgets et répartitions sommant la métrique parente).
+- **Phase 5 — Modules MVP** : 5a Finance (`MockFinanceConnector`, 8 séries cohérentes, page `/finance`), 5b Web analytics (`MockWebConnector`, 10 séries pilotées par les sessions — visiteurs, pages vues, engagement, durée, conversions, sources, top pages, appareils, pays — page `/web` avec 4 KPI + 9 widgets et répartitions sommant la métrique parente) et 5c Réseaux sociaux (`MockSocialConnector`, 9 séries pilotées par les abonnés — croissance, impressions, portée, interactions, taux d'engagement, mentions, publications, meilleurs posts par réseau — page `/social` avec 4 KPI + 8 widgets).
 
 ## Stack
 
