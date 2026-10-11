@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics (en cours), puis social, projects, legal.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`).
-- **Prochaine action** : finaliser et committer la sous-phase 5b (module Web analytics), puis enchaîner les sous-phases des modules restants.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, puis social, projects, legal.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`).
+- **Prochaine action** : sous-phase 5c — module Réseaux sociaux (social), puis 5d Projects et 5e Legal.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -477,7 +477,8 @@ Frontend (page `/web`, remplace le placeholder) :
 - Tests : `WebPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau, calqués sur `FinancePage.test.tsx`).
 - Vérifs : Vitest **36 passed** (10 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅.
 - Docs : `DECISIONS.md` (décisions 5b), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
-- **Non fait** : commit 5b (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases social/projects/legal.
+- Commit : `f3c75af feat: module Web analytics (page, KPI et connecteur de demo) (sous-phase 5b)` (21 fichiers, +1258/−58).
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases social/projects/legal.
 
 ### Critères de la phase 5b — vérité du terrain
 | Critère | État |
@@ -490,5 +491,5 @@ Frontend (page `/web`, remplace le placeholder) :
 | Bug corrigé | ✅ limite asyncpg 32 767 paramètres (`upsert_many` par lots) + test de non-régression |
 | Backend Web | ✅ `MockWebConnector` : 10 séries cohérentes, répartitions sommant la métrique parente |
 | Frontend Web | ✅ 4 KPI + 9 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
-| pre-commit | ⏳ à exécuter au commit (gitleaks inclus) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
