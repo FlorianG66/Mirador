@@ -779,6 +779,108 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}": {
+      "get": {
+        "summary": "Read Metric",
+        "description": "Série chronologique d'une métrique, pour l'organisation active de l'utilisateur.",
+        "operationId": "read_metric_api_v1_organizations__organization_id__metrics__metric_key__get",
+        "parameters": [
+          {
+            "name": "metric_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Clé canonique « module.metric »",
+              "title": "Metric Key"
+            },
+            "description": "Clé canonique « module.metric »"
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Borne basse inclusive",
+              "title": "Start"
+            },
+            "description": "Borne basse inclusive"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Borne haute inclusive",
+              "title": "End"
+            },
+            "description": "Borne haute inclusive"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricSeries"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Get Health",
@@ -1280,6 +1382,66 @@
         ],
         "title": "MembershipOut",
         "description": "Rattachement de l'utilisateur courant à une organisation."
+      },
+      "MetricPoint": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "dimensions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dimensions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "value"
+        ],
+        "title": "MetricPoint",
+        "description": "Un point d'une série : un instant, une valeur, éventuellement des dimensions."
+      },
+      "MetricSeries": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "period": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 1,
+            "title": "Period"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MetricPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "unit",
+          "period"
+        ],
+        "title": "MetricSeries",
+        "description": "Série canonique : clé, unité, période et points (format identique réel/mock)."
       },
       "Module": {
         "type": "string",

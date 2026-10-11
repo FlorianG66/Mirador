@@ -418,6 +418,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Metric
+         * @description Série chronologique d'une métrique, pour l'organisation active de l'utilisateur.
+         */
+        get: operations["read_metric_api_v1_organizations__organization_id__metrics__metric_key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -712,6 +732,37 @@ export interface components {
              */
             organization_id: string;
             role: components["schemas"]["Role"];
+        };
+        /**
+         * MetricPoint
+         * @description Un point d'une série : un instant, une valeur, éventuellement des dimensions.
+         */
+        MetricPoint: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Value */
+            value: number;
+            /** Dimensions */
+            dimensions?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * MetricSeries
+         * @description Série canonique : clé, unité, période et points (format identique réel/mock).
+         */
+        MetricSeries: {
+            /** Key */
+            key: string;
+            /** Unit */
+            unit: string;
+            /** Period */
+            period: string;
+            /** Points */
+            points?: components["schemas"]["MetricPoint"][];
         };
         /**
          * Module
@@ -1468,6 +1519,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditLogOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_metric_api_v1_organizations__organization_id__metrics__metric_key__get: {
+        parameters: {
+            query?: {
+                /** @description Borne basse inclusive */
+                start?: string | null;
+                /** @description Borne haute inclusive */
+                end?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Clé canonique « module.metric » */
+                metric_key: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricSeries"];
                 };
             };
             /** @description Validation Error */

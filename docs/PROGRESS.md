@@ -429,3 +429,20 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Décisions notées dans `docs/DECISIONS.md` (seed par UUID, re-synchro idempotente 365 j, unité par point, planificateur in-process désactivé en test).
 - Base de dev à jour (`alembic upgrade head` → `0006`), worker actif toutes les 5 min par défaut au prochain démarrage de l'API.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (en attente d'un feu vert).
+
+### 2026-10-10 — Sous-phase 5a livrée (module Finance — backend + frontend)
+Backend :
+- `app/connectors/mock.py` refondu : les 3 mocks génériques restants (web/projects/social) ; helpers publics `hash01`/`daily_value`/`cumulative_value` ; `metric_configs()` (tuples de `MockMetricConfig`, nouveau champ `anomalies: bool`).
+- `app/connectors/finance.py` : nouveau `MockFinanceConnector` (provider `mock.finance`) riche — 8 séries cohérentes entre elles : revenue/expenses (CA et dépenses quotidiennes EUR, effet week-end + anomalies), margin (= CA − dépenses, peut être négatif un mauvais week-end), cash (cumulée depuis `CREATION_EPOCH`, indépendante de la fenêtre demandée), budget (hebdomadaire lisse, `anomalies=False`), invoices_outstanding (avec `dimensions.aging = [{days, count}]`), top_clients (parts normalisées, somme = 55 % du CA, 5 noms fictifs) et top_suppliers (40 % des dépenses, 4 noms). `sync` surchargé pour la série cumulée (lookback fixe 365 j → dérive limitée).
+- Registre : `ALL_CONNECTORS = (MockFinanceConnector, *MOCK_CONNECTORS)` (ordre stable), le connecteur finance enregistre les 8 clés.
+- Tests : `tests/connectors/test_finance_mock.py` (11) — cohérence marge, dérivée de la trésorerie (cash[j+1]−cash[j] == net[j+1]), ancienneté décroissante 0-30 > 31-60 > 61+, top clients ≥ 50 % du CA total, déterminisme, registre, séries dans `test_mock_connector.py`/`test_registry.py`/`test_metric_snapshots.py` adaptés (clé finance → job finance).
+- **Piège résolu** : la suite complète restait bloquée 10+ min par des processus PostgreSQL orphelins (clusters `%TEMP%\mirador-pg-*` d'un pgserver précédent encore vivants) — 7 processus tués + 2 répertoires purge → **245 passed en 320 s**. ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅.
+Frontend (page `/finance`, remplace le placeholder) :
+- `recharts@3.10.1` installé (épinglé, 36 paquets, 0 vulnérabilité) — justifié dans `docs/DECISIONS.md`.
+- `src/metrics/queries.ts` (clés de requête, `fetchMetricSeries`, `POLLING_INTERVAL_MS` 5 min, limite 60) ; `src/metrics/finance.ts` (les 8 clés canoniques, `fetchFinancePanel` en `Promise.all`, séries absentes = 404 → « pas encore connecté », erreurs réelles propagées) ; `src/metrics/format.ts` (Intl : devise, devise compacte, dates, tendance du dernier point).
+- `src/components/metrics/MultiSeriesChart.tsx` (un seul enveloppe Recharts, variantes area/bar/line, couleurs par tokens CSS `--brand/--danger/--warning/--success`, libellés i18n fournis par l'appelant) et `RankedList.tsx` (classement avec part proportionnelle).
+- `src/pages/FinancePage.tsx` : 4 KPI (CA, trésorerie, marge, impayés) + grille asymétrique (CA vs dépenses 8, ancienneté 4, budget vs réalisé 6, marge 6, top clients/fournisseurs 6+6) ; états chargement/index vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives » (dépôt public). Route `/finance` branchée ; i18n `finance.*` FR/EN.
+- Tests : `FinancePage.test.tsx` (3 — panneau complet, module non connecté, panne réseau), `guards.test.tsx` adapté (la route finance affiche maintenant la vraie page), doublons de texte (KPI « Marge » = titre de graphique) gérés via `getAllByText`.
+- Vérifs : Vitest **33 passed** · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant) · `npx playwright test` rejoué **5/5** (login + a11y inchangés).
+- Docs : `ARCHITECTURE.md` (structure frontend + point 5a), `DECISIONS.md` (7 décisions : Recharts, 8 clés du panneau, 404 = non connecté, parts tops, marge négative, lookback cumul, formatage Intl), `CHANGELOG.md`, ce fichier.
+- **Non fait** : commit (à faire), push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 5b Web analytics.

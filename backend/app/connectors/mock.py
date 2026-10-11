@@ -50,20 +50,13 @@ class MockMetricConfig:
     cumulative: bool = False
     # Nombre de décimales de la valeur arrondie (0 → entier).
     decimals: int = 0
+    # False : pas d'anomalie quotidienne (ex. une cible de budget doit rester lisse).
+    anomalies: bool = True
 
 
-# Une métrique de démonstration par module permissionnable (SPÉC §5.4, §3).
+# Une métrique de démonstration par module « simple » (SPÉC §5.4, §3). Finance
+# produit un écosystème plus riche dans `finance.py` (marge, trésorerie, top…).
 MOCK_METRICS: tuple[MockMetricConfig, ...] = (
-    MockMetricConfig(
-        key="finance.revenue",
-        unit="EUR",
-        base=42_000,
-        trend=0.12,
-        seasonality=0.15,
-        weekend_factor=0.55,
-        noise=0.06,
-        decimals=2,
-    ),
     MockMetricConfig(
         key="web.visits",
         unit="visits",
@@ -95,14 +88,14 @@ MOCK_METRICS: tuple[MockMetricConfig, ...] = (
 )
 
 
-def _hash01(seed: int, *parts: object) -> float:
+def hash01(seed: int, *parts: object) -> float:
     """Valeur pseudo-aléatoire stable dans [0, 1) dérivée du seed et des parts."""
     payload = "|".join(str(part) for part in (seed, *parts))
     digest = hashlib.sha256(payload.encode("utf-8")).digest()
     return int.from_bytes(digest[:8], "big") / 2**64
 
 
-def _daily_value(seed: int, config: MockMetricConfig, day: date) -> float:
+def daily_value(seed: int, config: MockMetricConfig, day: date) -> float:
     """Valeur d'un jour : base × tendance × saison × semaine × bruit × (anomalie)."""
     elapsed_years = max(day.toordinal() - CREATION_EPOCH.toordinal(), 0) / 365.25
     trend = 1.0 + config.trend * elapsed_years
@@ -113,18 +106,18 @@ def _daily_value(seed: int, config: MockMetricConfig, day: date) -> float:
 
     weekday_factor = config.weekend_factor if day.weekday() >= 5 else 1.0
 
-    noise = 1.0 + config.noise * (2.0 * _hash01(seed, config.key, day) - 1.0)
+    noise = 1.0 + config.noise * (2.0 * hash01(seed, config.key, day) - 1.0)
 
     value = config.base * trend * season * weekday_factor * noise
 
     # Une petite probabilité d'anomalie : un jour nettement au-dessus de la norme.
-    if _hash01(seed, config.key, day) < _ANOMALY_RATE:
-        value *= 1.5 + 2.0 * _hash01(seed, config.key, "spike")
+    if config.anomalies and hash01(seed, config.key, day) < _ANOMALY_RATE:
+        value *= 1.5 + 2.0 * hash01(seed, config.key, "spike")
 
     return round(value, config.decimals)
 
 
-def _cumulative_value(seed: int, config: MockMetricConfig, day: date) -> float:
+def cumulative_value(seed: int, config: MockMetricConfig, day: date) -> float:
     """Cumul déterministe (ex. abonnés) : croissance hebdomadaire depuis l'époque.
 
     Le cumul est indépendant du nombre de jours demandés : la valeur d'un jour
@@ -133,15 +126,15 @@ def _cumulative_value(seed: int, config: MockMetricConfig, day: date) -> float:
     weeks = max(day.toordinal() - CREATION_EPOCH.toordinal(), 0) // 7
     total = config.base
     for week in range(weeks + 1):
-        growth = config.base * (0.003 + 0.005 * _hash01(seed, config.key, "week", week))
+        growth = config.base * (0.003 + 0.005 * hash01(seed, config.key, "week", week))
         total += growth
     return round(total, config.decimals)
 
 
-def _value_on(seed: int, config: MockMetricConfig, day: date) -> float:
+def value_on(seed: int, config: MockMetricConfig, day: date) -> float:
     if config.cumulative:
-        return _cumulative_value(seed, config, day)
-    return _daily_value(seed, config, day)
+        return cumulative_value(seed, config, day)
+    return daily_value(seed, config, day)
 
 
 def build_series(seed: int, config: MockMetricConfig, since: datetime) -> MetricSeries:
@@ -154,7 +147,7 @@ def build_series(seed: int, config: MockMetricConfig, since: datetime) -> Metric
     points = [
         MetricPoint(
             at=datetime.combine(day, time.min, tzinfo=UTC),
-            value=_value_on(seed, config, day),
+            value=value_on(seed, config, day),
         )
         for day in _daterange(start, today)
     ]
@@ -167,12 +160,11 @@ class MockConnector(Connector):
     auth_type = "none"
 
     @classmethod
-    def metric_config(cls) -> MockMetricConfig:
-        """La configuration de la métrique de démonstration du module."""
-        for config in MOCK_METRICS:
-            if config.key.startswith(f"{cls.category.value}."):
-                return config
-        raise NotImplementedError(f"Aucune métrique de démonstration pour « {cls.category} »")
+    def metric_configs(cls) -> tuple[MockMetricConfig, ...]:
+        """Les configurations des métriques de démonstration du module."""
+        return tuple(
+            config for config in MOCK_METRICS if config.key.startswith(f"{cls.category.value}.")
+        )
 
     async def connect(self) -> None:
         """Rien à ouvrir pour une simulation."""
@@ -188,21 +180,14 @@ class MockConnector(Connector):
         return []
 
     async def sync(self, since: datetime) -> list[MetricSeries]:
-        """Série quotidienne du module, du jour de `since` (au plus tôt à l'époque
-        de référence) au jour courant. Vide si `since` est dans le futur."""
+        """Séries quotidiennes du module, du jour de `since` (au plus tôt à l'époque
+        de référence) au jour courant. Vides si `since` est dans le futur."""
         seed = self.seed
         if seed is None:
             # Défense : un connecteur de démonstration n'a de sens que seedé.
             raise RuntimeError("Un connecteur de démonstration doit être instancié avec un seed.")
-        series = build_series(seed, self.metric_config(), since)
-        return [] if not series.points else [series]
-
-
-class MockFinanceConnector(MockConnector):
-    """Démo finance : chiffre d'affaires quotidien (SPEC §5.4, premier réel : Stripe)."""
-
-    provider = "mock.finance"
-    category = Module.FINANCE
+        series = [build_series(seed, config, since) for config in self.metric_configs()]
+        return [series for series in series if series.points]
 
 
 class MockWebConnector(MockConnector):
@@ -226,9 +211,9 @@ class MockProjectsConnector(MockConnector):
     category = Module.PROJECTS
 
 
-# Les quatre modules permissionnables du MVP ont chacun leur démo (SPÉC §5.4).
+# Les mocks « simple » (une série par module) ; la finance a son panneau dédié
+# dans `finance.py` (MockFinanceConnector, enregistré dans `app/connectors`).
 MOCK_CONNECTORS: tuple[type[MockConnector], ...] = (
-    MockFinanceConnector,
     MockWebConnector,
     MockSocialConnector,
     MockProjectsConnector,

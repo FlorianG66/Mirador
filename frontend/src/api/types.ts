@@ -8,3 +8,20 @@ export type MyPermissionsOut = components['schemas']['MyPermissionsOut']
 export type ModuleKey = components['schemas']['Module']
 export type PermissionLevel = components['schemas']['PermissionLevel']
 export type Role = components['schemas']['Role']
+export type MetricPoint = components['schemas']['MetricPoint']
+export type MetricSeries = components['schemas']['MetricSeries']
+
+/**
+ * Les clés canoniques du panneau financier (sous-phase 5a). Sert à décrire le
+ * contrat des données consommées par la page Finance — chaque clé est un suffixe
+ * `module.metric` du schéma, pas une invention du frontend.
+ */
+export type FinanceMetricKey =
+  | 'finance.revenue'
+  | 'finance.expenses'
+  | 'finance.margin'
+  | 'finance.cash'
+  | 'finance.budget'
+  | 'finance.invoices_outstanding'
+  | 'finance.top_clients'
+  | 'finance.top_suppliers'

@@ -7,6 +7,7 @@ import { AuthProvider } from '../auth/AuthProvider.tsx'
 import { RequireAdmin, RequireAuth, RequireModule } from '../auth/guards.tsx'
 import { AppShell } from '../components/layout/AppShell.tsx'
 import { DashboardPage } from '../pages/DashboardPage.tsx'
+import { FinancePage } from '../pages/FinancePage.tsx'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.tsx'
 import { LoginPage } from '../pages/LoginPage.tsx'
 import { ModulePage } from '../pages/ModulePage.tsx'
@@ -38,7 +39,7 @@ export const routes: RouteObject[] = [
                 path: 'finance',
                 element: (
                   <RequireModule moduleKey="finance">
-                    <ModulePage moduleKey="finance" />
+                    <FinancePage />
                   </RequireModule>
                 ),
               },

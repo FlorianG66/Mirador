@@ -221,3 +221,35 @@ Le worker range/remplace les ~365 derniers jours à chaque passage (upsert sur `
 ## 2026-10-10 — Planificateur in-process, désactivé en test
 
 Le worker tourne dans la boucle asyncio de l'application (lifespan, intervalle `SYNC_INTERVAL_MINUTES`, 0 = éteint), ni processus ni queue dédiés. Raison : un seul processus et des volumes de démo rendent un orchestrateur (APScheduler, Celery…) prématuré ; les tests httpx ne déclenchent pas le lifespan, donc rien ne tourne dans la CI.
+
+## 2026-10-10 — Recharts 3.10.1 pour les graphiques (5a)
+
+`recharts@3.10.1` (dernière version stable npm vérifiée, épinglée exactement, 0 vulnérabilité) est ajouté pour les graphiques du module Finance. Raison : SPEC §7 liste Recharts dans la stack ; les graphiques restent décoratifs (résumé `aria-label`), l'accessibilité des données passe par les KPI et listes textuelles.
+
+## 2026-10-10 — Panneau finance = 8 clés canoniques fixes (5a)
+
+Le frontend charge exactement 8 séries canoniques (`finance.revenue|expenses|margin|cash|budget|invoices_outstanding|top_clients|top_suppliers`), interrogées toutes ensemble (`Promise.all`, polling 5 min). Raison : une page dédiée consomme un contrat stable — pas de découverte dynamique de clés avant la phase 6 (dashboard personnalisable).
+
+## 2026-10-10 — Série absente (404) = « module pas encore connecté » (5a)
+
+Dans `fetchFinancePanel`, un 404 se traduit par une clé `missing` ; seule une clé **toujours** absente rend l'état vide de la page, une vraie erreur (réseau, 5xx, 403) affiche l'état d'erreur avec réessai. Raison : une organisation peut légitimement n'avoir aucune synchro du module, mais l'UI ne doit jamais masquer une panne.
+
+## 2026-10-10 — Tops clients/fournisseurs : parts normalisées, noms fictifs (5a)
+
+`finance.top_clients` vaut la somme du CA du jour avec `dimensions.top = [{name, amount}]` normalisé pour que les parts des noms additionnent 55 % (5 clients), `top_suppliers` 40 % (4 fournisseurs) — chiffres arbitrés comme « part représentée » réaliste. Raison : SPEČ §3 veut un top clients visible et la somme ≪ 100 % évite de prétendre l'exhaustivité ; les noms sont fictifs (jamais de vraies entreprises, dépôt public).
+
+## 2026-10-10 — Marge brute peut être négative (5a)
+
+`finance.margin = revenue − expenses` n'est pas bornée à 0 : un mauvais week-end donne une marge négative (test assoupli en conséquence). Raison : réalisme — une marge toujours positive casserait la cohérence visible entre les séries.
+
+## 2026-10-10 — Trésorerie cumulée depuis l'époque, indépendante de la fenêtre (5a)
+
+`finance.cash` cumule les flux journaliers nets depuis `CREATION_EPOCH` (constante du connecteur), quel que soit l'intervalle demandé. Raison : un « solde de trésorerie » ne peut pas dépendre de la fenêtre du widget — comme `social.followers`, il exige un cumul stable depuis l'origine.
+
+## 2026-10-10 — Formatage affiché via `Intl.NumberFormat` (5a)
+
+`src/metrics/format.ts` centralise devise, devise compacte et dates via `Intl` (langue active), jamais de formatage « à la main » dans les composants. Raison : FR et EN doivent produire les nombres et distances corrects (séparateurs, notation compacte) sans duplication.
+
+## 2026-10-10 — Couleurs des graphiques = tokens de thème, pas de palette fixe (5a)
+
+Les séries de `MultiSeriesChart` reçoivent des couleurs écrites en variables CSS (`var(--brand)`, `--danger`, `--warning`, `--success`). Raison : le clair/sombre bascule sans re-configurer les graphiques, et la charte reste contrôlée au seul endroit où sont définis les tokens.

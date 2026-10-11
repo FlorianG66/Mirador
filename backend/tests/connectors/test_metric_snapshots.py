@@ -18,7 +18,21 @@ from app.repositories import metric_snapshots as metric_snapshots_repository
 from app.services.sync import seed_for_organization, sync_organization
 from tests.conftest import seed_organization_with_admin
 
-EXPECTED_KEYS = {"finance.revenue", "web.visits", "social.followers", "projects.tasks_done"}
+EXPECTED_KEYS = {
+    # Panneau financier (sous-phase 5a).
+    "finance.revenue",
+    "finance.expenses",
+    "finance.margin",
+    "finance.cash",
+    "finance.budget",
+    "finance.invoices_outstanding",
+    "finance.top_clients",
+    "finance.top_suppliers",
+    # Mocks « simple » des autres modules.
+    "web.visits",
+    "social.followers",
+    "projects.tasks_done",
+}
 
 
 async def _seed_org(session: AsyncSession, *, name: str, email: str) -> uuid.UUID:

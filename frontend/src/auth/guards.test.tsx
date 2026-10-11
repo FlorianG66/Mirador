@@ -90,7 +90,9 @@ describe('gardes de routes', () => {
 
     renderAt('/finance')
 
-    expect(await screen.findByText('Module en construction')).toBeInTheDocument()
+    // La sous-phase 5a remplace le placeholder finance par la vraie page : on
+    // vérifie que le module se rend (titre de page), pas son contenu métier.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Finance' })).toBeInTheDocument()
   })
 
   it('réserve la page Équipe aux admins', async () => {

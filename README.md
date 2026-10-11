@@ -2,7 +2,7 @@
 
 > SaaS de dashboard « en un coup d'œil » pour entreprises : finance, web analytics, réseaux sociaux, projets & tâches et identité légale, au même endroit.
 
-> **Statut** : projet en cours de développement — phases 0 à 3 livrées et mergées sur `main` (fondations, identité légale, auth & équipe, frontend socle & design system) ; **phase 4 « Connecteurs & données fictives » livrée sur la branche `phase-4-connecteurs`** (métriques canoniques `module.metric`, quatre connecteurs de démo déterministes par seed, stockage RLS + worker de synchro périodique, endpoint de lecture filtré par tenant et permissions). Phase 5 (modules MVP) ensuite.
+> **Statut** : projet en cours de développement — phases 0 à 3 livrées et mergées sur `main` (fondations, identité légale, auth & équipe, frontend socle & design system) ; **phase 4 « Connecteurs & données fictives »** mergée (métriques canoniques `module.metric`, connecteurs de démo déterministes par seed, stockage RLS + worker de synchro périodique, endpoint de lecture filtré par tenant et permissions) ; **phase 5a « Module Finance » livrée sur la branche `phase-5-modules-mvp`** (connecteur finance à 8 séries cohérentes + page `/finance` complète : KPI, graphiques Recharts, tops, états chargement/vide/erreur, i18n FR/EN).
 
 ## Présentation
 
