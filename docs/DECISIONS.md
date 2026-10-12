@@ -349,3 +349,23 @@ Le champ JSON `schema` de `LegalIdentifierOut` impose un attribut Python `schema
 ## 2026-10-11 — Régénération OpenAPI différée à la 5e-c (5e-b)
 
 L'export `frontend/openapi/schema.json` (donc `src/api/schema.d.ts`) n'est pas régénéré en 5e-b : il est couplé à l'écriture de la page frontend et sera produit une fois les endpoints figés par les tests. Raison : éviter deux régénérations pour un même contrat.
+
+## 2026-10-11 — Page légale dans `src/legal/`, pas `src/metrics/` (5e-c)
+
+La page `/legal` et son support vivent dans `src/legal/` (`queries.ts`, `mentions.ts`, `ProvenanceBadge.tsx`, `LegalEditForm.tsx`), hors du dossier `src/metrics/` des quatre autres modules. Raison : la fiche légale n'est pas un panneau de séries temporelles (pas de polling, un objet unique) ; garder ce dossier propre évite de mélanger deux contrats.
+
+## 2026-10-11 — Export PDF via l'impression du navigateur (5e-c)
+
+L'action « Exporter en PDF » appelle `window.print()` au lieu d'embarquer une bibliothèque de génération PDF. Raison : le navigateur produit un PDF correct sans dépendance supplémentaire (AGENTS.md §2 : option la plus simple) ; une vraie génération serveur sera arbitrée si un format imposé est requis.
+
+## 2026-10-11 — Saisie manuelle : seuls les champs modifiés sont envoyés (5e-c)
+
+Le formulaire compare la saisie à la fiche d'origine et n'envoie que les champs réellement modifiés ; un champ vidé n'est pas envoyé (le backend n'efface pas via `null`). Raison : préserver la provenance — un champ inchangé doit garder sa source `registry` et non basculer en `manual` ; l'effacement volontaire attendra un contrat dédié côté API.
+
+## 2026-10-11 — Rafraîchissement : nombre de champs modifiés calculé côté client (5e-c)
+
+Après un `POST /refresh`, l'UI compare la fiche avant/après et annonce « N champ(s) modifié(s) ». Raison : l'API ne renvoie pas d'indicateur de divergence dans la réponse (l'écart manuel est journalisé côté serveur) ; le delta visible suffit à informer sans exposer la mécanique d'audit.
+
+## 2026-10-11 — Suppression de `src/pages/ModulePage.tsx` (5e-c)
+
+Le placeholder `ModulePage` (quatre modules « en construction ») est supprimé une fois `/legal` remplacée par `LegalPage`. Raison : plus aucune route ne l'utilise — garder un fichier mort serait du bruit (contrôle de `git grep` avant suppression).

@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale (en cours — 5e-a socle backend ✅, 5e-b persistance + endpoints ✅).
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4`).
-- **Prochaine action** : sous-phase 5e-c — page frontend `/legal` (fiche légale : identité, fiscalité, provenance par champ, dirigeants admin, rafraîchissement registre), types `LegalProfileOut`/`LegalMetricKey` ?, régénération du client OpenAPI (`export_openapi.py` puis `npm run generate:api`), i18n `legal.*` FR/EN, tests Vitest.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » à venir.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`).
+- **Prochaine action** : sous-phase 5f — vue d'ensemble « Pouls » (ROADMAP ligne 55, SPEC §4) : KPI clés, santé globale, alertes et fil d'activité sur `DashboardPage`, à partir des modules autorisés.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -602,3 +602,27 @@ Tests :
 | Provenance par champ | ✅ source `registry`/`manual` + date, le manuel prime et l'écart est journalisé |
 | pre-commit | ⏳ à lancer avant commit |
 | CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5e-c livrée (page frontend de la Fiche légale)
+- Nouveau dossier `src/legal/` (hors `src/metrics/` : la fiche est un objet unique, sans polling, v. `DECISIONS.md`) : `queries.ts` (`legalKeys`, `fetchLegalProfile`, `useLegalProfile`, `useUpdateLegalProfile` (PUT) et `useRefreshLegalProfile` (POST refresh) qui mettent à jour le cache TanStack Query), `mentions.ts` (12 champs texte dans l'ordre d'affichage, `formatDate`/`formatDateTime` via `Intl`, `vatIdentifier`, `hasAnyData`, `buildMentionsText`), `ProvenanceBadge.tsx` (source `registry`/`manual`/`computed` + date de synchro), `LegalEditForm.tsx` (saisie des 12 champs + dirigeants admin ; n'envoie **que** les champs réellement modifiés pour préserver la provenance des champs inchangés).
+- `src/pages/LegalPage.tsx` (`/legal`, gardée par `RequireModule moduleKey="legal"`) : en-tête avec actions rafraîchir/éditer limitées au niveau `edit` ou au rôle admin ; quatre blocs — identité avec provenance par champ, TVA, dirigeants (**visibles des seuls administrateurs**), bloc « mentions légales » copiable en un clic (`navigator.clipboard`) ; export PDF par `window.print()` ; états chargement (squelette)/vide/erreur (+ réessai). Une modification n'est pas permise à un membre `view` (aucun bouton d'édition) et les dirigeants sont masqués hors admin.
+- Câblage : `src/app/routes.tsx` pointe `/legal` sur `LegalPage` (fin des placeholders) ; `src/api/types.ts` ajoute `LegalProfile`/`LegalProfileUpdate`/`LegalDirector`/`LegalIdentifier`/`LegalFieldSource` (alias du schéma généré) ; i18n `legal.*` FR/EN ; régénération du client OpenAPI (`schema.json` + `schema.d.ts`) ; suppression de `src/pages/ModulePage.tsx` (devenu mort).
+- Tests : `src/pages/LegalPage.test.tsx` (4 — fiche complète avec provenance/dirigeants/mentions, dirigeants et actions masqués pour un membre, panne réseau avec réessai, saisie manuelle n'envoyant que le champ modifié).
+- Vérifs : Vitest **46 passed** (13 fichiers, +4 vs 5d) · `npm run lint` 0 erreur · `npm run typecheck` 0 erreur · `npm run build` OK · `export_openapi.py` sans diff (schéma à jour) · suite backend complète **317 passed** (209 s ; la 5e-c ne touche pas au backend).
+- Docs : `DECISIONS.md` (5 décisions : dossier `legal/`, export PDF par impression du navigateur, envoi sélectif des champs, comptage client des champs modifiés au refresh, suppression de `ModulePage`), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `206a0c7 feat: add legal identity page (phase 5e-c)` ; docs dans le commit suivant.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phase 5f « Pouls ».
+
+### Critères de la sous-phase 5e-c — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **46 passed** (13 fichiers) |
+| Tests backend | ✅ suite complète **317 passed** (la 5e-c n'ajoute aucun test backend) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Client OpenAPI | ✅ `export_openapi.py` régénéré sans diff (`schema.json` + `schema.d.ts` à jour) |
+| Fiche légale | ✅ 12 champs + provenance par champ, TVA, dirigeants (admin), mentions copiables, export PDF, saisie sélective |
+| Permission `legal` | ✅ `view` lit sans bouton d'édition ; `edit`/admin rafraîchissent et modifient ; dirigeants masqués hors admin |
+| Routes | ✅ `/legal` sur `LegalPage` ; plus aucun placeholder `ModulePage` |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
