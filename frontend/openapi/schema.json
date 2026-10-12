@@ -779,6 +779,280 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}": {
+      "get": {
+        "summary": "Read Metric",
+        "description": "Série chronologique d'une métrique, pour l'organisation active de l'utilisateur.",
+        "operationId": "read_metric_api_v1_organizations__organization_id__metrics__metric_key__get",
+        "parameters": [
+          {
+            "name": "metric_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Clé canonique « module.metric »",
+              "title": "Metric Key"
+            },
+            "description": "Clé canonique « module.metric »"
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Borne basse inclusive",
+              "title": "Start"
+            },
+            "description": "Borne basse inclusive"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Borne haute inclusive",
+              "title": "End"
+            },
+            "description": "Borne haute inclusive"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricSeries"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/pulse": {
+      "get": {
+        "summary": "Read Pulse",
+        "description": "Pouls de l'organisation active : KPI clés, santé et fil d'activité.\n\nLe fil d'activité (journal d'audit) n'est renvoyé qu'aux administrateurs ;\npour un membre, la route l'omet sans erreur.",
+        "operationId": "read_pulse_api_v1_organizations__organization_id__pulse_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PulseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/legal": {
+      "get": {
+        "summary": "Read Legal Profile",
+        "description": "Fiche légale de l'organisation ; dirigeants masqués pour un membre non-admin.",
+        "operationId": "read_legal_profile_api_v1_organizations__organization_id__legal_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Legal Profile",
+        "description": "Écrit la saisie manuelle (source `manual`) : ces valeurs priment sur le registre.",
+        "operationId": "update_legal_profile_api_v1_organizations__organization_id__legal_put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/legal/refresh": {
+      "post": {
+        "summary": "Refresh Legal Profile",
+        "description": "Recharge la fiche depuis le registre, sans écraser la saisie manuelle.",
+        "operationId": "refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Get Health",
@@ -1018,6 +1292,32 @@
         "title": "EnableTwoFactorRequest",
         "description": "Active (ou réactive) le TOTP : le mot de passe courant est exigé."
       },
+      "FieldSourceOut": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "synced_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synced At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "FieldSourceOut",
+        "description": "Provenance d'un champ : registre ou saisie manuelle, à une date donnée."
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -1154,6 +1454,451 @@
         "title": "InvitationOut",
         "description": "Invitation telle que l'admin la voit (niveaux effectifs annoncés)."
       },
+      "LegalDirectorOut": {
+        "properties": {
+          "nom": {
+            "type": "string",
+            "title": "Nom"
+          },
+          "qualite": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualite"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nom"
+        ],
+        "title": "LegalDirectorOut",
+        "description": "Dirigeant publié au registre ou saisi : nom et qualité (donnée personnelle)."
+      },
+      "LegalDirectorUpdate": {
+        "properties": {
+          "nom": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Nom"
+          },
+          "qualite": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qualite"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nom"
+        ],
+        "title": "LegalDirectorUpdate",
+        "description": "Dirigeant saisi à la main (utile quand le registre ne le publie pas)."
+      },
+      "LegalIdentifierOut": {
+        "properties": {
+          "pays": {
+            "type": "string",
+            "title": "Pays"
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema"
+          },
+          "valeur": {
+            "type": "string",
+            "title": "Valeur"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pays",
+          "schema",
+          "valeur",
+          "source",
+          "verified_at"
+        ],
+        "title": "LegalIdentifierOut",
+        "description": "Identifiant légal générique (pays + schéma), ex. le numéro de TVA.\n\nLe champ est exposé en JSON sous `schema` ; en Python il porte `schema_name`\ncar `schema` entre en conflit avec une méthode de `BaseModel`."
+      },
+      "LegalProfileOut": {
+        "properties": {
+          "siren": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siren"
+          },
+          "siret_siege": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siret Siege"
+          },
+          "raison_sociale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raison Sociale"
+          },
+          "nom_commercial": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nom Commercial"
+          },
+          "forme_juridique": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forme Juridique"
+          },
+          "date_creation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Creation"
+          },
+          "code_naf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Naf"
+          },
+          "libelle_naf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Libelle Naf"
+          },
+          "adresse_siege": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adresse Siege"
+          },
+          "tranche_effectif": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tranche Effectif"
+          },
+          "capital_social": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capital Social"
+          },
+          "rcs_greffe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rcs Greffe"
+          },
+          "dirigeants": {
+            "items": {
+              "$ref": "#/components/schemas/LegalDirectorOut"
+            },
+            "type": "array",
+            "title": "Dirigeants"
+          },
+          "sources": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldSourceOut"
+            },
+            "type": "object",
+            "title": "Sources"
+          },
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/LegalIdentifierOut"
+            },
+            "type": "array",
+            "title": "Identifiers"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "siren",
+          "siret_siege",
+          "raison_sociale",
+          "nom_commercial",
+          "forme_juridique",
+          "date_creation",
+          "code_naf",
+          "libelle_naf",
+          "adresse_siege",
+          "tranche_effectif",
+          "capital_social",
+          "rcs_greffe"
+        ],
+        "title": "LegalProfileOut",
+        "description": "Fiche légale complète : identité, fiscalité, provenance et dirigeants."
+      },
+      "LegalProfileUpdate": {
+        "properties": {
+          "siren": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siren"
+          },
+          "siret_siege": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siret Siege"
+          },
+          "raison_sociale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raison Sociale"
+          },
+          "nom_commercial": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nom Commercial"
+          },
+          "forme_juridique": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forme Juridique"
+          },
+          "date_creation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Creation"
+          },
+          "code_naf": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Naf"
+          },
+          "libelle_naf": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Libelle Naf"
+          },
+          "adresse_siege": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adresse Siege"
+          },
+          "tranche_effectif": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tranche Effectif"
+          },
+          "capital_social": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capital Social"
+          },
+          "rcs_greffe": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rcs Greffe"
+          },
+          "dirigeants": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LegalDirectorUpdate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dirigeants"
+          }
+        },
+        "type": "object",
+        "title": "LegalProfileUpdate",
+        "description": "Champs de saisie manuelle : seuls ceux fournis sont écrits (SPEC §5.4).\n\nTous optionnels ; un champ absent du corps est inchangé. Le SIREN et le SIRET\nsont validés (Luhn) dès qu'ils sont fournis ; un SIREN valide recalcule la TVA."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -1281,6 +2026,66 @@
         "title": "MembershipOut",
         "description": "Rattachement de l'utilisateur courant à une organisation."
       },
+      "MetricPoint": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "dimensions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dimensions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "value"
+        ],
+        "title": "MetricPoint",
+        "description": "Un point d'une série : un instant, une valeur, éventuellement des dimensions."
+      },
+      "MetricSeries": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "period": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 1,
+            "title": "Period"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MetricPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "unit",
+          "period"
+        ],
+        "title": "MetricSeries",
+        "description": "Série canonique : clé, unité, période et points (format identique réel/mock)."
+      },
       "Module": {
         "type": "string",
         "enum": [
@@ -1366,6 +2171,107 @@
         ],
         "title": "PermissionsOut",
         "description": "Niveaux effectifs après mise à jour."
+      },
+      "PulseHealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "good",
+              "warning",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "modules_with_data": {
+            "type": "integer",
+            "title": "Modules With Data"
+          },
+          "modules_total": {
+            "type": "integer",
+            "title": "Modules Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "modules_with_data",
+          "modules_total"
+        ],
+        "title": "PulseHealthOut",
+        "description": "Santé opérationnelle : modules alimentés sur les modules autorisés.\n\nUn module sans donnée signifie « pas encore connecté » (démo non\nsynchronisée) : c'est un signal d'exploitation, pas un jugement financier\n(les règles d'alerte métier arrivent en phase 6)."
+      },
+      "PulseKpiOut": {
+        "properties": {
+          "module": {
+            "$ref": "#/components/schemas/Module"
+          },
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "module",
+          "metric_key",
+          "unit",
+          "value",
+          "captured_at"
+        ],
+        "title": "PulseKpiOut",
+        "description": "Dernière valeur d'un KPI clé, avec la valeur précédente pour la tendance."
+      },
+      "PulseOut": {
+        "properties": {
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/PulseKpiOut"
+            },
+            "type": "array",
+            "title": "Kpis"
+          },
+          "health": {
+            "$ref": "#/components/schemas/PulseHealthOut"
+          },
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogOut"
+            },
+            "type": "array",
+            "title": "Activity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "health"
+        ],
+        "title": "PulseOut",
+        "description": "Réponse du Pouls : KPI clés, santé et fil d'activité (réservé aux admins)."
       },
       "RegisterRequest": {
         "properties": {

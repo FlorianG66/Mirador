@@ -4,10 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres.
-  Avant d'attaquer : découper la phase en sous-phases, puis merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis).
-- **Branche** : `phase-4-connecteurs` (créée depuis `main` = `21f3a69` ; commits 4a `6e86c10`, 4b `f0b7823`, 4c `3faa8ba`, 4d `6baa097`, clôture `94dff58`).
-- **Prochaine action** : merger `phase-4-connecteurs` sur `main` (feu vert du mainteneur requis), puis découper et démarrer la phase 5 — Modules MVP.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **La phase 5 est complète** (5a → 5f) : clôture et merge à valider par le mainteneur.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1` + fix `a6f9c96`, docs `479ca93`).
+- **Prochaine action** : clôturer la phase 5 (critères AGENTS.md §3, puis feu vert du mainteneur pour le merge sur `main`), puis ouvrir la phase 6 — fonctions transverses (comparaison de périodes + objectifs/budgets avec alertes de dérive, recherche globale, dashboard personnalisable).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -429,3 +428,235 @@ au premier push GitHub (réglages de dépôt, hors code)
 - Décisions notées dans `docs/DECISIONS.md` (seed par UUID, re-synchro idempotente 365 j, unité par point, planificateur in-process désactivé en test).
 - Base de dev à jour (`alembic upgrade head` → `0006`), worker actif toutes les 5 min par défaut au prochain démarrage de l'API.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (en attente d'un feu vert).
+
+### 2026-10-10 — Sous-phase 5a livrée (module Finance — backend + frontend)
+Backend :
+- `app/connectors/mock.py` refondu : les 3 mocks génériques restants (web/projects/social) ; helpers publics `hash01`/`daily_value`/`cumulative_value` ; `metric_configs()` (tuples de `MockMetricConfig`, nouveau champ `anomalies: bool`).
+- `app/connectors/finance.py` : nouveau `MockFinanceConnector` (provider `mock.finance`) riche — 8 séries cohérentes entre elles : revenue/expenses (CA et dépenses quotidiennes EUR, effet week-end + anomalies), margin (= CA − dépenses, peut être négatif un mauvais week-end), cash (cumulée depuis `CREATION_EPOCH`, indépendante de la fenêtre demandée), budget (hebdomadaire lisse, `anomalies=False`), invoices_outstanding (avec `dimensions.aging = [{days, count}]`), top_clients (parts normalisées, somme = 55 % du CA, 5 noms fictifs) et top_suppliers (40 % des dépenses, 4 noms). `sync` surchargé pour la série cumulée (lookback fixe 365 j → dérive limitée).
+- Registre : `ALL_CONNECTORS = (MockFinanceConnector, *MOCK_CONNECTORS)` (ordre stable), le connecteur finance enregistre les 8 clés.
+- Tests : `tests/connectors/test_finance_mock.py` (11) — cohérence marge, dérivée de la trésorerie (cash[j+1]−cash[j] == net[j+1]), ancienneté décroissante 0-30 > 31-60 > 61+, top clients ≥ 50 % du CA total, déterminisme, registre, séries dans `test_mock_connector.py`/`test_registry.py`/`test_metric_snapshots.py` adaptés (clé finance → job finance).
+- **Piège résolu** : la suite complète restait bloquée 10+ min par des processus PostgreSQL orphelins (clusters `%TEMP%\mirador-pg-*` d'un pgserver précédent encore vivants) — 7 processus tués + 2 répertoires purge → **245 passed en 320 s**. ruff ✅ · format ✅ · mypy strict ✅ · pre-commit ✅.
+Frontend (page `/finance`, remplace le placeholder) :
+- `recharts@3.10.1` installé (épinglé, 36 paquets, 0 vulnérabilité) — justifié dans `docs/DECISIONS.md`.
+- `src/metrics/queries.ts` (clés de requête, `fetchMetricSeries`, `POLLING_INTERVAL_MS` 5 min, limite 60) ; `src/metrics/finance.ts` (les 8 clés canoniques, `fetchFinancePanel` en `Promise.all`, séries absentes = 404 → « pas encore connecté », erreurs réelles propagées) ; `src/metrics/format.ts` (Intl : devise, devise compacte, dates, tendance du dernier point).
+- `src/components/metrics/MultiSeriesChart.tsx` (un seul enveloppe Recharts, variantes area/bar/line, couleurs par tokens CSS `--brand/--danger/--warning/--success`, libellés i18n fournis par l'appelant) et `RankedList.tsx` (classement avec part proportionnelle).
+- `src/pages/FinancePage.tsx` : 4 KPI (CA, trésorerie, marge, impayés) + grille asymétrique (CA vs dépenses 8, ancienneté 4, budget vs réalisé 6, marge 6, top clients/fournisseurs 6+6) ; états chargement/index vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives » (dépôt public). Route `/finance` branchée ; i18n `finance.*` FR/EN.
+- Tests : `FinancePage.test.tsx` (3 — panneau complet, module non connecté, panne réseau), `guards.test.tsx` adapté (la route finance affiche maintenant la vraie page), doublons de texte (KPI « Marge » = titre de graphique) gérés via `getAllByText`.
+- Vérifs : Vitest **33 passed** · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant) · `npx playwright test` rejoué **5/5** (login + a11y inchangés).
+- Docs : `ARCHITECTURE.md` (structure frontend + point 5a), `DECISIONS.md` (7 décisions : Recharts, 8 clés du panneau, 404 = non connecté, parts tops, marge négative, lookback cumul, formatage Intl), `CHANGELOG.md`, ce fichier.
+- Commit : `92f2b11 feat: module Finance (page, KPI et connecteur de démo) (sous-phase 5a)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 5b Web analytics.
+
+### Critères de la phase 5a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **245 passed** |
+| Tests frontend | ✅ Vitest **33 passed** (9 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (81 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Backend Finance | ✅ `MockFinanceConnector` : 8 séries cohérentes (marge = CA − dépenses, trésorerie dérivée, ancienneté, tops) |
+| Frontend Finance | ✅ 4 KPI + grille asymétrique, états chargement/vide/erreur, note « données fictives » |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5b livrée (module Web analytics — backend + frontend)
+Backend :
+- `app/connectors/web.py` : nouveau `MockWebConnector` (provider `mock.web`, `category = Module.WEB`) — 10 séries web cohérentes pilotées par les sessions : `web.sessions` (saisonnalité + week-end + bruit), `web.visitors` (fraction des sessions), `web.pageviews` (sessions × pages/session ≥ sessions), `web.engagement_rate` (%), `web.avg_session_duration` (s), `web.conversions`, et quatre répartitions (`web.traffic_sources` = sessions, `web.top_pages` = 60 % des pages vues sur 5 pages, `web.devices` = visiteurs, `web.countries` = visiteurs) au format `dimensions.items = [{name, value}]` sommant exactement la métrique parente. Chemins de pages fictifs ; sources/appareils = clés canoniques traduites côté UI ; pays = codes ISO nommés par `Intl.DisplayNames`.
+- `app/connectors/mock.py` : `web.visits` retiré ; `MOCK_CONNECTORS = (MockSocialConnector, MockProjectsConnector)`. `app/connectors/__init__.py` : `ALL_CONNECTORS = (MockFinanceConnector, MockWebConnector, *MOCK_CONNECTORS)`.
+- Registre : le connecteur web enregistre les 10 clés (remplace l'ancienne `web.visits`).
+- **Piège résolu** : `upsert_many` dépassait la limite asyncpg de 32 767 paramètres par requête (20 séries × 365 jours × 7 colonnes) → découpage en lots (`_MAX_ROWS_PER_STATEMENT = 2 000`), test de non-régression ajouté.
+- Tests : `tests/connectors/test_web_mock.py` (12 — 10 séries, cohérences visitors ≤ sessions ≤ pageviews, conversions ≤ sessions, somme exacte des répartitions, week-end, déterminisme du seed, futur vide, registre) ; `test_metric_snapshots.py` (`EXPECTED_KEYS` → 10 clés web).
+- Vérifs : connecteurs + registry + snapshots **34 passed** · ruff check + format ✅ · mypy strict ✅ (82 fichiers).
+Frontend (page `/web`, remplace le placeholder) :
+- `src/metrics/web.ts` : les 10 clés canoniques, `fetchWebPanel` en `Promise.all` (404 → « pas encore connecté », erreurs réelles propagées), `useWebPanel` (polling 5 min).
+- `src/metrics/queries.ts` : `isNotFound` déplacé ici (partagé finance/web) et `metricsKeys.panel` étendu à `'finance' | 'web'` ; `finance.ts` importe depuis `queries.ts`.
+- `src/metrics/format.ts` : ajout de `formatInteger`, `formatPercent` (ratio 0→1), `formatDuration` (unités `minute`/`second` via `Intl`, sans texte en dur) et `formatCountry` (`Intl.DisplayNames`).
+- `src/pages/WebPage.tsx` : 4 KPI (visiteurs, sessions, pages vues, taux de conversion) + grille 9 widgets (sessions vs visiteurs, sources, pages vues, top pages, durée, appareils, pays, engagement) ; états chargement/vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives ». Route `/web` branchée sur `RequireModule`.
+- `src/api/types.ts` : union `WebMetricKey` (10 clés) ; i18n `web.*` FR/EN (libellés sources/appareils + note fictive).
+- Tests : `WebPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau, calqués sur `FinancePage.test.tsx`).
+- Vérifs : Vitest **36 passed** (10 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅.
+- Docs : `DECISIONS.md` (décisions 5b), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `f3c75af feat: module Web analytics (page, KPI et connecteur de demo) (sous-phase 5b)` (21 fichiers, +1258/−58).
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases social/projects/legal.
+
+### Critères de la phase 5b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **256 passed** (un lancement concurrent avec Vitest a fait échouer le test *flaky* `test_scheduler` par timing, vert en exécution isolée — sans lien avec la 5b) |
+| Tests frontend | ✅ Vitest **36 passed** (10 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (82 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Bug corrigé | ✅ limite asyncpg 32 767 paramètres (`upsert_many` par lots) + test de non-régression |
+| Backend Web | ✅ `MockWebConnector` : 10 séries cohérentes, répartitions sommant la métrique parente |
+| Frontend Web | ✅ 4 KPI + 9 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5c livrée (module Réseaux sociaux — backend + frontend)
+Backend :
+- `app/connectors/social.py` : nouveau `MockSocialConnector` (provider `mock.social`, `category = Module.SOCIAL`) — 9 séries cohérentes pilotées par les abonnés cumulés : `social.followers` (total cumulé depuis `CREATION_EPOCH`, `dimensions.items` = abonnés par réseau LinkedIn/Instagram/Facebook/X/YouTube sommant le total), `social.followers_growth` (variation quotidienne du total, ≥ 0), `social.impressions`, `social.reach` (≤ impressions), `social.engagements` (≤ impressions), `social.engagement_rate` (= interactions/impressions × 100, 2 décimales), `social.mentions`, `social.posts` (nb de publications/jour, week-end plus calme) et `social.top_posts` (`dimensions.items` = 4 meilleurs posts fictifs, interactions, sommant 45 % des interactions). Helpers `followers_by_network`/`posts_for_day`/`ranked_names`/`_followers_point`/`_distribution_point`/`_days`, `TOP_POSTS_COUNT = 4`, `TOP_POSTS_SHARE = 0.45`, 12 titres de posts fictifs.
+- `app/connectors/mock.py` : `social.followers` retiré (le module social a désormais son panneau comme finance/web) ; `MOCK_CONNECTORS = (MockProjectsConnector,)`. `app/connectors/__init__.py` : `MockSocialConnector` importé depuis `social`, `ALL_CONNECTORS = (MockFinanceConnector, MockWebConnector, MockSocialConnector, *MOCK_CONNECTORS)`.
+- Tests : `tests/connectors/test_social_mock.py` (13 — les 9 séries + tz UTC, abonnés par réseau sommant le total, abonnés cumulés croissants, croissance = variation des abonnés, portée ≤ impressions, interactions ≤ impressions, taux = interactions/impressions, top_posts = 4 items sommant 45 % des interactions, mentions ≥ 0, week-end plus calme, déterminisme du seed, suite vide, registre) ; `test_metric_snapshots.py` (`EXPECTED_KEYS` → 9 clés social).
+- Vérifs : connecteurs **89 passed** · ruff check + format ✅ · mypy strict ✅ (83 fichiers) · suite backend complète **268 passed**.
+Frontend (page `/social`, remplace le placeholder) :
+- `src/metrics/social.ts` : les 9 clés canoniques, `fetchSocialPanel` en `Promise.all` (404 → « pas encore connecté », erreurs réelles propagées), `useSocialPanel` (polling 5 min).
+- `src/metrics/queries.ts` : `metricsKeys.panel` étendu à `'finance' | 'web' | 'social'` ; `src/api/types.ts` : union `SocialMetricKey` (9 clés).
+- `src/pages/SocialPage.tsx` : 4 KPI (abonnés, impressions, portée, taux d'engagement) + grille de 8 widgets (impressions vs portée, abonnés par réseau, croissance, taux d'engagement, mentions, meilleurs posts, interactions, publications) ; états chargement/vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives ». Route `/social` branchée sur `RequireModule`.
+- i18n `social.*` FR/EN (`social.network.*` pour les 5 réseaux) ; `src/pages/SocialPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau).
+- Vérifs : Vitest **39 passed** (11 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant).
+- Docs : `DECISIONS.md` (décisions 5c), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `3b27329 feat: module Réseaux sociaux (page, KPI et connecteur de demo) (sous-phase 5c)` (13 fichiers, +1156/−29) ; docs `442c6af`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phases projects/legal.
+
+### Critères de la phase 5c — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **268 passed** (+12 vs 5b) |
+| Tests frontend | ✅ Vitest **39 passed** (11 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (83 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Backend Social | ✅ `MockSocialConnector` : 9 séries cohérentes, abonnés par réseau et top posts sommant leur métrique parente, croissance = variation |
+| Frontend Social | ✅ 4 KPI + 8 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5d livrée (module Projets & tâches — backend + frontend)
+Backend :
+- `app/connectors/projects.py` : nouveau `MockProjectsConnector` (provider `mock.projects`, `category = Module.PROJECTS`) — 10 séries cohérentes pilotées par le stock de tâches ouvertes : `projects.tasks_created`/`projects.tasks_done` (rythme quotidien, week-end plus calme), `projects.open_tasks` (stock = différence cumulée créées − terminées depuis `CREATION_EPOCH`, jamais négatif), `projects.overdue_tasks` (≤ stock ouvert), `projects.avg_completion_time` (jours, 1 décimale), `projects.avg_progress` (0-100 %), `projects.active_projects`, et trois répartitions (`projects.tasks_by_status` = stock sur 4 statuts canoniques, `projects.person_load` = stock sur 6 personnes fictives, `projects.upcoming_milestones` = délai restant de 6 jalons génériques) au format `dimensions.items = [{name, value}]` sommant exactement la métrique parente. Helpers `_milestones_point`/`_days_until`/`_distribution_point`/`_days`, `STATUSES`/`PERSONS`/`MILESTONES`, `INITIAL_BACKLOG = 40` (aucun salarié ni client réel, AGENTS.md §5).
+- `app/connectors/mock.py` : `projects.tasks_done` et `MockProjectsConnector` retirés (le module projets a désormais son panneau comme les autres) ; `MOCK_METRICS`/`metric_configs()`/`MOCK_CONNECTORS` supprimés, `MockConnector.sync` de base lève `NotImplementedError`. `app/connectors/__init__.py` : `MockProjectsConnector` importé depuis `projects`, `ALL_CONNECTORS = (MockFinanceConnector, MockWebConnector, MockSocialConnector, MockProjectsConnector)`.
+- Tests : `tests/connectors/test_projects_mock.py` (12 — les 10 séries + tz UTC, créées en moyenne > terminées, stock ouvert = différence cumulée au quotidien, retards ≤ stock, avancement dans 0-100, délai de livraison raisonnable, projets actifs ≥ 1, statuts/personnes sommant le stock, jalons à venir triés et sommant leur total, déterminisme du seed, suite vide, registre) ; `test_metric_snapshots.py` (`EXPECTED_KEYS` → 10 clés projets).
+- Vérifs : ruff check + format ✅ · mypy strict ✅ (84 fichiers) · suite backend complète **280 passed** (+12 vs 5c).
+Frontend (page `/projects`, remplace le placeholder) :
+- `src/metrics/projects.ts` : les 10 clés canoniques, `fetchProjectsPanel` en `Promise.all` (404 → « pas encore connecté », erreurs réelles propagées), `useProjectsPanel` (polling 5 min).
+- `src/metrics/queries.ts` : `metricsKeys.panel` étendu à `'finance' | 'web' | 'social' | 'projects'` ; `src/api/types.ts` : union `ProjectMetricKey` (10 clés) ; `src/metrics/format.ts` : ajout de `formatDays` (unité `day` via `Intl`, sans texte en dur).
+- `src/pages/ProjectsPage.tsx` : 4 KPI (tâches terminées, tâches ouvertes, avancement moyen, délai moyen de livraison) + grille de 8 widgets (créées vs terminées 8, tâches par statut, retards, charge par personne, avancement, délai de livraison, jalons à venir, projets actifs) ; états chargement/vide (404 complet)/erreur (+ réessai)/prêt ; note « Données de démonstration fictives ». Route `/projects` branchée sur `RequireModule`.
+- i18n `projects.*` FR/EN (`projects.status.*` pour les 4 statuts) ; `src/pages/ProjectsPage.test.tsx` (3 — panneau complet, module non connecté, panne réseau).
+- Vérifs : Vitest **42 passed** (12 fichiers) · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm run build` ✅ (avertissement chunk > 500 kB pré-existant).
+- Docs : `DECISIONS.md` (décisions 5d), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `c767cdf`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phase legal.
+
+### Critères de la phase 5d — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **280 passed** (+12 vs 5c) |
+| Tests frontend | ✅ Vitest **42 passed** (12 fichiers) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (84 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Backend Projets | ✅ `MockProjectsConnector` : 10 séries cohérentes, stock ouvert = différence cumulée, répartitions sommant la métrique parente |
+| Frontend Projets | ✅ 4 KPI + 8 widgets, états chargement/vide/erreur, note « données fictives », libellés i18n |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5e-a livrée (socle backend du module Identité légale)
+Découpage de la 5e (volumineuse) : **5e-a** socle backend (validation + service de registre), **5e-b** persistance et endpoints `legal`, **5e-c** page frontend `/legal`.
+- `app/core/siren.py` étendu : `is_valid_siret` (14 chiffres + Luhn) et calcul du numéro de TVA (`french_vat_key` = `(12 + 3 × (SIREN mod 97)) mod 97`, `french_vat_number` = `FR` + clé + SIREN), factorisation d'un `_luhn_is_valid` partagé. L'exception connue de la clé de Luhn (certains établissements de La Poste) est **documentée mais non traitée** faute de règle officielle vérifiée (AGENTS.md §2 : ne rien deviner).
+- `app/services/legal_registry.py` : modèle canonique `LegalCompany` (+ `LegalLeader`), contrat `LegalRegistry` (`fetch_by_siren`), et client `RechercheEntreprisesRegistry` de l'API Recherche d'entreprises — `httpx` à **transport injectable** (la CI ne fait jamais d'appel réel), cache mémoire TTL (24 h), timeout 10 s, backoff borné sur 429/5xx (en-tête `Retry-After` respecté, `sleep` injectable). Parsing **tolérant** (`parse_recherche_entreprise`) : champ absent → `None`, entreprise « non diffusible » → dirigeants et adresse masqués (`diffusable=False`). Le mapping des champs (endpoint et noms de clés) est explicitement marqué « à confirmer » sur la documentation officielle avant production.
+- Tests : `tests/test_legal_registry.py` (18) — Luhn SIREN/SIRET (cas valides, mauvaise clé, mauvaise longueur, non-chiffres), formule TVA sur exemple figé, parsing complet, SIREN inconnu → `None`, cache (1 seul appel HTTP), non-diffusible, champs optionnels absents, retentative 429 → succès, abandon sur 5xx répétés, erreur cliente définitive, JSON invalide, panne réseau, résultat sans SIREN.
+- Vérifs : ruff check + format ✅ · mypy strict ✅ (85 fichiers) · suite backend complète **298 passed** (+18 vs 5d).
+- Docs : `DECISIONS.md`, `CHANGELOG.md`, ce fichier.
+- Commit : `fcb1c92`.
+- **Non fait** : persistance/endpoints (5e-b), page frontend (5e-c) ; push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### Critères de la sous-phase 5e-a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **298 passed** (+18 vs 5d) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (85 fichiers) |
+| Validation légale | ✅ SIRET (Luhn) + clé/n° de TVA calculés ; exception La Poste documentée, non traitée |
+| Service registre | ✅ `RechercheEntreprisesRegistry` à transport injectable, cache TTL, timeout, backoff ; aucun appel réseau en test |
+| Non diffusible | ✅ dirigeants et adresse masqués (`diffusable=False`) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5e-b livrée (persistance et endpoints du module Identité légale)
+Persistance :
+- `app/models/legal_profile.py` : `LegalProfile` (1:1 avec l'organisation, `unique(organization_id)`), colonnes d'identité (`raison_sociale`, `forme_juridique`, `siren`, `siret`, `tva`, `code_naf`, `activite_principale`, `date_creation`, `adresse`, `code_postal`, `ville`, `pays`), adresse/ville, JSONB `dirigeants` (liste) et `field_sources` (provenance par champ), horodatage `synced_at`/`updated_at`. Constantes `LEGAL_PROFILE_TEXT_FIELDS`/`LEGAL_PROFILE_FIELDS`.
+- `app/models/legal_identifier.py` : `LegalIdentifier` (unique `(organization_id, pays, schema)`), `IDENTIFIER_SCHEMA_VAT = "vat"` — la TVA étant une donnée d'identifiant (pays + schéma), elle vit ici. `app/models/__init__.py` : exports ajoutés.
+- Migration `0007_phase5_legal_profiles_and_rls.py` : 2 tables + index `organization_id` + **RLS** (`ENABLE`/`FORCE` + policy tenant) comme les autres tables métier.
+- `app/repositories/legal_profiles.py` (`get_by_organization`, `create`) et `app/repositories/legal_identifiers.py` (`list_for_organization`, `upsert` `pg_insert ... on_conflict_do_update`).
+Service et endpoints :
+- `app/schemas/legal.py` : `FieldSourceOut`, `LegalDirectorOut`, `LegalIdentifierOut`, `LegalProfileOut`, `LegalDirectorUpdate`, `LegalProfileUpdate` (validators → 422 sur SIREN/SIRET invalides). Le champ JSON `schema` impose un renommage Python `schema_name` + `serialization_alias="schema"` (conflit avec `BaseModel.schema`).
+- `app/services/legal.py` : `get_profile` (404 si absente), `update_profile` (saisie manuelle → source `manual` par champ, recalcul de la TVA), `refresh_profile` (interroge le registre par SIREN, fusionne via `_merge_registry_value`, marque la source `registry` + `synced_at`, **le manuel prime** et un écart est consigné ; déduit la TVA depuis le SIREN, dirigeants/adresse masqués si non diffusible). Actions d'audit : `legal.profile.updated`, `legal.profile.refreshed`, `legal.profile.diverged`. Erreurs : 400 (SIREN manquant), 404 (inconnu), 502 (registre injoignable).
+- `app/routers/legal.py` : `GET .../legal` (vue), `PUT .../legal` (édition), `POST .../legal/refresh` (édition, rafraîchit depuis le registre). Les **dirigeants ne sont exposés qu'à l'admin**. `app/core/deps.py` : `get_legal_registry`. `app/main.py` : `RechercheEntreprisesRegistry` posé sur `app.state.legal_registry` et router monté.
+Tests :
+- `tests/test_legal.py` (19) : lecture admin/membre, `view` lit mais n'écrit pas → 403, `edit` écrit, saisie manuelle → source `manual`, NAF/TVA calculés, validation 422, rafraîchissement qui pré-remplit, sans SIREN → 400, inconnu → 404, registre indisponible → 502, le manuel prime + `legal.profile.diverged`, changement du registre → champ mis à jour + 2 × `legal.profile.refreshed`, non diffusible masque adresse et dirigeants, dirigeants masqués hors admin, autre organisation → 403, isolation RLS directe (db_session).
+- `tests/conftest.py` : `TRUNCATE` étendu. `tests/helpers.py` : `SIREN_VALIDE`/`SIRET_VALIDE`, `sample_company`, `FakeLegalRegistry`, `install_legal_registry`. `tests/test_alembic.py` : `HEAD_REVISION = "0007"`, `TENANT_TABLES` += 2.
+- **Pièges résolus** : conflit Pydantic `schema` (renommage `schema_name`) ; corruption UTF-8 de `test_legal.py` par PowerShell (réécriture via l'outil d'écriture, BOM retiré par `ruff format`) — leçon : ne pas éditer les sources accentuées avec `Set-Content`/`Get-Content`.
+- Vérifs : ruff check + format ✅ · mypy strict ✅ (92 fichiers) · `pytest tests/test_legal.py tests/test_alembic.py` **26 passed** · suite backend complète **316 passed** (+18 vs 5e-a) — un test *flaky* préexistant (`tests/connectors/test_scheduler.py`) vert en exécution isolée.
+- OpenAPI : non régénéré ici, reporté à la 5e-c (couplé au frontend).
+- Commit : `eb821a4 feat: add legal identity persistence and endpoints (phase 5e-b)` (15 fichiers, +1378/−2).
+- **Non fait** : page frontend (5e-c) ; push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### Critères de la sous-phase 5e-b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ suite complète **316 passed** (+18 vs 5e-a) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (92 fichiers) |
+| Persistance | ✅ `legal_profiles` + `legal_identifiers`, migration `0007` RLS (tenant isolé, test dédié) |
+| Endpoints | ✅ `GET`/`PUT`/`POST refresh` sous `/organizations/{id}/legal`, gardes `view`/`edit`, dirigeants admin only |
+| Provenance par champ | ✅ source `registry`/`manual` + date, le manuel prime et l'écart est journalisé |
+| pre-commit | ⏳ à lancer avant commit |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-11 — Sous-phase 5e-c livrée (page frontend de la Fiche légale)
+- Nouveau dossier `src/legal/` (hors `src/metrics/` : la fiche est un objet unique, sans polling, v. `DECISIONS.md`) : `queries.ts` (`legalKeys`, `fetchLegalProfile`, `useLegalProfile`, `useUpdateLegalProfile` (PUT) et `useRefreshLegalProfile` (POST refresh) qui mettent à jour le cache TanStack Query), `mentions.ts` (12 champs texte dans l'ordre d'affichage, `formatDate`/`formatDateTime` via `Intl`, `vatIdentifier`, `hasAnyData`, `buildMentionsText`), `ProvenanceBadge.tsx` (source `registry`/`manual`/`computed` + date de synchro), `LegalEditForm.tsx` (saisie des 12 champs + dirigeants admin ; n'envoie **que** les champs réellement modifiés pour préserver la provenance des champs inchangés).
+- `src/pages/LegalPage.tsx` (`/legal`, gardée par `RequireModule moduleKey="legal"`) : en-tête avec actions rafraîchir/éditer limitées au niveau `edit` ou au rôle admin ; quatre blocs — identité avec provenance par champ, TVA, dirigeants (**visibles des seuls administrateurs**), bloc « mentions légales » copiable en un clic (`navigator.clipboard`) ; export PDF par `window.print()` ; états chargement (squelette)/vide/erreur (+ réessai). Une modification n'est pas permise à un membre `view` (aucun bouton d'édition) et les dirigeants sont masqués hors admin.
+- Câblage : `src/app/routes.tsx` pointe `/legal` sur `LegalPage` (fin des placeholders) ; `src/api/types.ts` ajoute `LegalProfile`/`LegalProfileUpdate`/`LegalDirector`/`LegalIdentifier`/`LegalFieldSource` (alias du schéma généré) ; i18n `legal.*` FR/EN ; régénération du client OpenAPI (`schema.json` + `schema.d.ts`) ; suppression de `src/pages/ModulePage.tsx` (devenu mort).
+- Tests : `src/pages/LegalPage.test.tsx` (4 — fiche complète avec provenance/dirigeants/mentions, dirigeants et actions masqués pour un membre, panne réseau avec réessai, saisie manuelle n'envoyant que le champ modifié).
+- Vérifs : Vitest **46 passed** (13 fichiers, +4 vs 5d) · `npm run lint` 0 erreur · `npm run typecheck` 0 erreur · `npm run build` OK · `export_openapi.py` sans diff (schéma à jour) · suite backend complète **317 passed** (209 s ; la 5e-c ne touche pas au backend).
+- Docs : `DECISIONS.md` (5 décisions : dossier `legal/`, export PDF par impression du navigateur, envoi sélectif des champs, comptage client des champs modifiés au refresh, suppression de `ModulePage`), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `206a0c7 feat: add legal identity page (phase 5e-c)` ; docs dans le commit suivant.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phase 5f « Pouls ».
+
+### Critères de la sous-phase 5e-c — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **46 passed** (13 fichiers) |
+| Tests backend | ✅ suite complète **317 passed** (la 5e-c n'ajoute aucun test backend) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Client OpenAPI | ✅ `export_openapi.py` régénéré sans diff (`schema.json` + `schema.d.ts` à jour) |
+| Fiche légale | ✅ 12 champs + provenance par champ, TVA, dirigeants (admin), mentions copiables, export PDF, saisie sélective |
+| Permission `legal` | ✅ `view` lit sans bouton d'édition ; `edit`/admin rafraîchissent et modifient ; dirigeants masqués hors admin |
+| Routes | ✅ `/legal` sur `LegalPage` ; plus aucun placeholder `ModulePage` |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-12 — Sous-phase 5f livrée (Vue d'ensemble « Pouls » — backend + frontend)
+Périmètre (décision) : **minimal** — KPI clés des modules autorisés + santé **opérationnelle** + fil d'activité + carte Objectifs vide ; les alertes et objectifs métier réels viendront en phase 6.
+Backend :
+- `app/schemas/pulse.py` : `PulseKpiOut` (module, `metric_key`, unité, valeur, `previous_value` pour la tendance, horodatage), `PulseHealthOut` (`status` `good`/`warning`/`unknown`, `modules_with_data`, `modules_total`) et `PulseOut` (kpis, health, activity).
+- `app/services/pulse.py` : `PULSE_KPI_KEYS` (8 clés — `finance.revenue`/`margin`, `web.visitors`/`conversions`, `social.followers`/`engagement_rate`, `projects.open_tasks`/`avg_progress` ; le légal, sans métrique, est exclu) et `build_pulse` — restreint chaque KPI aux modules visibles (`modules_for`), **omet** un KPI sans donnée (jamais de valeur inventée), calcule la santé (`good` si tous les modules visibles à KPI ont de la donnée, `warning` sinon, `unknown` si aucun) et n'ajoute le fil d'activité (`services.audit.list_recent`) que pour un administrateur.
+- `app/routers/pulse.py` : `GET /organizations/{organization_id}/pulse` — **pas de garde de module** (la route restreint elle-même par membre) ; un membre sans module reçoit un Pouls vide, jamais un 403. Monté dans `app/main.py`.
+- `app/repositories/metric_snapshots.py` : nouvelle lecture `get_latest` (du plus récent au plus ancien) pour la valeur courante **et** la précédente (`get_series` trie en ordre croissant).
+- Tests : `tests/test_pulse.py` (7 — Pouls admin complet, KPI d'un module non autorisé omis, santé `good`/`warning`/`unknown`, KPI sans donnée omis, fil d'activité admin/membre, tendance).
+- Vérifs : `pytest tests/test_pulse.py` **7 passed** · suite backend complète **324 passed** (214,91 s) · ruff check + format ✅ · mypy strict ✅ (95 fichiers).
+Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
+- `src/pulse/queries.ts` (`usePulse`, polling 5 min, `retry:false`) et `src/pulse/format.ts` (`KPI_META` réutilisant les libellés i18n des modules, `kpiTrend`, `formatRelativeTime` via `Intl.RelativeTimeFormat`, `actionLabelKey` des actions d'audit).
+- `src/pages/DashboardPage.tsx` réécrit : grille de `KpiCard` (les KPI clés autorisés), badge de santé en en-tête (`role="status"`), panneau d'activité (note « réservée aux administrateurs » sinon) et carte « Objectifs » en état vide ; suppression des panneaux d'accueil/accès rapide et des 4 `ChartCard` placeholder ; états chargement (squelette)/erreur (+ réessai).
+- `src/api/types.ts` : alias `Pulse`/`PulseKpi`/`PulseHealth`/`AuditLog` ; i18n `dashboard.*` FR/EN (libellés de module réutilisés) + `common.percent` + `web.kpiConversions`/`web.unitConversions` ; régénération du client OpenAPI (`schema.json` + `schema.d.ts`).
+- Tests : `src/pages/DashboardPage.test.tsx` (4 — Pouls complet admin, membre sans activité, KPI vides, panne réseau) ; `App.test.tsx` et `e2e/helpers.ts` mockent `/pulse` ; e2e Playwright `login.spec.ts` (assertion du titre d'accueil mise à jour en `Vue d'ensemble`) et `a11y.spec.ts`.
+- Vérifs : Vitest **50 passed** (14 fichiers) · `npm run lint` 0 erreur · `npm run typecheck` 0 erreur · `npm run build` OK (avertissement chunk > 500 kB pré-existant).
+- Vérifs e2e : `npx playwright test` **5 passed** — une assertion de `login.spec.ts` était restée sur l'ancien titre (« Bienvenue sur votre tableau de bord ») : corrigée (`a6f9c96`), ce que la suite Vitest ne pouvait pas détecter.
+- Docs : `DECISIONS.md` (6 décisions 5f), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `a1d65e1 feat: add overview pulse page and aggregate endpoint (phase 5f)` · correctif e2e `a6f9c96` ; docs dans le commit suivant (`479ca93`).
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; clôture de la phase 5 et phase 6.
+
+### Critères de la sous-phase 5f — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ `tests/test_pulse.py` **7 passed** · suite complète **324 passed** (+7 vs 5e-c) |
+| Tests frontend | ✅ Vitest **50 passed** (14 fichiers, +4 vs 5e-c) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (95 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| e2e Playwright | ✅ `npx playwright test` **5 passed** (login 3 + a11y 2) |
+| Endpoint Pouls | ✅ `GET /organizations/{id}/pulse` : 8 KPI clés restreints aux modules visibles, santé opérationnelle, activité admin-only |
+| Frontend Pouls | ✅ page d'accueil réécrite : KPI + badge de santé + fil d'activité + objectifs vides, états chargement/erreur, i18n FR/EN |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

@@ -17,11 +17,14 @@ from app.routers.google import router as google_router
 from app.routers.health import router as health_router
 from app.routers.invitations import accept_router as invitation_accept_router
 from app.routers.invitations import router as invitations_router
+from app.routers.legal import router as legal_router
 from app.routers.metrics import router as metrics_router
 from app.routers.password import router as password_router
+from app.routers.pulse import router as pulse_router
 from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
+from app.services.legal_registry import RechercheEntreprisesRegistry
 from app.services.oidc import GoogleOidcProvider
 from app.workers.scheduler import JobScheduler
 from app.workers.sync import sync_all_organizations
@@ -69,6 +72,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.rate_limiter = RateLimiter()
     # Envoi d'e-mails : journalisation en développement, SMTP en phase 11.
     app.state.email_sender = LogEmailSender()
+    # Registre d'identité légale (SPEC §3) : service public sans clé ; les tests
+    # remplacent cette instance par un registre factice sur `app.state`.
+    app.state.legal_registry = RechercheEntreprisesRegistry()
     # Connexion Google : fournisseur absent (routes en 404) tant que les
     # identifiants ne sont pas renseignés dans l'environnement.
     app.state.oidc_provider = (
@@ -91,6 +97,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(invitation_accept_router, prefix=API_PREFIX)
     app.include_router(team_router, prefix=API_PREFIX)
     app.include_router(metrics_router, prefix=API_PREFIX)
+    app.include_router(pulse_router, prefix=API_PREFIX)
+    app.include_router(legal_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)
     register_exception_handlers(app)
     return app

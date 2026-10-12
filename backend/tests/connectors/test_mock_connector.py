@@ -25,17 +25,20 @@ def _sync(provider: str, seed: int, since: datetime | None = None):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("provider", ["mock.finance", "mock.web", "mock.social", "mock.projects"])
-async def test_sync_produit_une_serie_canonique_par_module(provider: str) -> None:
+async def test_sync_produit_des_series_canoniques_par_module(provider: str) -> None:
     connector = registry.make(provider, seed=42)
     series = await connector.sync(_NOW - _WINDOW)
 
-    assert len(series) == 1
-    metric = series[0]
-    assert metric.key.startswith(f"{connector.category.value}.")
-    assert metric.period == PERIOD_DAY
-    assert metric.unit
-    assert metric.points  # au moins un point sur la fenêtre
-    assert all(point.value >= 0 for point in metric.points)
+    # Depuis 5a, la finance produit un panneau entier ; les autres modules une série.
+    assert len(series) >= 1
+    for metric in series:
+        assert metric.key.startswith(f"{connector.category.value}.")
+        assert metric.period == PERIOD_DAY
+        assert metric.unit
+        assert metric.points  # au moins un point sur la fenêtre
+        # La marge est une différence : un sale week-end peut la rendre négative.
+        if metric.key != "finance.margin":
+            assert all(point.value >= 0 for point in metric.points)
 
 
 @pytest.mark.asyncio

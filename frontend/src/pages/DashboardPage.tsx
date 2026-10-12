@@ -1,131 +1,174 @@
-// Page « Vue d'ensemble » : disposition « bento » asymétrique (colonnes 7/5).
-// Aucune donnée n'est inventée ici (AGENTS.md §8) — le panneau d'accueil sert de
-// navigation rapide réelle vers les modules autorisés, le reste affiche des
-// états vides soignés en attendant les API des modules.
+// Page « Vue d'ensemble » (sous-phase 5f) : le Pouls de l'entreprise. Elle
+// regroupe les KPI clés des modules autorisés, un indicateur de santé
+// d'exploitation, le fil d'activité (réservé aux admins) et un emplacement
+// d'objectifs. Toutes les données viennent de l'API (AGENTS.md §8), tous les
+// libellés de l'i18n ; le backend filtre déjà par module autorisé.
 import type { LucideIcon } from 'lucide-react'
 import {
-  ArrowRight,
   BarChart3,
+  CircleCheck,
+  CircleHelp,
   History,
   Landmark,
   ListChecks,
   Share2,
+  Target,
+  TriangleAlert,
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
-import type { ModuleKey } from '../api/types.ts'
+import type { AuditLog, ModuleKey, PulseHealth, PulseKpi } from '../api/types.ts'
 import { useAuth } from '../auth/context.ts'
-import { Card, CardHeader, CardTitle } from '../components/ui/Card.tsx'
-import { ChartCard } from '../components/ui/ChartCard.tsx'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.tsx'
 import { EmptyState } from '../components/ui/EmptyState.tsx'
+import { ErrorState } from '../components/ui/ErrorState.tsx'
+import { KpiCard } from '../components/ui/KpiCard.tsx'
 import { PageHeader } from '../components/ui/PageHeader.tsx'
-import { canSeeModule } from '../lib/permissions.ts'
+import { Skeleton } from '../components/ui/Skeleton.tsx'
 import { cn } from '../lib/utils.ts'
+import { KPI_META, actionLabelKey, formatRelativeTime, kpiTrend } from '../pulse/format.ts'
+import { usePulse } from '../pulse/queries.ts'
 
-interface ModuleEntry {
-  moduleKey: ModuleKey
-  to: string
-  icon: LucideIcon
+// Icône d'un module pour les KPI (réutilise celles de la navigation).
+const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
+  finance: Wallet,
+  web: BarChart3,
+  social: Share2,
+  projects: ListChecks,
+  legal: Landmark,
 }
-
-const MODULES: ModuleEntry[] = [
-  { moduleKey: 'finance', to: '/finance', icon: Wallet },
-  { moduleKey: 'web', to: '/web', icon: BarChart3 },
-  { moduleKey: 'social', to: '/social', icon: Share2 },
-  { moduleKey: 'projects', to: '/projects', icon: ListChecks },
-  { moduleKey: 'legal', to: '/legal', icon: Landmark },
-]
-
-// Répartition volontairement asymétrique (7/5 puis 5/7) pour casser la symétrie.
-const WIDGETS: { key: string; titleKey: string; span: string }[] = [
-  { key: 'finance', titleKey: 'nav.finance', span: 'xl:col-span-7' },
-  { key: 'web', titleKey: 'nav.web', span: 'xl:col-span-5' },
-  { key: 'social', titleKey: 'nav.social', span: 'xl:col-span-5' },
-  { key: 'projects', titleKey: 'nav.projects', span: 'xl:col-span-7' },
-]
 
 export function DashboardPage() {
   const { t } = useTranslation()
-  const { permissions } = useAuth()
-  const visibleModules = MODULES.filter((entry) =>
-    canSeeModule(entry.moduleKey, permissions),
-  )
+  const { permissions, activeOrganizationId } = useAuth()
+  const pulseQuery = usePulse(activeOrganizationId ?? '')
+
+  if (pulseQuery.isPending) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+        <PulseSkeleton />
+      </div>
+    )
+  }
+
+  if (pulseQuery.isError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+        <ErrorState
+          title={t('errorState.title')}
+          description={t('dashboard.errorDescription')}
+          retryLabel={t('common.retry')}
+          onRetry={() => void pulseQuery.refetch()}
+        />
+      </div>
+    )
+  }
+
+  const { kpis = [], health, activity = [] } = pulseQuery.data
+  const isAdmin = permissions?.role === 'admin'
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+      <PageHeader
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitle')}
+        actions={<HealthBadge health={health} />}
+      />
+
+      <KpiGrid kpis={kpis} />
 
       <div className="grid gap-4 xl:grid-cols-12">
-        <WelcomePanel modules={visibleModules} className="xl:col-span-8" />
-        <ActivityPanel className="xl:col-span-4" />
-        {WIDGETS.map((widget) => (
-          <ChartCard
-            key={widget.key}
-            className={widget.span}
-            title={t(widget.titleKey)}
-            empty
-            emptyTitle={t('emptyState.title')}
-            emptyDescription={t('emptyState.description')}
-          />
-        ))}
+        <ActivityPanel entries={activity} isAdmin={isAdmin} className="xl:col-span-7" />
+        <GoalsPanel className="xl:col-span-5" />
       </div>
     </div>
   )
 }
 
-function WelcomePanel({
-  modules,
-  className,
-}: {
-  modules: ModuleEntry[]
-  className?: string
-}) {
+/** Indicateur de santé d'exploitation : modules alimentés sur modules visibles. */
+function HealthBadge({ health }: { health: PulseHealth }) {
   const { t } = useTranslation()
+  const config: Record<PulseHealth['status'], { icon: LucideIcon; className: string }> = {
+    good: { icon: CircleCheck, className: 'border-success/30 bg-success/5 text-success' },
+    warning: { icon: TriangleAlert, className: 'border-warning/30 bg-warning/5 text-warning' },
+    unknown: { icon: CircleHelp, className: 'border-border bg-surface-muted text-muted' },
+  }
+  const { icon: Icon, className } = config[health.status]
+  const label = {
+    good: t('dashboard.healthGood'),
+    warning: t('dashboard.healthWarning', {
+      withData: health.modules_with_data,
+      total: health.modules_total,
+    }),
+    unknown: t('dashboard.healthUnknown'),
+  }[health.status]
 
   return (
-    <Card className={cn('relative overflow-hidden p-6', className)}>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-brand/10 blur-3xl"
-      />
-      <div className="relative space-y-5">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">
-            {t('dashboard.welcomeTitle')}
-          </h2>
-          <p className="max-w-md text-sm text-muted">{t('dashboard.welcomeText')}</p>
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-semibold tracking-wider text-muted uppercase">
-            {t('dashboard.quickAccess')}
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {modules.map(({ moduleKey, to, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className="group flex items-center gap-3 rounded-md border border-border bg-surface/70 px-3 py-2.5 text-sm font-medium transition-colors hover:border-brand/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-              >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-muted text-brand">
-                  <Icon aria-hidden="true" className="size-4" />
-                </span>
-                <span className="flex-1 truncate">{t(`nav.${moduleKey}`)}</span>
-                <ArrowRight
-                  aria-hidden="true"
-                  className="size-4 text-muted transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Card>
+    <span
+      role="status"
+      aria-label={t('dashboard.healthAria')}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
+        className,
+      )}
+    >
+      <Icon aria-hidden="true" className="size-3.5" />
+      {label}
+    </span>
   )
 }
 
-function ActivityPanel({ className }: { className?: string }) {
+/** Grille des KPI clés autorisés, ou état vide si aucun module n'a de donnée. */
+function KpiGrid({ kpis }: { kpis: PulseKpi[] }) {
   const { t } = useTranslation()
+
+  if (kpis.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-5">
+          <EmptyState
+            icon={BarChart3}
+            title={t('dashboard.kpiEmptyTitle')}
+            description={t('dashboard.kpiEmptyDescription')}
+          />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {kpis.map((kpi) => {
+        const meta = KPI_META[kpi.metric_key]
+        return (
+          <KpiCard
+            key={kpi.metric_key}
+            label={meta ? t(meta.labelKey) : kpi.metric_key}
+            value={kpi.value}
+            unit={meta?.unitKey ? t(meta.unitKey) : undefined}
+            decimals={meta?.decimals ?? 0}
+            trend={kpiTrend(kpi)}
+            icon={MODULE_ICONS[kpi.module]}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+/** Fil d'activité : journal lisible par les admins, note explicite sinon. */
+function ActivityPanel({
+  entries,
+  isAdmin,
+  className,
+}: {
+  entries: AuditLog[]
+  isAdmin: boolean
+  className?: string
+}) {
+  const { t, i18n } = useTranslation()
 
   return (
     <Card className={cn('flex flex-col', className)}>
@@ -133,13 +176,92 @@ function ActivityPanel({ className }: { className?: string }) {
         <CardTitle>{t('dashboard.activityTitle')}</CardTitle>
       </CardHeader>
       <div className="flex-1 px-5 pb-5">
+        {!isAdmin ? (
+          <EmptyState
+            icon={History}
+            title={t('dashboard.activityAdminOnlyTitle')}
+            description={t('dashboard.activityAdminOnlyDescription')}
+            className="h-full"
+          />
+        ) : entries.length === 0 ? (
+          <EmptyState
+            icon={History}
+            title={t('dashboard.activityEmptyTitle')}
+            description={t('dashboard.activityEmptyDescription')}
+            className="h-full"
+          />
+        ) : (
+          <ul role="list" aria-label={t('dashboard.activityTitle')} className="space-y-1">
+            {entries.map((entry) => (
+              <li
+                key={entry.id}
+                className="flex items-start gap-3 rounded-md px-2 py-2 hover:bg-surface-hover"
+              >
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-muted text-brand">
+                  <History aria-hidden="true" className="size-3.5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm">{t(actionLabelKey(entry))}</p>
+                  <time dateTime={entry.created_at} className="text-xs text-muted">
+                    {formatRelativeTime(entry.created_at, i18n.language)}
+                  </time>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+/** Emplacement des objectifs : état vide, l'édition arrive en phase 6. */
+function GoalsPanel({ className }: { className?: string }) {
+  const { t } = useTranslation()
+
+  return (
+    <Card className={cn('flex flex-col', className)}>
+      <CardHeader>
+        <CardTitle>{t('dashboard.goalsTitle')}</CardTitle>
+      </CardHeader>
+      <div className="flex-1 px-5 pb-5">
         <EmptyState
-          icon={History}
-          title={t('dashboard.activityEmptyTitle')}
-          description={t('dashboard.activityEmptyDescription')}
+          icon={Target}
+          title={t('dashboard.goalsEmptyTitle')}
+          description={t('dashboard.goalsEmptyDescription')}
           className="h-full"
         />
       </div>
     </Card>
+  )
+}
+
+/** Squellette chargé pendant la première requête du Pouls. */
+function PulseSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Card key={index}>
+            <CardContent className="space-y-3 p-5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4 xl:grid-cols-12">
+        <Card className="xl:col-span-7">
+          <CardContent className="p-5">
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
+        <Card className="xl:col-span-5">
+          <CardContent className="p-5">
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }

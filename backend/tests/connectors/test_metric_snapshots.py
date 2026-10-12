@@ -18,7 +18,49 @@ from app.repositories import metric_snapshots as metric_snapshots_repository
 from app.services.sync import seed_for_organization, sync_organization
 from tests.conftest import seed_organization_with_admin
 
-EXPECTED_KEYS = {"finance.revenue", "web.visits", "social.followers", "projects.tasks_done"}
+EXPECTED_KEYS = {
+    # Panneau financier (sous-phase 5a).
+    "finance.revenue",
+    "finance.expenses",
+    "finance.margin",
+    "finance.cash",
+    "finance.budget",
+    "finance.invoices_outstanding",
+    "finance.top_clients",
+    "finance.top_suppliers",
+    # Panneau web analytics (sous-phase 5b).
+    "web.sessions",
+    "web.visitors",
+    "web.pageviews",
+    "web.engagement_rate",
+    "web.avg_session_duration",
+    "web.conversions",
+    "web.traffic_sources",
+    "web.top_pages",
+    "web.devices",
+    "web.countries",
+    # Panneau réseaux sociaux (sous-phase 5c).
+    "social.followers",
+    "social.followers_growth",
+    "social.impressions",
+    "social.reach",
+    "social.engagements",
+    "social.engagement_rate",
+    "social.mentions",
+    "social.posts",
+    "social.top_posts",
+    # Panneau projets & tâches (sous-phase 5d).
+    "projects.tasks_done",
+    "projects.tasks_created",
+    "projects.open_tasks",
+    "projects.overdue_tasks",
+    "projects.avg_completion_time",
+    "projects.avg_progress",
+    "projects.active_projects",
+    "projects.tasks_by_status",
+    "projects.person_load",
+    "projects.upcoming_milestones",
+}
 
 
 async def _seed_org(session: AsyncSession, *, name: str, email: str) -> uuid.UUID:

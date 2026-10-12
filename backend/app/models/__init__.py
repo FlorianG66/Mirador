@@ -10,6 +10,8 @@ from app.models.backup_code import BackupCode
 from app.models.base import Base
 from app.models.enums import Module, PermissionLevel, Role
 from app.models.invitation import Invitation
+from app.models.legal_identifier import LegalIdentifier
+from app.models.legal_profile import LegalProfile
 from app.models.membership import Membership
 from app.models.metric_snapshot import MetricSnapshot
 from app.models.module_permission import ModulePermission
@@ -24,6 +26,8 @@ __all__ = [
     "BackupCode",
     "Base",
     "Invitation",
+    "LegalIdentifier",
+    "LegalProfile",
     "Membership",
     "MetricSnapshot",
     "Module",

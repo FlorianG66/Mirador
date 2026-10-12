@@ -73,5 +73,13 @@ export async function installApiMocks(
     fulfill(route, 200, { role: 'admin', modules }),
   )
 
+  await page.route('**/api/v1/organizations/*/pulse', (route) =>
+    fulfill(route, 200, {
+      kpis: [],
+      health: { status: 'unknown', modules_with_data: 0, modules_total: 0 },
+      activity: [],
+    }),
+  )
+
   return state
 }

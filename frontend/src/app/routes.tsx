@@ -7,15 +7,19 @@ import { AuthProvider } from '../auth/AuthProvider.tsx'
 import { RequireAdmin, RequireAuth, RequireModule } from '../auth/guards.tsx'
 import { AppShell } from '../components/layout/AppShell.tsx'
 import { DashboardPage } from '../pages/DashboardPage.tsx'
+import { FinancePage } from '../pages/FinancePage.tsx'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.tsx'
+import { LegalPage } from '../pages/LegalPage.tsx'
 import { LoginPage } from '../pages/LoginPage.tsx'
-import { ModulePage } from '../pages/ModulePage.tsx'
 import { NotFoundPage } from '../pages/NotFoundPage.tsx'
+import { ProjectsPage } from '../pages/ProjectsPage.tsx'
 import { RegisterPage } from '../pages/RegisterPage.tsx'
 import { SettingsPage } from '../pages/SettingsPage.tsx'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage.tsx'
+import { SocialPage } from '../pages/SocialPage.tsx'
 import { TeamPage } from '../pages/TeamPage.tsx'
 import { TwoFactorPage } from '../pages/TwoFactorPage.tsx'
+import { WebPage } from '../pages/WebPage.tsx'
 
 export const routes: RouteObject[] = [
   {
@@ -38,7 +42,7 @@ export const routes: RouteObject[] = [
                 path: 'finance',
                 element: (
                   <RequireModule moduleKey="finance">
-                    <ModulePage moduleKey="finance" />
+                    <FinancePage />
                   </RequireModule>
                 ),
               },
@@ -46,7 +50,7 @@ export const routes: RouteObject[] = [
                 path: 'web',
                 element: (
                   <RequireModule moduleKey="web">
-                    <ModulePage moduleKey="web" />
+                    <WebPage />
                   </RequireModule>
                 ),
               },
@@ -54,7 +58,7 @@ export const routes: RouteObject[] = [
                 path: 'social',
                 element: (
                   <RequireModule moduleKey="social">
-                    <ModulePage moduleKey="social" />
+                    <SocialPage />
                   </RequireModule>
                 ),
               },
@@ -62,7 +66,7 @@ export const routes: RouteObject[] = [
                 path: 'projects',
                 element: (
                   <RequireModule moduleKey="projects">
-                    <ModulePage moduleKey="projects" />
+                    <ProjectsPage />
                   </RequireModule>
                 ),
               },
@@ -70,7 +74,7 @@ export const routes: RouteObject[] = [
                 path: 'legal',
                 element: (
                   <RequireModule moduleKey="legal">
-                    <ModulePage moduleKey="legal" />
+                    <LegalPage />
                   </RequireModule>
                 ),
               },

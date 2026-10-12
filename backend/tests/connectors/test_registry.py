@@ -4,7 +4,7 @@ import pytest
 
 from app import connectors
 from app.connectors import Connector
-from app.connectors.mock import MockFinanceConnector
+from app.connectors.finance import MockFinanceConnector
 from app.models.enums import Module
 
 

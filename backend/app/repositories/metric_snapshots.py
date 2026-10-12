@@ -12,11 +12,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.metric_snapshot import MetricSnapshot
 from app.schemas.metrics import MetricSnapshotIn
 
+# Un INSERT … VALUES est limité à 32 767 arguments par asyncpg. Chaque ligne en
+# pose 7 (hors valeurs par défaut) : on découpe par lots largement sous la limite,
+# sinon la synchronisation d'un panneau riche (web + finance) échoue d'un bloc.
+_MAX_ROWS_PER_STATEMENT = 2_000
+
 
 async def upsert_many(
     session: AsyncSession, organization_id: uuid.UUID, snapshots: list[MetricSnapshotIn]
 ) -> int:
-    """Écrit les points en une seule instruction, sans doublon (idempotent).
+    """Écrit les points par lots, sans doublon (idempotent).
 
     La contrainte (organization_id, metric_key, captured_at) sert de cible de
     conflit : une re-synchronisation remplace la valeur au lieu d'ajouter une
@@ -36,16 +41,18 @@ async def upsert_many(
         }
         for snapshot in snapshots
     ]
-    statement = pg_insert(MetricSnapshot).values(rows)
-    statement = statement.on_conflict_do_update(
-        constraint="metric_snapshots_org_key_at",
-        set_={
-            "unit": statement.excluded.unit,
-            "value": statement.excluded.value,
-            "dimensions": statement.excluded.dimensions,
-        },
-    )
-    await session.execute(statement)
+    for start in range(0, len(rows), _MAX_ROWS_PER_STATEMENT):
+        chunk = rows[start : start + _MAX_ROWS_PER_STATEMENT]
+        statement = pg_insert(MetricSnapshot).values(chunk)
+        statement = statement.on_conflict_do_update(
+            constraint="metric_snapshots_org_key_at",
+            set_={
+                "unit": statement.excluded.unit,
+                "value": statement.excluded.value,
+                "dimensions": statement.excluded.dimensions,
+            },
+        )
+        await session.execute(statement)
     return len(rows)
 
 
@@ -68,5 +75,30 @@ async def get_series(
     if end is not None:
         statement = statement.where(MetricSnapshot.captured_at <= end)
     statement = statement.order_by(MetricSnapshot.captured_at).limit(limit)
+    result = await session.execute(statement)
+    return list(result.scalars())
+
+
+async def get_latest(
+    session: AsyncSession,
+    organization_id: uuid.UUID,
+    metric_key: str,
+    *,
+    limit: int = 1,
+) -> list[MetricSnapshot]:
+    """Points les plus récents d'une métrique, du plus récent au plus ancien.
+
+    `get_series` trie en ordre croissant : pour un KPI du Pouls on veut l'inverse
+    (le dernier point d'abord), d'où cette lecture dédiée.
+    """
+    statement = (
+        select(MetricSnapshot)
+        .where(
+            MetricSnapshot.organization_id == organization_id,
+            MetricSnapshot.metric_key == metric_key,
+        )
+        .order_by(MetricSnapshot.captured_at.desc())
+        .limit(limit)
+    )
     result = await session.execute(statement)
     return list(result.scalars())

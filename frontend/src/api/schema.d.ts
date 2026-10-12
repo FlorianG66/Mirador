@@ -418,6 +418,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Metric
+         * @description Série chronologique d'une métrique, pour l'organisation active de l'utilisateur.
+         */
+        get: operations["read_metric_api_v1_organizations__organization_id__metrics__metric_key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/pulse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Pulse
+         * @description Pouls de l'organisation active : KPI clés, santé et fil d'activité.
+         *
+         *     Le fil d'activité (journal d'audit) n'est renvoyé qu'aux administrateurs ;
+         *     pour un membre, la route l'omet sans erreur.
+         */
+        get: operations["read_pulse_api_v1_organizations__organization_id__pulse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Legal Profile
+         * @description Fiche légale de l'organisation ; dirigeants masqués pour un membre non-admin.
+         */
+        get: operations["read_legal_profile_api_v1_organizations__organization_id__legal_get"];
+        /**
+         * Update Legal Profile
+         * @description Écrit la saisie manuelle (source `manual`) : ces valeurs priment sur le registre.
+         */
+        put: operations["update_legal_profile_api_v1_organizations__organization_id__legal_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/legal/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Legal Profile
+         * @description Recharge la fiche depuis le registre, sans écraser la saisie manuelle.
+         */
+        post: operations["refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -557,6 +644,16 @@ export interface components {
             /** Current Password */
             current_password: string;
         };
+        /**
+         * FieldSourceOut
+         * @description Provenance d'un champ : registre ou saisie manuelle, à une date donnée.
+         */
+        FieldSourceOut: {
+            /** Source */
+            source: string;
+            /** Synced At */
+            synced_at?: string | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -641,6 +738,120 @@ export interface components {
             expires_at: string;
         };
         /**
+         * LegalDirectorOut
+         * @description Dirigeant publié au registre ou saisi : nom et qualité (donnée personnelle).
+         */
+        LegalDirectorOut: {
+            /** Nom */
+            nom: string;
+            /** Qualite */
+            qualite?: string | null;
+        };
+        /**
+         * LegalDirectorUpdate
+         * @description Dirigeant saisi à la main (utile quand le registre ne le publie pas).
+         */
+        LegalDirectorUpdate: {
+            /** Nom */
+            nom: string;
+            /** Qualite */
+            qualite?: string | null;
+        };
+        /**
+         * LegalIdentifierOut
+         * @description Identifiant légal générique (pays + schéma), ex. le numéro de TVA.
+         *
+         *     Le champ est exposé en JSON sous `schema` ; en Python il porte `schema_name`
+         *     car `schema` entre en conflit avec une méthode de `BaseModel`.
+         */
+        LegalIdentifierOut: {
+            /** Pays */
+            pays: string;
+            /** Schema */
+            schema: string;
+            /** Valeur */
+            valeur: string;
+            /** Source */
+            source: string;
+            /** Verified At */
+            verified_at: string | null;
+        };
+        /**
+         * LegalProfileOut
+         * @description Fiche légale complète : identité, fiscalité, provenance et dirigeants.
+         */
+        LegalProfileOut: {
+            /** Siren */
+            siren: string | null;
+            /** Siret Siege */
+            siret_siege: string | null;
+            /** Raison Sociale */
+            raison_sociale: string | null;
+            /** Nom Commercial */
+            nom_commercial: string | null;
+            /** Forme Juridique */
+            forme_juridique: string | null;
+            /** Date Creation */
+            date_creation: string | null;
+            /** Code Naf */
+            code_naf: string | null;
+            /** Libelle Naf */
+            libelle_naf: string | null;
+            /** Adresse Siege */
+            adresse_siege: string | null;
+            /** Tranche Effectif */
+            tranche_effectif: string | null;
+            /** Capital Social */
+            capital_social: string | null;
+            /** Rcs Greffe */
+            rcs_greffe: string | null;
+            /** Dirigeants */
+            dirigeants?: components["schemas"]["LegalDirectorOut"][];
+            /** Sources */
+            sources?: {
+                [key: string]: components["schemas"]["FieldSourceOut"];
+            };
+            /** Identifiers */
+            identifiers?: components["schemas"]["LegalIdentifierOut"][];
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * LegalProfileUpdate
+         * @description Champs de saisie manuelle : seuls ceux fournis sont écrits (SPEC §5.4).
+         *
+         *     Tous optionnels ; un champ absent du corps est inchangé. Le SIREN et le SIRET
+         *     sont validés (Luhn) dès qu'ils sont fournis ; un SIREN valide recalcule la TVA.
+         */
+        LegalProfileUpdate: {
+            /** Siren */
+            siren?: string | null;
+            /** Siret Siege */
+            siret_siege?: string | null;
+            /** Raison Sociale */
+            raison_sociale?: string | null;
+            /** Nom Commercial */
+            nom_commercial?: string | null;
+            /** Forme Juridique */
+            forme_juridique?: string | null;
+            /** Date Creation */
+            date_creation?: string | null;
+            /** Code Naf */
+            code_naf?: string | null;
+            /** Libelle Naf */
+            libelle_naf?: string | null;
+            /** Adresse Siege */
+            adresse_siege?: string | null;
+            /** Tranche Effectif */
+            tranche_effectif?: string | null;
+            /** Capital Social */
+            capital_social?: string | null;
+            /** Rcs Greffe */
+            rcs_greffe?: string | null;
+            /** Dirigeants */
+            dirigeants?: components["schemas"]["LegalDirectorUpdate"][] | null;
+        };
+        /**
          * LoginRequest
          * @description Connexion e-mail/mot de passe.
          */
@@ -714,6 +925,37 @@ export interface components {
             role: components["schemas"]["Role"];
         };
         /**
+         * MetricPoint
+         * @description Un point d'une série : un instant, une valeur, éventuellement des dimensions.
+         */
+        MetricPoint: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Value */
+            value: number;
+            /** Dimensions */
+            dimensions?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * MetricSeries
+         * @description Série canonique : clé, unité, période et points (format identique réel/mock).
+         */
+        MetricSeries: {
+            /** Key */
+            key: string;
+            /** Unit */
+            unit: string;
+            /** Period */
+            period: string;
+            /** Points */
+            points?: components["schemas"]["MetricPoint"][];
+        };
+        /**
          * Module
          * @description Modules du MVP rendus permissionnables (SPEC §3).
          * @enum {string}
@@ -758,6 +1000,56 @@ export interface components {
             modules: {
                 [key: string]: components["schemas"]["PermissionLevel"];
             };
+        };
+        /**
+         * PulseHealthOut
+         * @description Santé opérationnelle : modules alimentés sur les modules autorisés.
+         *
+         *     Un module sans donnée signifie « pas encore connecté » (démo non
+         *     synchronisée) : c'est un signal d'exploitation, pas un jugement financier
+         *     (les règles d'alerte métier arrivent en phase 6).
+         */
+        PulseHealthOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "good" | "warning" | "unknown";
+            /** Modules With Data */
+            modules_with_data: number;
+            /** Modules Total */
+            modules_total: number;
+        };
+        /**
+         * PulseKpiOut
+         * @description Dernière valeur d'un KPI clé, avec la valeur précédente pour la tendance.
+         */
+        PulseKpiOut: {
+            module: components["schemas"]["Module"];
+            /** Metric Key */
+            metric_key: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: number;
+            /** Previous Value */
+            previous_value?: number | null;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+        };
+        /**
+         * PulseOut
+         * @description Réponse du Pouls : KPI clés, santé et fil d'activité (réservé aux admins).
+         */
+        PulseOut: {
+            /** Kpis */
+            kpis?: components["schemas"]["PulseKpiOut"][];
+            health: components["schemas"]["PulseHealthOut"];
+            /** Activity */
+            activity?: components["schemas"]["AuditLogOut"][];
         };
         /**
          * RegisterRequest
@@ -1468,6 +1760,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditLogOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_metric_api_v1_organizations__organization_id__metrics__metric_key__get: {
+        parameters: {
+            query?: {
+                /** @description Borne basse inclusive */
+                start?: string | null;
+                /** @description Borne haute inclusive */
+                end?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Clé canonique « module.metric » */
+                metric_key: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricSeries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_pulse_api_v1_organizations__organization_id__pulse_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PulseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_legal_profile_api_v1_organizations__organization_id__legal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_legal_profile_api_v1_organizations__organization_id__legal_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalProfileOut"];
                 };
             };
             /** @description Validation Error */

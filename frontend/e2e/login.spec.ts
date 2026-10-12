@@ -16,9 +16,7 @@ test.describe('connexion', () => {
     await page.getByRole('button', { name: 'Se connecter' }).click()
 
     await expect(page).toHaveURL('/')
-    await expect(
-      page.getByRole('heading', { name: 'Bienvenue sur votre tableau de bord' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: "Vue d'ensemble" })).toBeVisible()
     expect(state.loggedIn).toBe(true)
   })
 

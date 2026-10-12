@@ -221,3 +221,175 @@ Le worker range/remplace les ~365 derniers jours à chaque passage (upsert sur `
 ## 2026-10-10 — Planificateur in-process, désactivé en test
 
 Le worker tourne dans la boucle asyncio de l'application (lifespan, intervalle `SYNC_INTERVAL_MINUTES`, 0 = éteint), ni processus ni queue dédiés. Raison : un seul processus et des volumes de démo rendent un orchestrateur (APScheduler, Celery…) prématuré ; les tests httpx ne déclenchent pas le lifespan, donc rien ne tourne dans la CI.
+
+## 2026-10-10 — Recharts 3.10.1 pour les graphiques (5a)
+
+`recharts@3.10.1` (dernière version stable npm vérifiée, épinglée exactement, 0 vulnérabilité) est ajouté pour les graphiques du module Finance. Raison : SPEC §7 liste Recharts dans la stack ; les graphiques restent décoratifs (résumé `aria-label`), l'accessibilité des données passe par les KPI et listes textuelles.
+
+## 2026-10-10 — Panneau finance = 8 clés canoniques fixes (5a)
+
+Le frontend charge exactement 8 séries canoniques (`finance.revenue|expenses|margin|cash|budget|invoices_outstanding|top_clients|top_suppliers`), interrogées toutes ensemble (`Promise.all`, polling 5 min). Raison : une page dédiée consomme un contrat stable — pas de découverte dynamique de clés avant la phase 6 (dashboard personnalisable).
+
+## 2026-10-10 — Série absente (404) = « module pas encore connecté » (5a)
+
+Dans `fetchFinancePanel`, un 404 se traduit par une clé `missing` ; seule une clé **toujours** absente rend l'état vide de la page, une vraie erreur (réseau, 5xx, 403) affiche l'état d'erreur avec réessai. Raison : une organisation peut légitimement n'avoir aucune synchro du module, mais l'UI ne doit jamais masquer une panne.
+
+## 2026-10-10 — Tops clients/fournisseurs : parts normalisées, noms fictifs (5a)
+
+`finance.top_clients` vaut la somme du CA du jour avec `dimensions.top = [{name, amount}]` normalisé pour que les parts des noms additionnent 55 % (5 clients), `top_suppliers` 40 % (4 fournisseurs) — chiffres arbitrés comme « part représentée » réaliste. Raison : SPEČ §3 veut un top clients visible et la somme ≪ 100 % évite de prétendre l'exhaustivité ; les noms sont fictifs (jamais de vraies entreprises, dépôt public).
+
+## 2026-10-10 — Marge brute peut être négative (5a)
+
+`finance.margin = revenue − expenses` n'est pas bornée à 0 : un mauvais week-end donne une marge négative (test assoupli en conséquence). Raison : réalisme — une marge toujours positive casserait la cohérence visible entre les séries.
+
+## 2026-10-10 — Trésorerie cumulée depuis l'époque, indépendante de la fenêtre (5a)
+
+`finance.cash` cumule les flux journaliers nets depuis `CREATION_EPOCH` (constante du connecteur), quel que soit l'intervalle demandé. Raison : un « solde de trésorerie » ne peut pas dépendre de la fenêtre du widget — comme `social.followers`, il exige un cumul stable depuis l'origine.
+
+## 2026-10-10 — Formatage affiché via `Intl.NumberFormat` (5a)
+
+`src/metrics/format.ts` centralise devise, devise compacte et dates via `Intl` (langue active), jamais de formatage « à la main » dans les composants. Raison : FR et EN doivent produire les nombres et distances corrects (séparateurs, notation compacte) sans duplication.
+
+## 2026-10-10 — Couleurs des graphiques = tokens de thème, pas de palette fixe (5a)
+
+Les séries de `MultiSeriesChart` reçoivent des couleurs écrites en variables CSS (`var(--brand)`, `--danger`, `--warning`, `--success`). Raison : le clair/sombre bascule sans re-configurer les graphiques, et la charte reste contrôlée au seul endroit où sont définis les tokens.
+
+## 2026-10-11 — Panneau web = 10 clés canoniques fixes (5b)
+
+Le frontend charge exactement 10 séries (`web.sessions|visitors|pageviews|engagement_rate|avg_session_duration|conversions|traffic_sources|top_pages|devices|countries`), interrogées ensemble (`Promise.all`, polling 5 min). Raison : même contrat de page dédiée que la finance (5a) — colonne vertébrale `sessions`, pas de découverte dynamique de clés avant la phase 6.
+
+## 2026-10-11 — Répartitions web : `dimensions.items` sommant la métrique parente (5b)
+
+`web.traffic_sources`, `web.top_pages`, `web.devices` et `web.countries` portent `dimensions.items = [{name, value}]` trié décroissant, dont la somme vaut **exactement** la métrique parente (sessions, 60 % des pages vues, visiteurs, visiteurs). Raison : un widget de répartition ne doit pas contredire le KPI du dessus ; la dernière entrée absorbe l'arrondi.
+
+## 2026-10-11 — Sources/appareils en clés canoniques, pays en codes ISO (5b)
+
+Le connecteur stocke les sources (`direct`, `organic_search`, …) et appareils (`desktop`, `mobile`, `tablet`) comme clés canoniques traduites par i18n (`web.source.*`, `web.device.*`), et les pays comme codes ISO 3166-1 alpha-2 nommés côté UI via `Intl.DisplayNames`. Raison : aucun texte en dur dans les données (AGENTS.md §7), et l'affichage suit la langue active sans stocker de libellé.
+
+## 2026-10-11 — `upsert_many` par lots (limite de paramètres asyncpg) (5b)
+
+`metric_snapshots.upsert_many` découpe l'insertion en lots de 2 000 lignes (`_MAX_ROWS_PER_STATEMENT`) au lieu d'un unique `INSERT`. Raison : asyncpg refuse plus de 32 767 arguments par requête ; le module web (20 séries × 365 jours × 7 colonnes) dépassait la limite, un test de non-régression verrouille le découpage.
+
+## 2026-10-11 — Formatage web centralisé dans `format.ts` (5b)
+
+Compteurs (`formatInteger`, `formatPercent` sur ratio 0→1), durées (`formatDuration` : unités `minute`/`second` via `Intl.NumberFormat`) et pays (`formatCountry` via `Intl.DisplayNames`) rejoignent les formatages finance, sans aucun libellé d'unité codé en dur. Raison : FR/EN corrects et maintenus à un seul endroit, comme la décision 5a sur `Intl`.
+
+## 2026-10-11 — Panneau social = 9 clés canoniques fixes (5c)
+
+Le frontend charge exactement 9 séries (`social.followers|followers_growth|impressions|reach|engagements|engagement_rate|mentions|posts|top_posts`), interrogées ensemble (`Promise.all`, polling 5 min). Raison : même contrat de page dédiée que finance (5a) et web (5b) — colonne vertébrale `followers`, pas de découverte dynamique de clés avant la phase 6.
+
+## 2026-10-11 — Abonnés cumulés depuis l'époque, croissance = variation positive (5c)
+
+`social.followers` cumule depuis `CREATION_EPOCH` et reste monotone croissant ; `social.followers_growth` est la variation quotidienne du total (différence des points), donc **toujours ≥ 0**. Raison : un nombre d'abonnés ne baisse pas dans une démo crédible, et garder la croissance positive évite de relâcher l'assertion générique « espérance ≥ 0 » des séries (seule `finance.margin` y échappe).
+
+## 2026-10-11 — Répartitions sociales : `dimensions.items` sommant la métrique parente (5c)
+
+`social.followers` porte `dimensions.items = [{name, value}]` (abonnés par réseau, trié décroissant) sommant **exactement** le total, et `social.top_posts` porte les 4 meilleurs posts dont la somme vaut `engagements × 0.45` (`TOP_POSTS_SHARE`). Raison : cohérence visible avec les KPI du dessus (même principe qu'en 5b) ; les titres de posts sont fictifs (dépôt public) et 45 % évite de prétendre l'exhaustivité.
+
+## 2026-10-11 — Réseaux stockés en clés canoniques, traduits par i18n (5c)
+
+Le connecteur nomme les réseaux (`linkedin`, `instagram`, `facebook`, `x`, `youtube`) comme clés brutes, traduites côté UI par `social.network.*`. Raison : aucun texte en dur dans les données (AGENTS.md §7) et l'affichage suit la langue active ; `x` est affiché « X (Twitter) » sans stocker le libellé.
+
+## 2026-10-11 — Panneau projets = 10 clés canoniques fixes (5d)
+
+Le frontend charge exactement 10 séries (`projects.tasks_done|tasks_created|open_tasks|overdue_tasks|avg_completion_time|avg_progress|active_projects|tasks_by_status|person_load|upcoming_milestones`), interrogées ensemble (`Promise.all`, polling 5 min). Raison : même contrat de page dédiée que 5a/5b/5c — colonne vertébrale « stock de tâches ouvertes », pas de découverte dynamique de clés avant la phase 6 ; `tasks_created` complète `tasks_done` pour visualiser le rythme créées vs terminées qui alimente le stock.
+
+## 2026-10-11 — Tâches ouvertes = stock cumulé, retards et répartitions en dérivent (5d)
+
+`projects.open_tasks` est le cumul `INITIAL_BACKLOG + Σ(créées − terminées)` depuis `CREATION_EPOCH` (jamais négatif, indépendant de la fenêtre, comme `finance.cash`/`social.followers`) ; `overdue_tasks` (≤ stock), `tasks_by_status` et `person_load` en sont des fractions qui somment **exactement** le stock. Raison : un backlog de tâches est un état, pas un flux ; les widgets de répartition doivent rester cohérents avec le KPI d'ouvertes du dessus (même principe qu'en 5b/5c).
+
+## 2026-10-11 — Jalons à venir = somme des jours restants, pas un compte (5d)
+
+`projects.upcoming_milestones` porte `dimensions.items = [{name, value}]` où `value` est le nombre de jours restant jusqu'au jalon (jalons triés du plus proche au plus lointain) et la valeur de la série est la somme de ces délais. Raison : le widget `RankedList` affiche une intensité par jalon ; une somme de jours reste une métrique agrégée utile, là où un simple compte « 6 jalons » n'apporterait rien de plus que le nombre d'items.
+
+## 2026-10-11 — Statuts et personnes en clés canoniques, traduits par i18n (5d)
+
+Le connecteur nomme les 4 statuts (`todo`, `in_progress`, `review`, `blocked`) et les 6 personnes comme clés brutes, traduites côté UI par `projects.status.*` (les noms de personnes sont fictifs, aucun salarié réel — AGENTS.md §5). Raison : aucun texte en dur dans les données (AGENTS.md §7), l'affichage suit la langue active.
+
+## 2026-10-11 — `mock.py` purgé du module projets, `sync` de base en erreur explicite (5d)
+
+`MockProjectsConnector` et la clé `projects.tasks_done` quittent `mock.py` (le module a son panneau comme finance/web/social) et `MockConnector.sync` de base lève désormais `NotImplementedError` au lieu de retourner un stub. Raison : `mock.py` ne garde que les helpers partagés (`CREATION_EPOCH`, `MockMetricConfig`, `build_series`, `daily_value`, `cumulative_value`, `hash01`) ; un `sync` hérité par erreur doit échouer bruyamment plutôt que renvoyer des données muettes.
+
+## 2026-10-11 — Découpage de la 5e en trois sous-phases (5e)
+
+La 5e est scindée en **5e-a** socle backend (validation SIREN/SIRET/TVA + service de registre), **5e-b** persistance (`legal_profiles`/`legal_identifiers`, migration RLS) + endpoints `legal` + permission, **5e-c** page frontend `/legal`. Raison : la 5e couvre à elle seule validation, appel à des registres externes, nouveau schéma, endpoints et UI — trop pour une session (AGENTS.md §2 : découper si ça dépasse).
+
+## 2026-10-11 — Registre légal : transport httpx injectable, jamais d'appel réel en CI (5e-a)
+
+`RechercheEntreprisesRegistry` reçoit un `httpx.AsyncBaseTransport` (même schéma que `GoogleOidcProvider`) et un `sleep` injectables ; les tests fournissent un `httpx.MockTransport` à réponses simulées. Raison : la CI ne doit jamais dépendre d'un service public externe (ROADMAP 5e), et le backoff doit être testable sans attente réelle.
+
+## 2026-10-11 — Modèle `LegalCompany` canonique, parsing tolérant et mapping à confirmer (5e-a)
+
+Le registre produit une structure interne `LegalCompany`/`LegalLeader` indépendante du fournisseur ; `parse_recherche_entreprise` lit chaque champ de façon tolérante (absent → `None`) et masque dirigeants/adresse d'une entreprise non diffusible (`diffusable=False`). Le mapping (endpoint et noms de clés de l'API Recherche d'entreprises) est explicitement marqué « à confirmer sur la documentation officielle » avant production. Raison : ne rien deviner (AGENTS.md §2) ; un futur repli INSEE/pays doit produire la même structure.
+
+## 2026-10-11 — Exception de la clé de Luhn (La Poste) documentée, non traitée (5e-a)
+
+`is_valid_siret`/`is_valid_siren` appliquent la clé de Luhn standard ; l'exception connue (certains établissements de La Poste) n'est pas traitée. Raison : la règle exacte n'a pas été vérifiée sur une source officielle — mieux vaut un faux négatif documenté qu'une règle inventée (AGENTS.md §2).
+
+## 2026-10-11 — Fiche légale : une table d'identité + une table d'identifiants (5e-b)
+
+`legal_profiles` (1:1 avec l'organisation) porte les champs d'identité textuels et `legal_identifiers` (unique `organization_id, pays, schema`) porte les identifiants structurés, la TVA vivant ici sous `schema="vat"`, `pays="FR"`. Raison : la TVA est un identifiant calculé (pas un champ de saisie parmi d'autres) et la clé `(pays, schema)` prépare l'extension à d'autres pays/schémas sans migrer `legal_profiles`.
+
+## 2026-10-11 — Provenance stockée par champ dans un JSONB `field_sources` (5e-b)
+
+Chaque champ de la fiche légale a une entrée `field_sources[champ] = {source: "registry"|"manual", synced_at}`. Raison : l'UI doit afficher d'où vient chaque valeur et quand elle a été synchronisée (SPEC §3) ; un JSONB évite une table de provenance par champ pour un besoin purement informatif.
+
+## 2026-10-11 — La saisie manuelle prime, l'écart avec le registre est journalisé (5e-b)
+
+Lors d'un `refresh`, une valeur saisie à la main (`source="manual"`) n'est jamais écrasée par le registre ; si le registre renvoie une valeur différente, un audit `legal.profile.diverged` est consigné. Raison : une correction humaine est intentionnelle et ne doit pas être perdue par une resynchronisation ; l'écart reste traçable plutôt que silencieux.
+
+## 2026-10-11 — Dirigeants et adresse masqués hors admin ; non-diffusable respecté (5e-b)
+
+Les dirigeants ne sont exposés qu'à l'administrateur (`Role.ADMIN`) et, si l'entreprise est « non diffusible » au registre, adresse et dirigeants sortent masqués. Raison : données potentiellement personnelles (AGENTS.md §5) et exigence de l'annuaire des entreprises ; la même règle qu'en 5e-a est donc appliquée jusqu'à l'API.
+
+## 2026-10-11 — `schema_name` côté Python, alias JSON `schema` (5e-b)
+
+Le champ JSON `schema` de `LegalIdentifierOut` impose un attribut Python `schema_name` avec `serialization_alias="schema"`. Raison : `schema` entre en collision avec `BaseModel.schema` (déprécié mais résolu par Pydantic) ; l'alias préserve le contrat d'API attendu (`GET .../legal` renvoie `schema`).
+
+## 2026-10-11 — Régénération OpenAPI différée à la 5e-c (5e-b)
+
+L'export `frontend/openapi/schema.json` (donc `src/api/schema.d.ts`) n'est pas régénéré en 5e-b : il est couplé à l'écriture de la page frontend et sera produit une fois les endpoints figés par les tests. Raison : éviter deux régénérations pour un même contrat.
+
+## 2026-10-11 — Page légale dans `src/legal/`, pas `src/metrics/` (5e-c)
+
+La page `/legal` et son support vivent dans `src/legal/` (`queries.ts`, `mentions.ts`, `ProvenanceBadge.tsx`, `LegalEditForm.tsx`), hors du dossier `src/metrics/` des quatre autres modules. Raison : la fiche légale n'est pas un panneau de séries temporelles (pas de polling, un objet unique) ; garder ce dossier propre évite de mélanger deux contrats.
+
+## 2026-10-11 — Export PDF via l'impression du navigateur (5e-c)
+
+L'action « Exporter en PDF » appelle `window.print()` au lieu d'embarquer une bibliothèque de génération PDF. Raison : le navigateur produit un PDF correct sans dépendance supplémentaire (AGENTS.md §2 : option la plus simple) ; une vraie génération serveur sera arbitrée si un format imposé est requis.
+
+## 2026-10-11 — Saisie manuelle : seuls les champs modifiés sont envoyés (5e-c)
+
+Le formulaire compare la saisie à la fiche d'origine et n'envoie que les champs réellement modifiés ; un champ vidé n'est pas envoyé (le backend n'efface pas via `null`). Raison : préserver la provenance — un champ inchangé doit garder sa source `registry` et non basculer en `manual` ; l'effacement volontaire attendra un contrat dédié côté API.
+
+## 2026-10-11 — Rafraîchissement : nombre de champs modifiés calculé côté client (5e-c)
+
+Après un `POST /refresh`, l'UI compare la fiche avant/après et annonce « N champ(s) modifié(s) ». Raison : l'API ne renvoie pas d'indicateur de divergence dans la réponse (l'écart manuel est journalisé côté serveur) ; le delta visible suffit à informer sans exposer la mécanique d'audit.
+
+## 2026-10-11 — Suppression de `src/pages/ModulePage.tsx` (5e-c)
+
+Le placeholder `ModulePage` (quatre modules « en construction ») est supprimé une fois `/legal` remplacée par `LegalPage`. Raison : plus aucune route ne l'utilise — garder un fichier mort serait du bruit (contrôle de `git grep` avant suppression).
+
+## 2026-10-12 — Pouls minimal : KPI clés + santé + activité, alertes et objectifs en phase 6 (5f)
+
+Le Pouls livre un agrégat en lecture seule (KPI clés des modules autorisés, indicateur de santé, fil d'activité) et une carte « Objectifs » vide ; les règles d'alerte et d'objectif réelles arrivent en phase 6. Raison : décision de périmètre explicite (une sous-phase = un pas livrable) ; l'agrégat n'invente aucune règle métier.
+
+## 2026-10-12 — La santé du Pouls est un signal d'exploitation, pas un jugement métier (5f)
+
+`good`/`warning`/`unknown` ne dépend que de « un module visible a-t-il de la donnée ? » (`modules_with_data` / `modules_total`, légal exclu car sans métrique). Raison : aucune règle financière n'a été vérifiée (AGENTS.md §2 : ne rien deviner) — l'état reflète la connexion/synchro des modules, pas leur performance.
+
+## 2026-10-12 — Le Pouls filtre par module autorisé, sans garde de module sur la route (5f)
+
+La route `GET /organizations/{id}/pulse` n'a pas de garde de module : le service restreint lui-même chaque KPI aux modules visibles, et un membre sans module reçoit un Pouls vide (santé `unknown`), jamais un 403. Raison : la page d'accueil ne doit pas être un cul-de-sac pour un membre sans droit — elle affiche un état vide explicite.
+
+## 2026-10-12 — Fil d'activité du Pouls réservé aux administrateurs (5f)
+
+Le fil (journal d'audit, `services.audit.list_recent`) n'est renvoyé que si `membership.role == admin`, sinon la route l'omet (`activity: []`) et l'UI affiche une note « réservé aux admins ». Raison : ne pas contourner la règle de la 2d (audit admin-only) par la porte de l'agrégat.
+
+## 2026-10-12 — Huit KPI clés, libellés de module réutilisés (5f)
+
+Le Pouls expose 8 clés (2 par module à métrique) : `finance.revenue`/`margin`, `web.visitors`/`conversions`, `social.followers`/`engagement_rate`, `projects.open_tasks`/`avg_progress` ; le module légal n'a pas de métrique. Le frontend réutilise les libellés i18n existants des pages de module (`finance.*`, `web.*`, `social.*`, `projects.*`) et n'ajoute que `common.percent` et `web.kpiConversions`/`web.unitConversions`. Raison : une seule source de libellés (pas de duplication i18n), et aucune logique métier dans l'agrégat.
+
+## 2026-10-12 — Lecture `get_latest` pour la valeur courante et la précédente (5f)
+
+Le KPI du Pouls lit les deux derniers points via `metric_snapshots.get_latest` (tri décroissant), pas `get_series` (tri croissant, fenêtré). Raison : le Pouls veut la dernière valeur et la précédente pour la tendance, pas une série complète — une lecture dédiée est plus simple et évite de charger 365 points par KPI.
