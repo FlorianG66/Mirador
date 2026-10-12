@@ -405,3 +405,11 @@ L'agrégation d'une fenêtre et la frontière entre les deux périodes vivent da
 ## 2026-10-12 — Comparaison : une lecture, frontière `end - days` (6a-i)
 
 `get_metric_comparison` lit une seule fois la double fenêtre `[end - 2×days, end]` puis répartit les points (`captured_at > end - days` → période courante). Raison : une requête au lieu de deux, et une frontière déterministe (pas de point compté deux fois) facile à tester avec un `end` explicite ; le résumé expose `change` et `change_percent` (`null` si la période précédente vaut 0).
+
+## 2026-10-12 — La comparaison de périodes est portée par le tableau de bord (6a-ii)
+
+Le sélecteur 7 j / 30 j / 90 j (défaut 30 j) vit sur la vue d'ensemble et pilote, pour chaque KPI clé du Pouls, un appel à `GET /metrics/{clé}/comparison?days=` : la carte affiche `summary.current_value` et `summary.change_percent`. Raison : le tableau de bord est la vue « coup d'œil » où la roadmap (6a) associe comparaison et objectifs ; le contrat du Pouls (5f) reste inchangé et aucun calcul n'est dupliqué côté client.
+
+## 2026-10-12 — Un KPI sans donnée sur la fenêtre retombe sur la dernière valeur (6a-ii)
+
+Une comparaison en 404 (aucun point dans la double fenêtre), en erreur ou en cours de chargement n'échoue pas la carte : elle affiche la valeur et la tendance à deux points fournies par le Pouls. Raison : une fenêtre vide ne doit pas transformer un KPI isolé en état d'erreur ; la dégradation reste lisible et aucune valeur n'est inventée (AGENTS.md §2).

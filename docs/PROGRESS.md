@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison ✅ commit `4c41e9e`, 6a-ii frontend comparaison, 6a-iii backend objectifs, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`.
-- **Prochaine action** : 6a-ii — sélecteur de période (7 j / 30 j / 90 j) et affichage de la comparaison « vs période précédente » côté frontend, en s'appuyant sur `GET /metrics/{clé}/comparison`.
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison ✅ commit `4c41e9e`, 6a-ii frontend comparaison ✅, 6a-iii backend objectifs, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`.
+- **Prochaine action** : 6a-iii — objectifs/budgets avec alertes de dérive côté backend (modèle + endpoints), puis 6a-iv (frontend).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -686,3 +686,26 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict **96 fichiers**, 0 erreur |
 | Frontend | ✅ `tsc -b` ✅ · `eslint` ✅ · Vitest **14 fichiers / 50 tests passed** |
 | Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés |
+
+### 2026-10-12 — Sous-phase 6a-ii : sélecteur de période et comparaison (frontend)
+- Composant `src/components/ui/PeriodSelect.tsx` : groupe de boutons accessible (`role="group"`, `aria-pressed`, anneau de focus), sans état interne — même patron que `LanguageSwitcher`. Constantes `PERIOD_OPTIONS` (7 j / 30 j / 90 j) et `DEFAULT_PERIOD_DAYS` dans `src/metrics/queries.ts`.
+- `src/metrics/queries.ts` : clé de cache `metricsKeys.comparison` et fonction `fetchMetricComparison(organizationId, metricKey, days)` (endpoint `GET /metrics/{clé}/comparison`), plus les alias de types `MetricAggregation`/`MetricComparison`/`MetricComparisonSummary` (`src/api/types.ts`).
+- `src/pages/DashboardPage.tsx` : sélecteur de période au-dessus de la grille de KPI (masqué sans donnée) ; `useQueries` déclenche une comparaison par KPI visible (clés dérivées du Pouls), la carte affiche l'agrégat de la fenêtre (`summary.current_value`) et l'écart `change_percent` ; un 404 « aucune donnée sur la fenêtre » retombe sur la valeur et la tendance à deux points du Pouls, jamais sur une erreur. i18n `dashboard.periodLabel`/`dashboard.periodDays` (FR/EN).
+- Tests : `src/components/ui/PeriodSelect.test.tsx` (1) + `src/pages/DashboardPage.test.tsx` (5, dont un test de comparaison : valeur/écart de la période, défaut 30 j, bascule vers 7 j) ; route de comparaison simulée dans le stub (404 = pas de donnée). Aucun changement e2e (le Pouls simulé n'expose aucun KPI).
+- Vérifs : Vitest **52 passed** (15 fichiers, +2 vs 6a-i) · `tsc -b` ✅ · `eslint` ✅ · `npm run build` ✅ · `npx playwright test` **5 passed** · pas de changement backend.
+- Commit : `01c2220` — `feat: selecteur de periode et comparaison sur le tableau de bord (6a-ii)`.
+- **Non fait** : objectifs/budgets avec alertes (6a-iii/iv).
+
+### Critères de la sous-phase 6a-ii — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend (sous-phase) | ✅ `PeriodSelect.test.tsx` **1 passed** · `DashboardPage.test.tsx` **5 passed** |
+| Suite frontend complète | ✅ Vitest **52 passed** (15 fichiers, +2 vs 6a-i) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` (ESLint) 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| e2e Playwright | ✅ `npx playwright test` **5 passed** (login 3 + a11y 2) |
+| Sélecteur de période | ✅ 7 j / 30 j / 90 j, défaut 30 j, accessible (`role="group"`, `aria-pressed`) |
+| Comparaison affichée | ✅ valeur = `summary.current_value`, écart = `summary.change_percent` ; repli sur la dernière valeur du Pouls si 404/chargement |
+| i18n | ✅ `dashboard.periodLabel` / `dashboard.periodDays` FR + EN, aucun texte en dur |
+| pre-commit | ⏳ à lancer avant commit |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
