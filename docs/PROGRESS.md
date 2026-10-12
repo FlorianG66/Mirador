@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison ✅ commit `4c41e9e`, 6a-ii frontend comparaison ✅, 6a-iii backend objectifs, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`.
-- **Prochaine action** : 6a-iii — objectifs/budgets avec alertes de dérive côté backend (modèle + endpoints), puis 6a-iv (frontend).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison ✅ commit `4c41e9e`, 6a-ii frontend comparaison ✅ commit `01c2220`, 6a-iii backend objectifs ✅ commit `831546e`, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`.
+- **Prochaine action** : 6a-iv — objectifs/budgets côté frontend (liste, création/édition/suppression, progression et alerte de dérive).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -709,3 +709,28 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | i18n | ✅ `dashboard.periodLabel` / `dashboard.periodDays` FR + EN, aucun texte en dur |
 | pre-commit | ⏳ à lancer avant commit |
 | CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-12 — Sous-phase 6a-iii : objectifs & budgets (backend)
+- Persistance : `app/models/goal.py` — table tenant `goals` (`metric_key` canonique, `label` libre optionnel, `direction`, `target_value`, `period_days` 1–365) + contraintes `CHECK` (`goals_key_format` sur `METRIC_KEY_REGEX`, `goals_direction_known`, `goals_period_days_range`) ; `app/models/enums.py` gagne `GoalDirection` (`at_least`/`at_most`) et `GOAL_DIRECTION_VALUES_SQL` ; migration `0008_phase6_goals_and_rls.py` (table + index `organization_id` + RLS `ENABLE`/`FORCE` + politique par organisation).
+- Couche service : `app/repositories/goals.py` (`list_for_organization`, `get_by_id`, `create`, `delete`) ; `app/schemas/goals.py` : `GoalStatus` (`achieved`/`on_track`/`off_track`/`unknown`), `GoalCreate`, `GoalUpdate` (mise à jour partielle via `model_fields_set` ; `label: null` efface), `GoalOut` ; `app/services/goals.py` (progression recalculée à la lecture) ; `app/routers/goals.py`.
+- Progression/dérive (SPEC muette — règle documentée dans `DECISIONS.md`) : progression = valeur agrégée de la fenêtre courante / cible (`progress_percent`, `null` si cible nulle) ; statut `achieved` (cible atteinte), `off_track` (non atteinte **et** métrique s'éloignant de la fenêtre précédente équivalente), `on_track`, `unknown` (aucune donnée). La réduction de fenêtre est factorisée dans `metric_catalog.reduce_values` (même code que `metrics._aggregate`) — aucune divergence entre comparaison (6a-i) et objectifs.
+- Endpoints `GET`/`POST` (201)/`PATCH`/`DELETE` (204) `/organizations/{id}/goals` : la lecture ne montre que les objectifs des modules visibles (comme le Pouls, jamais de 403) ; créer/modifier/supprimer exige `edit` sur le module préfixe de `metric_key` (vérifié dans le service) ; audit `goal.created`/`goal.updated`/`goal.deleted`.
+- Tests : `tests/test_goals.py` (15) — `achieved`, `on_track`/`off_track` selon la direction, `at_most` (budget), `unknown` sans donnée, `progress_percent` (`null` si cible nulle), 422 clé/`period_days`/direction, 403 droits et module, 404 objectif absent, lecture restreinte aux modules visibles, audit des trois actions, isolation RLS entre deux organisations. `tests/test_alembic.py` (`HEAD_REVISION` = `0008`, `TENANT_TABLES` += `goals`) et `tests/conftest.py` (TRUNCATE) mis à jour.
+- Client OpenAPI régénéré (`schema.json` + `schema.d.ts` : opérations `list_/create_/update_/delete_goal` et schémas `GoalCreate`/`GoalUpdate`/`GoalOut`/`GoalStatus`).
+- Commit : `831546e` — `feat: objectifs et budgets avec alerte de derive (6a-iii)`.
+- **Non fait** : frontend objectifs (6a-iv) ; push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### Critères de la sous-phase 6a-iii — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend (sous-phase) | ✅ `tests/test_goals.py` **15 passed** |
+| Suite backend complète | ✅ `pytest -q` **357 passed** (299 s, +15 vs 6a-i) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict **101 fichiers**, 0 erreur |
+| Persistance | ✅ table `goals` + migration `0008` ; RLS activée/forcée, isolation testée entre deux organisations |
+| Endpoints | ✅ `GET`/`POST`/`PATCH`/`DELETE /organizations/{id}/goals`, gardés par le module de la métrique, audit `goal.*` |
+| Progression & dérive | ✅ agrégation via `metric_catalog.reduce_values` ; statut `achieved`/`on_track`/`off_track`/`unknown` |
+| Entrées | ✅ clé canonique (422), `period_days` 1–365, `direction` `at_least`/`at_most` |
+| Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés |
+| Frontend | ✅ `tsc -b` ✅ · `eslint` ✅ (aucun changement de code frontend, seulement le client généré) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

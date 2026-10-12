@@ -413,3 +413,19 @@ Le sélecteur 7 j / 30 j / 90 j (défaut 30 j) vit sur la vue d'ensemble et pilo
 ## 2026-10-12 — Un KPI sans donnée sur la fenêtre retombe sur la dernière valeur (6a-ii)
 
 Une comparaison en 404 (aucun point dans la double fenêtre), en erreur ou en cours de chargement n'échoue pas la carte : elle affiche la valeur et la tendance à deux points fournies par le Pouls. Raison : une fenêtre vide ne doit pas transformer un KPI isolé en état d'erreur ; la dégradation reste lisible et aucune valeur n'est inventée (AGENTS.md §2).
+
+## 2026-10-12 — Objectif = cible sur une clé canonique, fenêtre glissante (6a-iii)
+
+Un objectif (table tenant `goals`, RLS) porte `metric_key`, un sens (`at_least` = atteindre au moins la cible, `at_most` = rester en dessous, cas du budget), une valeur cible et une fenêtre glissante `period_days` (1–365). Raison : une seule primitive couvre « objectif » et « budget » sur n'importe quel KPI ; la progression n'est pas stockée mais recalculée à la lecture depuis les `metric_snapshots`.
+
+## 2026-10-12 — Progression et dérive d'un objectif (6a-iii) — hypothèse non spécifiée
+
+La progression = valeur agrégée de la fenêtre courante / cible (pourcentage, `null` si cible nulle) ; la dérive = cible non atteinte **et** métrique s'éloignant de la fenêtre précédente équivalente (`off_track`), sinon `on_track`, `achieved` si la cible est atteinte, `unknown` sans donnée. Raison : la SPEC ne définit pas la dérive ; on retient la règle la plus simple et maintenable, qui réutilise la lecture de la double fenêtre de la comparaison (6a-i) sans alignement calendaire (fuseaux, mois de longueurs différentes).
+
+## 2026-10-12 — Objectifs : permission portée par le module de la métrique (6a-iii)
+
+Créer, modifier ou supprimer un objectif exige `edit` sur le module préfixe de `metric_key` (l'admin a `edit` partout) ; la lecture ne renvoie que les objectifs des modules visibles (même règle que le Pouls, jamais de 403 sur la liste). Raison : un objectif porte sur les données d'un module, sa gestion suit donc la permission de ce module ; la vérification se fait dans le service, seul à connaître la clé après lecture du corps.
+
+## 2026-10-12 — Réduction de fenêtre partagée `reduce_values` (6a-iii)
+
+La comparaison de périodes et les objectifs réduisent une fenêtre de la même façon, via `metric_catalog.reduce_values` (le `_aggregate` de `metrics.py` y délègue), classée par le catalogue `sum`/`last`/`average`. Raison : une seule source de vérité pour l'agrégation évite toute divergence entre les deux fonctionnalités.
