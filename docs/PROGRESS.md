@@ -5,7 +5,7 @@
 ## État
 
 - **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **La phase 5 est complète** (5a → 5f) : clôture et merge à valider par le mainteneur.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1`).
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1` + fix `a6f9c96`, docs `479ca93`).
 - **Prochaine action** : clôturer la phase 5 (critères AGENTS.md §3, puis feu vert du mainteneur pour le merge sur `main`), puis ouvrir la phase 6 — fonctions transverses (comparaison de périodes + objectifs/budgets avec alertes de dérive, recherche globale, dashboard personnalisable).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
@@ -640,10 +640,11 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - `src/pulse/queries.ts` (`usePulse`, polling 5 min, `retry:false`) et `src/pulse/format.ts` (`KPI_META` réutilisant les libellés i18n des modules, `kpiTrend`, `formatRelativeTime` via `Intl.RelativeTimeFormat`, `actionLabelKey` des actions d'audit).
 - `src/pages/DashboardPage.tsx` réécrit : grille de `KpiCard` (les KPI clés autorisés), badge de santé en en-tête (`role="status"`), panneau d'activité (note « réservée aux administrateurs » sinon) et carte « Objectifs » en état vide ; suppression des panneaux d'accueil/accès rapide et des 4 `ChartCard` placeholder ; états chargement (squelette)/erreur (+ réessai).
 - `src/api/types.ts` : alias `Pulse`/`PulseKpi`/`PulseHealth`/`AuditLog` ; i18n `dashboard.*` FR/EN (libellés de module réutilisés) + `common.percent` + `web.kpiConversions`/`web.unitConversions` ; régénération du client OpenAPI (`schema.json` + `schema.d.ts`).
-- Tests : `src/pages/DashboardPage.test.tsx` (4 — Pouls complet admin, membre sans activité, KPI vides, panne réseau) ; `App.test.tsx` et `e2e/helpers.ts` mockent `/pulse` ; `e2e/a11y.spec.ts` (titre `Vue d'ensemble`).
+- Tests : `src/pages/DashboardPage.test.tsx` (4 — Pouls complet admin, membre sans activité, KPI vides, panne réseau) ; `App.test.tsx` et `e2e/helpers.ts` mockent `/pulse` ; e2e Playwright `login.spec.ts` (assertion du titre d'accueil mise à jour en `Vue d'ensemble`) et `a11y.spec.ts`.
 - Vérifs : Vitest **50 passed** (14 fichiers) · `npm run lint` 0 erreur · `npm run typecheck` 0 erreur · `npm run build` OK (avertissement chunk > 500 kB pré-existant).
+- Vérifs e2e : `npx playwright test` **5 passed** — une assertion de `login.spec.ts` était restée sur l'ancien titre (« Bienvenue sur votre tableau de bord ») : corrigée (`a6f9c96`), ce que la suite Vitest ne pouvait pas détecter.
 - Docs : `DECISIONS.md` (6 décisions 5f), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
-- Commit : `a1d65e1 feat: add overview pulse page and aggregate endpoint (phase 5f)` ; docs dans le commit suivant.
+- Commit : `a1d65e1 feat: add overview pulse page and aggregate endpoint (phase 5f)` · correctif e2e `a6f9c96` ; docs dans le commit suivant (`479ca93`).
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; clôture de la phase 5 et phase 6.
 
 ### Critères de la sous-phase 5f — vérité du terrain
@@ -654,6 +655,7 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (95 fichiers) |
 | Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
 | Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| e2e Playwright | ✅ `npx playwright test` **5 passed** (login 3 + a11y 2) |
 | Endpoint Pouls | ✅ `GET /organizations/{id}/pulse` : 8 KPI clés restreints aux modules visibles, santé opérationnelle, activité admin-only |
 | Frontend Pouls | ✅ page d'accueil réécrite : KPI + badge de santé + fil d'activité + objectifs vides, états chargement/erreur, i18n FR/EN |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
