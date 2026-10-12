@@ -393,3 +393,15 @@ Le Pouls expose 8 clés (2 par module à métrique) : `finance.revenue`/`margin`
 ## 2026-10-12 — Lecture `get_latest` pour la valeur courante et la précédente (5f)
 
 Le KPI du Pouls lit les deux derniers points via `metric_snapshots.get_latest` (tri décroissant), pas `get_series` (tri croissant, fenêtré). Raison : le Pouls veut la dernière valeur et la précédente pour la tendance, pas une série complète — une lecture dédiée est plus simple et évite de charger 365 points par KPI.
+
+## 2026-10-12 — Comparaison de périodes calculée côté backend (6a-i)
+
+L'agrégation d'une fenêtre et la frontière entre les deux périodes vivent dans `app/services/metrics.get_metric_comparison`, exposées par `GET /organizations/{id}/metrics/{metric_key}/comparison` ; le frontend ne fait qu'afficher. Raison : le même calcul resservira à la vue d'ensemble, à l'export PDF (6c) et au chatbot (phase 8) — une seule vérité testable plutôt qu'une règle dupliquée par page.
+
+## 2026-10-12 — Catalogue d'agrégation `sum`/`last`/`average` par métrique (6a-i)
+
+`app/services/metric_catalog.METRIC_AGGREGATIONS` classe chaque clé connue : flux → `sum`, niveau/stock → `last`, taux/durée → `average` ; une clé inconnue retombe sur `sum`. Raison : une série quotidienne peut être un flux (CA) ou un stock (trésorerie, abonnés) — sommer un stock n'a pas de sens. Un test exige que chaque métrique des quatre connecteurs soit classée (aucune omission silencieuse).
+
+## 2026-10-12 — Comparaison : une lecture, frontière `end - days` (6a-i)
+
+`get_metric_comparison` lit une seule fois la double fenêtre `[end - 2×days, end]` puis répartit les points (`captured_at > end - days` → période courante). Raison : une requête au lieu de deux, et une frontière déterministe (pas de point compté deux fois) facile à tester avec un `end` explicite ; le résumé expose `change` et `change_percent` (`null` si la période précédente vaut 0).

@@ -4,10 +4,10 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **Phase 5 clôturée et mergée sur `main`** (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `main` (pointe sur le merge `dcb7c9d` « merge: phase 5 — modules MVP (5a → 5f) ») ; la branche `phase-5-modules-mvp` (créée depuis `main` = `cc840c9`) reste en place — 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1` + fix `a6f9c96`, docs `479ca93`/`71f9273`.
-- **Prochaine action** : ouvrir la phase 6 « Fonctions transverses » sur une nouvelle branche (`phase-6-...`) — 6a comparaison de périodes + objectifs/budgets avec alertes de dérive, 6b recherche globale (Ctrl/Cmd+K) + dashboard personnalisable.
-- **À ne pas faire** : ouvrir la phase 6 avant que ce fichier (clôture phase 5) soit commité.
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison 🔄, 6a-ii frontend comparaison, 6a-iii backend objectifs, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`).
+- **Prochaine action** : committer la sous-phase 6a-i (comparaison de périodes côté backend), puis 6a-ii (sélecteur de période + affichage de la comparaison côté frontend).
+- **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
 | Critère | État |
@@ -667,3 +667,21 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - Décisions consignées dans `docs/DECISIONS.md` au fil des sous-phases (Recharts et les 8 clés finance, répartitions web/social/projets sommant la métrique parente, abonnés cumulés, stock de tâches ouvertes, registre légal à transport injectable, provenance par champ, Pouls minimal).
 - Merge sur `main` : `git merge --no-ff phase-5-modules-mvp` → `dcb7c9d` (`main` passe de `cc840c9` à `dcb7c9d`) ; aucun push (aucun remote GitHub configuré).
 - **Non fait** : push (aucun remote GitHub) ; phase 6 « Fonctions transverses » à ouvrir sur une nouvelle branche.
+
+## Phase 6 — Fonctions transverses
+
+### 2026-10-12 — Sous-phase 6a-i : comparaison de périodes (backend)
+- Catalogue d'agrégation `app/services/metric_catalog.py` : chaque clé connue → `sum` (flux), `last` (niveau/stock), `average` (taux/durée) ; repli `sum` pour une clé inconnue. Test de couverture : toute clé produite par les quatre connecteurs doit y figurer (aucune omission silencieuse).
+- Schémas `MetricAggregation`/`MetricComparisonSummary`/`MetricComparison` ; service `metrics.get_metric_comparison` (une seule lecture de la double fenêtre `[end − 2×days, end]`, frontière `end − days`) ; route `GET /organizations/{id}/metrics/{metric_key}/comparison?days=&end=`.
+- Tests : `tests/test_metric_catalog.py` (8) + `tests/connectors/test_metric_comparison.py` (10) — répartition des fenêtres, somme/dernière valeur/moyenne, écart et pourcentage (`null` si base nulle), jours hors bornes, 403 droits/organisation, 422 clé, 404 sans donnée.
+- Client OpenAPI régénéré (`schema.json` + `schema.d.ts`).
+- **Non fait** : sélecteur de période et affichage frontend (6a-ii) ; objectifs/budgets avec alertes (6a-iii/iv).
+
+### Critères de la sous-phase 6a-i — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend (sous-phase) | ✅ `tests/test_metric_catalog.py` **8 passed** · `tests/connectors/test_metric_comparison.py` **10 passed** |
+| Suite backend complète | ✅ `pytest -q` **342 passed** (22 min 33 s ; suite DB lourde) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict **96 fichiers**, 0 erreur |
+| Frontend | ✅ `tsc -b` ✅ · `eslint` ✅ · Vitest **14 fichiers / 50 tests passed** |
+| Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés |

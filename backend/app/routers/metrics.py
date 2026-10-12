@@ -18,7 +18,7 @@ from app.core.deps import get_session
 from app.core.permissions import ensure_module_access, get_current_tenant
 from app.models.enums import Module, PermissionLevel
 from app.models.membership import Membership
-from app.schemas.metrics import MetricSeries, validate_metric_key
+from app.schemas.metrics import MetricComparison, MetricSeries, validate_metric_key
 from app.services import metrics as metrics_service
 
 router = APIRouter(prefix="/organizations/{organization_id}")
@@ -67,4 +67,24 @@ async def read_metric(
         start=start,
         end=end,
         limit=limit,
+    )
+
+
+@router.get("/metrics/{metric_key}/comparison", response_model=MetricComparison)
+async def read_metric_comparison(
+    metric_key: Annotated[str, Path(description="Clé canonique « module.metric »")],
+    session: SessionDependency,
+    membership: Annotated[Membership, Depends(require_metric_module(PermissionLevel.VIEW))],
+    days: Annotated[int, Query(ge=1, le=365, description="Longueur de la fenêtre en jours")] = 30,
+    end: Annotated[
+        datetime | None, Query(description="Borne haute ; maintenant par défaut")
+    ] = None,
+) -> MetricComparison:
+    """Série sur `days` jours comparée aux `days` jours précédents (SPEC §4)."""
+    return await metrics_service.get_metric_comparison(
+        session,
+        organization_id=membership.organization_id,
+        metric_key=metric_key,
+        days=days,
+        end=end,
     )

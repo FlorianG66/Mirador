@@ -5,6 +5,7 @@ réel ou mock, et par l'API de lecture. Clé `module.metric` (ex. `finance.reven
 from __future__ import annotations
 
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -15,6 +16,19 @@ from app.models.enums import Module
 PERIOD_DAY = "P1D"
 # Permet aux règles métier de raisonner sur les clés et leurs préfixes de module.
 METRIC_KEY_SEPARATOR = "."
+
+
+class MetricAggregation(StrEnum):
+    """Réduction d'une fenêtre de points en une valeur (comparaison de périodes, phase 6a).
+
+    `sum` pour les flux (CA, visites, conversions…), `last` pour les niveaux
+    (trésorerie, abonnés, tâches ouvertes…) et `average` pour les taux et durées
+    moyennes. Le catalogue `app.services.metric_catalog` porte le choix par clé.
+    """
+
+    SUM = "sum"
+    LAST = "last"
+    AVERAGE = "average"
 
 
 def validate_metric_key(value: str) -> str:
@@ -46,6 +60,39 @@ class MetricSeries(BaseModel):
     unit: str = Field(min_length=1, max_length=16)
     period: str = Field(min_length=1, max_length=8)
     points: list[MetricPoint] = Field(default_factory=list)
+
+    @field_validator("key")
+    @classmethod
+    def _key_is_canonical(cls, value: str) -> str:
+        return validate_metric_key(value)
+
+
+class MetricComparisonSummary(BaseModel):
+    """Comparaison des valeurs agrégées de deux fenêtres de même longueur."""
+
+    current_value: float
+    previous_value: float
+    change: float
+    # Écart relatif en pourcentage (12.5 = +12,5 %), comme la tendance des KPI ;
+    # `None` quand la période précédente vaut 0 (aucun pourcentage n'a de sens).
+    change_percent: float | None = None
+
+
+class MetricComparison(BaseModel):
+    """Une série sur une période comparée à la période précédente équivalente.
+
+    Les deux fenêtres sont livrées brutes (points) en plus du résumé agrégé :
+    l'interface peut tracer la courbe précédente sans seconde requête.
+    """
+
+    key: str
+    unit: str = Field(min_length=1, max_length=16)
+    period: str = Field(min_length=1, max_length=8)
+    aggregation: MetricAggregation
+    days: int = Field(ge=1)
+    current: list[MetricPoint] = Field(default_factory=list)
+    previous: list[MetricPoint] = Field(default_factory=list)
+    summary: MetricComparisonSummary
 
     @field_validator("key")
     @classmethod

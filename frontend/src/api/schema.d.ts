@@ -438,6 +438,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Metric Comparison
+         * @description Série sur `days` jours comparée aux `days` jours précédents (SPEC §4).
+         */
+        get: operations["read_metric_comparison_api_v1_organizations__organization_id__metrics__metric_key__comparison_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/pulse": {
         parameters: {
             query?: never;
@@ -923,6 +943,53 @@ export interface components {
              */
             organization_id: string;
             role: components["schemas"]["Role"];
+        };
+        /**
+         * MetricAggregation
+         * @description Réduction d'une fenêtre de points en une valeur (comparaison de périodes, phase 6a).
+         *
+         *     `sum` pour les flux (CA, visites, conversions…), `last` pour les niveaux
+         *     (trésorerie, abonnés, tâches ouvertes…) et `average` pour les taux et durées
+         *     moyennes. Le catalogue `app.services.metric_catalog` porte le choix par clé.
+         * @enum {string}
+         */
+        MetricAggregation: "sum" | "last" | "average";
+        /**
+         * MetricComparison
+         * @description Une série sur une période comparée à la période précédente équivalente.
+         *
+         *     Les deux fenêtres sont livrées brutes (points) en plus du résumé agrégé :
+         *     l'interface peut tracer la courbe précédente sans seconde requête.
+         */
+        MetricComparison: {
+            /** Key */
+            key: string;
+            /** Unit */
+            unit: string;
+            /** Period */
+            period: string;
+            aggregation: components["schemas"]["MetricAggregation"];
+            /** Days */
+            days: number;
+            /** Current */
+            current?: components["schemas"]["MetricPoint"][];
+            /** Previous */
+            previous?: components["schemas"]["MetricPoint"][];
+            summary: components["schemas"]["MetricComparisonSummary"];
+        };
+        /**
+         * MetricComparisonSummary
+         * @description Comparaison des valeurs agrégées de deux fenêtres de même longueur.
+         */
+        MetricComparisonSummary: {
+            /** Current Value */
+            current_value: number;
+            /** Previous Value */
+            previous_value: number;
+            /** Change */
+            change: number;
+            /** Change Percent */
+            change_percent?: number | null;
         };
         /**
          * MetricPoint
@@ -1799,6 +1866,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetricSeries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_metric_comparison_api_v1_organizations__organization_id__metrics__metric_key__comparison_get: {
+        parameters: {
+            query?: {
+                /** @description Longueur de la fenêtre en jours */
+                days?: number;
+                /** @description Borne haute ; maintenant par défaut */
+                end?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Clé canonique « module.metric » */
+                metric_key: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricComparison"];
                 };
             };
             /** @description Validation Error */
