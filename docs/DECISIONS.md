@@ -369,3 +369,27 @@ Après un `POST /refresh`, l'UI compare la fiche avant/après et annonce « N ch
 ## 2026-10-11 — Suppression de `src/pages/ModulePage.tsx` (5e-c)
 
 Le placeholder `ModulePage` (quatre modules « en construction ») est supprimé une fois `/legal` remplacée par `LegalPage`. Raison : plus aucune route ne l'utilise — garder un fichier mort serait du bruit (contrôle de `git grep` avant suppression).
+
+## 2026-10-12 — Pouls minimal : KPI clés + santé + activité, alertes et objectifs en phase 6 (5f)
+
+Le Pouls livre un agrégat en lecture seule (KPI clés des modules autorisés, indicateur de santé, fil d'activité) et une carte « Objectifs » vide ; les règles d'alerte et d'objectif réelles arrivent en phase 6. Raison : décision de périmètre explicite (une sous-phase = un pas livrable) ; l'agrégat n'invente aucune règle métier.
+
+## 2026-10-12 — La santé du Pouls est un signal d'exploitation, pas un jugement métier (5f)
+
+`good`/`warning`/`unknown` ne dépend que de « un module visible a-t-il de la donnée ? » (`modules_with_data` / `modules_total`, légal exclu car sans métrique). Raison : aucune règle financière n'a été vérifiée (AGENTS.md §2 : ne rien deviner) — l'état reflète la connexion/synchro des modules, pas leur performance.
+
+## 2026-10-12 — Le Pouls filtre par module autorisé, sans garde de module sur la route (5f)
+
+La route `GET /organizations/{id}/pulse` n'a pas de garde de module : le service restreint lui-même chaque KPI aux modules visibles, et un membre sans module reçoit un Pouls vide (santé `unknown`), jamais un 403. Raison : la page d'accueil ne doit pas être un cul-de-sac pour un membre sans droit — elle affiche un état vide explicite.
+
+## 2026-10-12 — Fil d'activité du Pouls réservé aux administrateurs (5f)
+
+Le fil (journal d'audit, `services.audit.list_recent`) n'est renvoyé que si `membership.role == admin`, sinon la route l'omet (`activity: []`) et l'UI affiche une note « réservé aux admins ». Raison : ne pas contourner la règle de la 2d (audit admin-only) par la porte de l'agrégat.
+
+## 2026-10-12 — Huit KPI clés, libellés de module réutilisés (5f)
+
+Le Pouls expose 8 clés (2 par module à métrique) : `finance.revenue`/`margin`, `web.visitors`/`conversions`, `social.followers`/`engagement_rate`, `projects.open_tasks`/`avg_progress` ; le module légal n'a pas de métrique. Le frontend réutilise les libellés i18n existants des pages de module (`finance.*`, `web.*`, `social.*`, `projects.*`) et n'ajoute que `common.percent` et `web.kpiConversions`/`web.unitConversions`. Raison : une seule source de libellés (pas de duplication i18n), et aucune logique métier dans l'agrégat.
+
+## 2026-10-12 — Lecture `get_latest` pour la valeur courante et la précédente (5f)
+
+Le KPI du Pouls lit les deux derniers points via `metric_snapshots.get_latest` (tri décroissant), pas `get_series` (tri croissant, fenêtré). Raison : le Pouls veut la dernière valeur et la précédente pour la tendance, pas une série complète — une lecture dédiée est plus simple et évite de charger 365 points par KPI.

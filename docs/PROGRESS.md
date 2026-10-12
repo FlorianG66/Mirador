@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » à venir.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`).
-- **Prochaine action** : sous-phase 5f — vue d'ensemble « Pouls » (ROADMAP ligne 55, SPEC §4) : KPI clés, santé globale, alertes et fil d'activité sur `DashboardPage`, à partir des modules autorisés.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **La phase 5 est complète** (5a → 5f) : clôture et merge à valider par le mainteneur.
+- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1`).
+- **Prochaine action** : clôturer la phase 5 (critères AGENTS.md §3, puis feu vert du mainteneur pour le merge sur `main`), puis ouvrir la phase 6 — fonctions transverses (comparaison de périodes + objectifs/budgets avec alertes de dérive, recherche globale, dashboard personnalisable).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -624,5 +624,37 @@ Tests :
 | Fiche légale | ✅ 12 champs + provenance par champ, TVA, dirigeants (admin), mentions copiables, export PDF, saisie sélective |
 | Permission `legal` | ✅ `view` lit sans bouton d'édition ; `edit`/admin rafraîchissent et modifient ; dirigeants masqués hors admin |
 | Routes | ✅ `/legal` sur `LegalPage` ; plus aucun placeholder `ModulePage` |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-12 — Sous-phase 5f livrée (Vue d'ensemble « Pouls » — backend + frontend)
+Périmètre (décision) : **minimal** — KPI clés des modules autorisés + santé **opérationnelle** + fil d'activité + carte Objectifs vide ; les alertes et objectifs métier réels viendront en phase 6.
+Backend :
+- `app/schemas/pulse.py` : `PulseKpiOut` (module, `metric_key`, unité, valeur, `previous_value` pour la tendance, horodatage), `PulseHealthOut` (`status` `good`/`warning`/`unknown`, `modules_with_data`, `modules_total`) et `PulseOut` (kpis, health, activity).
+- `app/services/pulse.py` : `PULSE_KPI_KEYS` (8 clés — `finance.revenue`/`margin`, `web.visitors`/`conversions`, `social.followers`/`engagement_rate`, `projects.open_tasks`/`avg_progress` ; le légal, sans métrique, est exclu) et `build_pulse` — restreint chaque KPI aux modules visibles (`modules_for`), **omet** un KPI sans donnée (jamais de valeur inventée), calcule la santé (`good` si tous les modules visibles à KPI ont de la donnée, `warning` sinon, `unknown` si aucun) et n'ajoute le fil d'activité (`services.audit.list_recent`) que pour un administrateur.
+- `app/routers/pulse.py` : `GET /organizations/{organization_id}/pulse` — **pas de garde de module** (la route restreint elle-même par membre) ; un membre sans module reçoit un Pouls vide, jamais un 403. Monté dans `app/main.py`.
+- `app/repositories/metric_snapshots.py` : nouvelle lecture `get_latest` (du plus récent au plus ancien) pour la valeur courante **et** la précédente (`get_series` trie en ordre croissant).
+- Tests : `tests/test_pulse.py` (7 — Pouls admin complet, KPI d'un module non autorisé omis, santé `good`/`warning`/`unknown`, KPI sans donnée omis, fil d'activité admin/membre, tendance).
+- Vérifs : `pytest tests/test_pulse.py` **7 passed** · suite backend complète **324 passed** (214,91 s) · ruff check + format ✅ · mypy strict ✅ (95 fichiers).
+Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
+- `src/pulse/queries.ts` (`usePulse`, polling 5 min, `retry:false`) et `src/pulse/format.ts` (`KPI_META` réutilisant les libellés i18n des modules, `kpiTrend`, `formatRelativeTime` via `Intl.RelativeTimeFormat`, `actionLabelKey` des actions d'audit).
+- `src/pages/DashboardPage.tsx` réécrit : grille de `KpiCard` (les KPI clés autorisés), badge de santé en en-tête (`role="status"`), panneau d'activité (note « réservée aux administrateurs » sinon) et carte « Objectifs » en état vide ; suppression des panneaux d'accueil/accès rapide et des 4 `ChartCard` placeholder ; états chargement (squelette)/erreur (+ réessai).
+- `src/api/types.ts` : alias `Pulse`/`PulseKpi`/`PulseHealth`/`AuditLog` ; i18n `dashboard.*` FR/EN (libellés de module réutilisés) + `common.percent` + `web.kpiConversions`/`web.unitConversions` ; régénération du client OpenAPI (`schema.json` + `schema.d.ts`).
+- Tests : `src/pages/DashboardPage.test.tsx` (4 — Pouls complet admin, membre sans activité, KPI vides, panne réseau) ; `App.test.tsx` et `e2e/helpers.ts` mockent `/pulse` ; `e2e/a11y.spec.ts` (titre `Vue d'ensemble`).
+- Vérifs : Vitest **50 passed** (14 fichiers) · `npm run lint` 0 erreur · `npm run typecheck` 0 erreur · `npm run build` OK (avertissement chunk > 500 kB pré-existant).
+- Docs : `DECISIONS.md` (6 décisions 5f), `CHANGELOG.md`, `README.md`, `ARCHITECTURE.md`, ce fichier.
+- Commit : `a1d65e1 feat: add overview pulse page and aggregate endpoint (phase 5f)` ; docs dans le commit suivant.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; clôture de la phase 5 et phase 6.
+
+### Critères de la sous-phase 5f — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ `tests/test_pulse.py` **7 passed** · suite complète **324 passed** (+7 vs 5e-c) |
+| Tests frontend | ✅ Vitest **50 passed** (14 fichiers, +4 vs 5e-c) |
+| Lint/types backend | ✅ ruff check + format ✅ · mypy strict ✅ (95 fichiers) |
+| Lint/types frontend | ✅ `npm run lint` 0 erreur · `npm run typecheck` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement chunk > 500 kB pré-existant) |
+| Endpoint Pouls | ✅ `GET /organizations/{id}/pulse` : 8 KPI clés restreints aux modules visibles, santé opérationnelle, activité admin-only |
+| Frontend Pouls | ✅ page d'accueil réécrite : KPI + badge de santé + fil d'activité + objectifs vides, états chargement/erreur, i18n FR/EN |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
