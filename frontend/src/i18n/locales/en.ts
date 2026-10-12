@@ -44,6 +44,8 @@ const en = {
     healthGood: 'All modules are fed',
     healthWarning: '{{withData}}/{{total}} modules fed',
     healthUnknown: 'No module to review',
+    periodLabel: 'Period',
+    periodDays: '{{days}} d',
     kpiEmptyTitle: 'No data to summarize yet',
     kpiEmptyDescription: 'Sync a module to see its indicators here.',
     activityTitle: 'Recent activity',

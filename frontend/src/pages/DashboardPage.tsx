@@ -3,6 +3,8 @@
 // d'exploitation, le fil d'activité (réservé aux admins) et un emplacement
 // d'objectifs. Toutes les données viennent de l'API (AGENTS.md §8), tous les
 // libellés de l'i18n ; le backend filtre déjà par module autorisé.
+import { useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import type { LucideIcon } from 'lucide-react'
 import {
   BarChart3,
@@ -17,15 +19,22 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { AuditLog, ModuleKey, PulseHealth, PulseKpi } from '../api/types.ts'
+import type { AuditLog, MetricComparison, ModuleKey, PulseHealth, PulseKpi } from '../api/types.ts'
 import { useAuth } from '../auth/context.ts'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.tsx'
 import { EmptyState } from '../components/ui/EmptyState.tsx'
 import { ErrorState } from '../components/ui/ErrorState.tsx'
 import { KpiCard } from '../components/ui/KpiCard.tsx'
 import { PageHeader } from '../components/ui/PageHeader.tsx'
+import { PeriodSelect } from '../components/ui/PeriodSelect.tsx'
 import { Skeleton } from '../components/ui/Skeleton.tsx'
 import { cn } from '../lib/utils.ts'
+import {
+  DEFAULT_PERIOD_DAYS,
+  PERIOD_OPTIONS,
+  fetchMetricComparison,
+  metricsKeys,
+} from '../metrics/queries.ts'
 import { KPI_META, actionLabelKey, formatRelativeTime, kpiTrend } from '../pulse/format.ts'
 import { usePulse } from '../pulse/queries.ts'
 
@@ -41,7 +50,31 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
 export function DashboardPage() {
   const { t } = useTranslation()
   const { permissions, activeOrganizationId } = useAuth()
+  const [periodDays, setPeriodDays] = useState<number>(DEFAULT_PERIOD_DAYS)
   const pulseQuery = usePulse(activeOrganizationId ?? '')
+
+  // Le tableau de bord compare chaque KPI clé sur la fenêtre choisie (SPEC §4,
+  // phase 6a). Une requête par KPI visible : le Pouls fournit la liste autorisée,
+  // la comparaison fournit l'agrégat et l'écart. Les requêtes dépendent du Pouls
+  // (liste des clés), d'où les deux temps ; elles sont appelées ici, avant tout
+  // retour anticipé, pour respecter l'ordre des hooks.
+  const kpiKeys = (pulseQuery.data?.kpis ?? []).map((kpi) => kpi.metric_key)
+  const comparisonQueries = useQueries({
+    queries: kpiKeys.map((metricKey) => ({
+      queryKey: metricsKeys.comparison(activeOrganizationId ?? '', metricKey, periodDays),
+      queryFn: () =>
+        fetchMetricComparison(activeOrganizationId ?? '', metricKey, periodDays),
+      enabled: Boolean(activeOrganizationId),
+      retry: false,
+      refetchOnWindowFocus: false,
+    })),
+  })
+  const comparisons = new Map<string, MetricComparison>()
+  comparisonQueries.forEach((query, index) => {
+    if (query.data) {
+      comparisons.set(kpiKeys[index], query.data)
+    }
+  })
 
   if (pulseQuery.isPending) {
     return (
@@ -77,7 +110,12 @@ export function DashboardPage() {
         actions={<HealthBadge health={health} />}
       />
 
-      <KpiGrid kpis={kpis} />
+      <KpiSection
+        kpis={kpis}
+        comparisons={comparisons}
+        periodDays={periodDays}
+        onPeriodChange={setPeriodDays}
+      />
 
       <div className="grid gap-4 xl:grid-cols-12">
         <ActivityPanel entries={activity} isAdmin={isAdmin} className="xl:col-span-7" />
@@ -120,8 +158,52 @@ function HealthBadge({ health }: { health: PulseHealth }) {
   )
 }
 
+/**
+ * Bloc des KPI clés : sélecteur de période (masqué sans donnée) puis grille. Le
+ * sélecteur ne pilote que l'affichage : le backend filtre déjà par droits.
+ */
+function KpiSection({
+  kpis,
+  comparisons,
+  periodDays,
+  onPeriodChange,
+}: {
+  kpis: PulseKpi[]
+  comparisons: Map<string, MetricComparison>
+  periodDays: number
+  onPeriodChange: (days: number) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <div className="space-y-3">
+      {kpis.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-muted">{t('dashboard.periodLabel')}</h2>
+          <PeriodSelect
+            label={t('dashboard.periodLabel')}
+            value={periodDays}
+            onChange={onPeriodChange}
+            options={PERIOD_OPTIONS.map((days) => ({
+              value: days,
+              label: t('dashboard.periodDays', { days }),
+            }))}
+          />
+        </div>
+      ) : null}
+      <KpiGrid kpis={kpis} comparisons={comparisons} />
+    </div>
+  )
+}
+
 /** Grille des KPI clés autorisés, ou état vide si aucun module n'a de donnée. */
-function KpiGrid({ kpis }: { kpis: PulseKpi[] }) {
+function KpiGrid({
+  kpis,
+  comparisons,
+}: {
+  kpis: PulseKpi[]
+  comparisons: Map<string, MetricComparison>
+}) {
   const { t } = useTranslation()
 
   if (kpis.length === 0) {
@@ -142,14 +224,17 @@ function KpiGrid({ kpis }: { kpis: PulseKpi[] }) {
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {kpis.map((kpi) => {
         const meta = KPI_META[kpi.metric_key]
+        // La comparaison de périodes prime sur la tendance à deux points du Pouls ;
+        // sans donnée sur la fenêtre (404), on retombe sur la dernière valeur connue.
+        const summary = comparisons.get(kpi.metric_key)?.summary
         return (
           <KpiCard
             key={kpi.metric_key}
             label={meta ? t(meta.labelKey) : kpi.metric_key}
-            value={kpi.value}
+            value={summary ? summary.current_value : kpi.value}
             unit={meta?.unitKey ? t(meta.unitKey) : undefined}
             decimals={meta?.decimals ?? 0}
-            trend={kpiTrend(kpi)}
+            trend={summary ? (summary.change_percent ?? undefined) : kpiTrend(kpi)}
             icon={MODULE_ICONS[kpi.module]}
           />
         )

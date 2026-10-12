@@ -45,6 +45,8 @@ const fr = {
     healthGood: 'Tous les modules sont alimentés',
     healthWarning: '{{withData}}/{{total}} modules alimentés',
     healthUnknown: 'Aucun module à consulter',
+    periodLabel: 'Période',
+    periodDays: '{{days}} j',
     kpiEmptyTitle: 'Pas encore de données à synthétiser',
     kpiEmptyDescription: 'Synchronisez un module pour voir ses indicateurs ici.',
     activityTitle: 'Activité récente',

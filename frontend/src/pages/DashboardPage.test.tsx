@@ -1,7 +1,8 @@
 // Tests de la page « Vue d'ensemble » (sous-phase 5f) : KPI clés, santé
-// d'exploitation, fil d'activité (admin) et états vide/erreur. Même approche
-// que les autres pages : routeur mémoire + stub fetches + QueryClient sans retry.
-import { render, screen } from '@testing-library/react'
+// d'exploitation, fil d'activité (admin) et états vide/erreur. La comparaison de
+// périodes (phase 6a) est couverte par un test dédié. Même approche que les
+// autres pages : routeur mémoire + stub fetches + QueryClient sans retry.
+import { fireEvent, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -16,6 +17,12 @@ interface PulseBody {
   activity: unknown[]
 }
 
+/** Comparaison simulée d'un KPI : valeur de la fenêtre et de la précédente. */
+interface ComparisonEntry {
+  current: number
+  previous: number
+}
+
 function kpi(module: string, metricKey: string, unit: string, value: number): unknown {
   return {
     module,
@@ -27,8 +34,38 @@ function kpi(module: string, metricKey: string, unit: string, value: number): un
   }
 }
 
+// Réponse de l'endpoint de comparaison, au format du schéma OpenAPI.
+function comparisonBody(
+  metricKey: string,
+  { current, previous }: { current: number; previous: number },
+  days: number,
+): unknown {
+  const change = current - previous
+  return {
+    key: metricKey,
+    unit: 'EUR',
+    period: 'P1D',
+    aggregation: 'sum',
+    days,
+    current: [{ at: NOW, value: current, dimensions: {} }],
+    previous: [{ at: NOW, value: previous, dimensions: {} }],
+    summary: {
+      current_value: current,
+      previous_value: previous,
+      change,
+      change_percent: previous === 0 ? null : (change / Math.abs(previous)) * 100,
+    },
+  }
+}
+
 // Session simulée : rôle admin par défaut, surchargeable pour tester un membre.
-function stubEnvironment(pulse: PulseBody | 'error', role: 'admin' | 'member' = 'admin') {
+// `comparisons` : clé métrique → écart simulé ; une clé absente répond 404, ce qui
+// fait retomber la carte sur la dernière valeur du Pouls.
+function stubEnvironment(
+  pulse: PulseBody | 'error',
+  role: 'admin' | 'member' = 'admin',
+  comparisons: Record<string, ComparisonEntry> = {},
+) {
   const audit: FetchRoute[] = [
     {
       match: /auth\/me$/,
@@ -47,6 +84,19 @@ function stubEnvironment(pulse: PulseBody | 'error', role: 'admin' | 'member' = 
       match: /organizations\/[^/]+\/pulse$/,
       respond: () =>
         pulse === 'error' ? problem(500, 'Panne simulée') : json(pulse),
+    },
+    {
+      match: /metrics\/[^/]+\/comparison$/,
+      respond: (request) => {
+        const url = new URL(request.url)
+        const metricKey = url.pathname.split('/').at(-2) ?? ''
+        const entry = comparisons[metricKey]
+        if (!entry) {
+          return problem(404, 'Aucune donnée sur la période.')
+        }
+        const days = Number(url.searchParams.get('days') ?? 30)
+        return json(comparisonBody(metricKey, entry, days))
+      },
     },
   ]
   stubFetch(audit)
@@ -128,5 +178,36 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  it('compare les KPI sur la période choisie', async () => {
+    stubEnvironment(
+      {
+        kpis: [
+          kpi('finance', 'finance.revenue', 'EUR', 42_100),
+          kpi('finance', 'finance.margin', 'EUR', 12_000),
+        ],
+        health: { status: 'good', modules_with_data: 1, modules_total: 1 },
+        activity: [],
+      },
+      'admin',
+      {
+        'finance.revenue': { current: 60_000, previous: 40_000 },
+        'finance.margin': { current: 1_200, previous: 1_500 },
+      },
+    )
+    renderDashboard()
+
+    // L'écart vient de la fenêtre sélectionnée (≈ +50 % et -20 %), pas du point
+    // précédent du Pouls.
+    expect(await screen.findByText(/\+50/)).toBeInTheDocument()
+    expect(screen.getByText(/-20/)).toBeInTheDocument()
+
+    // 30 jours par défaut ; choisir 7 jours déplace l'option active.
+    const thirty = screen.getByRole('button', { name: '30 j' })
+    expect(thirty).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: '7 j' }))
+    expect(screen.getByRole('button', { name: '7 j' })).toHaveAttribute('aria-pressed', 'true')
+    expect(thirty).toHaveAttribute('aria-pressed', 'false')
   })
 })
