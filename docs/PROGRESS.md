@@ -4,10 +4,10 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **La phase 5 est complète** (5a → 5f) : clôture et merge à valider par le mainteneur.
-- **Branche** : `phase-5-modules-mvp` (créée depuis `main` = `cc840c9` ; commit 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1` + fix `a6f9c96`, docs `479ca93`).
-- **Prochaine action** : clôturer la phase 5 (critères AGENTS.md §3, puis feu vert du mainteneur pour le merge sur `main`), puis ouvrir la phase 6 — fonctions transverses (comparaison de périodes + objectifs/budgets avec alertes de dérive, recherche globale, dashboard personnalisable).
-- **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
+- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **Phase 5 clôturée et mergée sur `main`** (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `main` (pointe sur le merge `dcb7c9d` « merge: phase 5 — modules MVP (5a → 5f) ») ; la branche `phase-5-modules-mvp` (créée depuis `main` = `cc840c9`) reste en place — 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1` + fix `a6f9c96`, docs `479ca93`/`71f9273`.
+- **Prochaine action** : ouvrir la phase 6 « Fonctions transverses » sur une nouvelle branche (`phase-6-...`) — 6a comparaison de périodes + objectifs/budgets avec alertes de dérive, 6b recherche globale (Ctrl/Cmd+K) + dashboard personnalisable.
+- **À ne pas faire** : ouvrir la phase 6 avant que ce fichier (clôture phase 5) soit commité.
 
 ### Critères de la phase 0 — vérité du terrain
 | Critère | État |
@@ -660,3 +660,10 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Frontend Pouls | ✅ page d'accueil réécrite : KPI + badge de santé + fil d'activité + objectifs vides, états chargement/erreur, i18n FR/EN |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend/frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-12 — Clôture de la phase 5 (Modules MVP, 5a → 5f)
+- Critères AGENTS.md §3 remplis : suite backend **324 tests verts**, Vitest **50 passed** (14 fichiers), e2e Playwright **5 passed**, ruff + ruff format + mypy strict (95 fichiers) OK, `npm run lint`/`typecheck`/`build` OK, pre-commit **11 hooks** (gitleaks — aucun secret), docs à jour (README, ARCHITECTURE, DECISIONS, PROGRESS, CHANGELOG).
+- Corrections en route : `login.spec.ts` restait sur l'ancien titre d'accueil (« Bienvenue sur votre tableau de bord » → `Vue d'ensemble`) après la réécriture de `DashboardPage` ; Vitest ne voyait pas cette assertion, seul l'e2e l'a signalée (`a6f9c96`).
+- Décisions consignées dans `docs/DECISIONS.md` au fil des sous-phases (Recharts et les 8 clés finance, répartitions web/social/projets sommant la métrique parente, abonnés cumulés, stock de tâches ouvertes, registre légal à transport injectable, provenance par champ, Pouls minimal).
+- Merge sur `main` : `git merge --no-ff phase-5-modules-mvp` → `dcb7c9d` (`main` passe de `cc840c9` à `dcb7c9d`) ; aucun push (aucun remote GitHub configuré).
+- **Non fait** : push (aucun remote GitHub) ; phase 6 « Fonctions transverses » à ouvrir sur une nouvelle branche.
