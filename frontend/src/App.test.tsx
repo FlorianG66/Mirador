@@ -33,6 +33,15 @@ beforeEach(() => {
           },
         }),
     },
+    {
+      match: /organizations\/[^/]+\/pulse$/,
+      respond: () =>
+        json({
+          kpis: [],
+          health: { status: 'unknown', modules_with_data: 0, modules_total: 0 },
+          activity: [],
+        }),
+    },
   ])
 })
 

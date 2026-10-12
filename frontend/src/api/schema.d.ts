@@ -438,6 +438,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/pulse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Pulse
+         * @description Pouls de l'organisation active : KPI clés, santé et fil d'activité.
+         *
+         *     Le fil d'activité (journal d'audit) n'est renvoyé qu'aux administrateurs ;
+         *     pour un membre, la route l'omet sans erreur.
+         */
+        get: operations["read_pulse_api_v1_organizations__organization_id__pulse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/legal": {
         parameters: {
             query?: never;
@@ -977,6 +1000,56 @@ export interface components {
             modules: {
                 [key: string]: components["schemas"]["PermissionLevel"];
             };
+        };
+        /**
+         * PulseHealthOut
+         * @description Santé opérationnelle : modules alimentés sur les modules autorisés.
+         *
+         *     Un module sans donnée signifie « pas encore connecté » (démo non
+         *     synchronisée) : c'est un signal d'exploitation, pas un jugement financier
+         *     (les règles d'alerte métier arrivent en phase 6).
+         */
+        PulseHealthOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "good" | "warning" | "unknown";
+            /** Modules With Data */
+            modules_with_data: number;
+            /** Modules Total */
+            modules_total: number;
+        };
+        /**
+         * PulseKpiOut
+         * @description Dernière valeur d'un KPI clé, avec la valeur précédente pour la tendance.
+         */
+        PulseKpiOut: {
+            module: components["schemas"]["Module"];
+            /** Metric Key */
+            metric_key: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: number;
+            /** Previous Value */
+            previous_value?: number | null;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+        };
+        /**
+         * PulseOut
+         * @description Réponse du Pouls : KPI clés, santé et fil d'activité (réservé aux admins).
+         */
+        PulseOut: {
+            /** Kpis */
+            kpis?: components["schemas"]["PulseKpiOut"][];
+            health: components["schemas"]["PulseHealthOut"];
+            /** Activity */
+            activity?: components["schemas"]["AuditLogOut"][];
         };
         /**
          * RegisterRequest
@@ -1726,6 +1799,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetricSeries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_pulse_api_v1_organizations__organization_id__pulse_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PulseOut"];
                 };
             };
             /** @description Validation Error */

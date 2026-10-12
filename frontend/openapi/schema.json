@@ -881,6 +881,47 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/pulse": {
+      "get": {
+        "summary": "Read Pulse",
+        "description": "Pouls de l'organisation active : KPI clés, santé et fil d'activité.\n\nLe fil d'activité (journal d'audit) n'est renvoyé qu'aux administrateurs ;\npour un membre, la route l'omet sans erreur.",
+        "operationId": "read_pulse_api_v1_organizations__organization_id__pulse_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PulseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{organization_id}/legal": {
       "get": {
         "summary": "Read Legal Profile",
@@ -2130,6 +2171,107 @@
         ],
         "title": "PermissionsOut",
         "description": "Niveaux effectifs après mise à jour."
+      },
+      "PulseHealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "good",
+              "warning",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "modules_with_data": {
+            "type": "integer",
+            "title": "Modules With Data"
+          },
+          "modules_total": {
+            "type": "integer",
+            "title": "Modules Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "modules_with_data",
+          "modules_total"
+        ],
+        "title": "PulseHealthOut",
+        "description": "Santé opérationnelle : modules alimentés sur les modules autorisés.\n\nUn module sans donnée signifie « pas encore connecté » (démo non\nsynchronisée) : c'est un signal d'exploitation, pas un jugement financier\n(les règles d'alerte métier arrivent en phase 6)."
+      },
+      "PulseKpiOut": {
+        "properties": {
+          "module": {
+            "$ref": "#/components/schemas/Module"
+          },
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "module",
+          "metric_key",
+          "unit",
+          "value",
+          "captured_at"
+        ],
+        "title": "PulseKpiOut",
+        "description": "Dernière valeur d'un KPI clé, avec la valeur précédente pour la tendance."
+      },
+      "PulseOut": {
+        "properties": {
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/PulseKpiOut"
+            },
+            "type": "array",
+            "title": "Kpis"
+          },
+          "health": {
+            "$ref": "#/components/schemas/PulseHealthOut"
+          },
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogOut"
+            },
+            "type": "array",
+            "title": "Activity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "health"
+        ],
+        "title": "PulseOut",
+        "description": "Réponse du Pouls : KPI clés, santé et fil d'activité (réservé aux admins)."
       },
       "RegisterRequest": {
         "properties": {

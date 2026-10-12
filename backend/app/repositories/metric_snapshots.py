@@ -77,3 +77,28 @@ async def get_series(
     statement = statement.order_by(MetricSnapshot.captured_at).limit(limit)
     result = await session.execute(statement)
     return list(result.scalars())
+
+
+async def get_latest(
+    session: AsyncSession,
+    organization_id: uuid.UUID,
+    metric_key: str,
+    *,
+    limit: int = 1,
+) -> list[MetricSnapshot]:
+    """Points les plus récents d'une métrique, du plus récent au plus ancien.
+
+    `get_series` trie en ordre croissant : pour un KPI du Pouls on veut l'inverse
+    (le dernier point d'abord), d'où cette lecture dédiée.
+    """
+    statement = (
+        select(MetricSnapshot)
+        .where(
+            MetricSnapshot.organization_id == organization_id,
+            MetricSnapshot.metric_key == metric_key,
+        )
+        .order_by(MetricSnapshot.captured_at.desc())
+        .limit(limit)
+    )
+    result = await session.execute(statement)
+    return list(result.scalars())

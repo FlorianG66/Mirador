@@ -33,7 +33,7 @@ test('a11y : tableau de bord authentifié sans violation sérieuse', async ({ pa
   await installApiMocks(page, { loggedIn: true })
   await page.goto('/')
   await expect(
-    page.getByRole('heading', { name: 'Bienvenue sur votre tableau de bord' }),
+    page.getByRole('heading', { name: "Vue d'ensemble" }),
   ).toBeVisible()
   await expectNoSeriousViolations(page)
 })

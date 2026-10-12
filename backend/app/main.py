@@ -20,6 +20,7 @@ from app.routers.invitations import router as invitations_router
 from app.routers.legal import router as legal_router
 from app.routers.metrics import router as metrics_router
 from app.routers.password import router as password_router
+from app.routers.pulse import router as pulse_router
 from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
@@ -96,6 +97,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(invitation_accept_router, prefix=API_PREFIX)
     app.include_router(team_router, prefix=API_PREFIX)
     app.include_router(metrics_router, prefix=API_PREFIX)
+    app.include_router(pulse_router, prefix=API_PREFIX)
     app.include_router(legal_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)
     register_exception_handlers(app)

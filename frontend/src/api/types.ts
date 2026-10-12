@@ -15,6 +15,10 @@ export type LegalProfileUpdate = components['schemas']['LegalProfileUpdate']
 export type LegalDirector = components['schemas']['LegalDirectorOut']
 export type LegalIdentifier = components['schemas']['LegalIdentifierOut']
 export type LegalFieldSource = components['schemas']['FieldSourceOut']
+export type Pulse = components['schemas']['PulseOut']
+export type PulseKpi = components['schemas']['PulseKpiOut']
+export type PulseHealth = components['schemas']['PulseHealthOut']
+export type AuditLog = components['schemas']['AuditLogOut']
 
 /**
  * Les clés canoniques du panneau financier (sous-phase 5a). Sert à décrire le
