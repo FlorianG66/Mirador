@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison 🔄, 6a-ii frontend comparaison, 6a-iii backend objectifs, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`).
-- **Prochaine action** : committer la sous-phase 6a-i (comparaison de périodes côté backend), puis 6a-ii (sélecteur de période + affichage de la comparaison côté frontend).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison ✅ commit `4c41e9e`, 6a-ii frontend comparaison, 6a-iii backend objectifs, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`.
+- **Prochaine action** : 6a-ii — sélecteur de période (7 j / 30 j / 90 j) et affichage de la comparaison « vs période précédente » côté frontend, en s'appuyant sur `GET /metrics/{clé}/comparison`.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -675,6 +675,7 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - Schémas `MetricAggregation`/`MetricComparisonSummary`/`MetricComparison` ; service `metrics.get_metric_comparison` (une seule lecture de la double fenêtre `[end − 2×days, end]`, frontière `end − days`) ; route `GET /organizations/{id}/metrics/{metric_key}/comparison?days=&end=`.
 - Tests : `tests/test_metric_catalog.py` (8) + `tests/connectors/test_metric_comparison.py` (10) — répartition des fenêtres, somme/dernière valeur/moyenne, écart et pourcentage (`null` si base nulle), jours hors bornes, 403 droits/organisation, 422 clé, 404 sans donnée.
 - Client OpenAPI régénéré (`schema.json` + `schema.d.ts`).
+- Commit : `4c41e9e` — `feat: comparaison de periodes par metrique (6a-i)`.
 - **Non fait** : sélecteur de période et affichage frontend (6a-ii) ; objectifs/budgets avec alertes (6a-iii/iv).
 
 ### Critères de la sous-phase 6a-i — vérité du terrain
