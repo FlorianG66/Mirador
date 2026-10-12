@@ -28,7 +28,19 @@ class PermissionLevel(StrEnum):
     EDIT = "edit"
 
 
+class GoalDirection(StrEnum):
+    """Sens d'un objectif (SPEC §4) : viser au moins la cible, ou rester en dessous.
+
+    `at_least` pour une cible à atteindre (chiffre d'affaires, abonnés) ; `at_most`
+    pour un plafond à ne pas dépasser (budget de dépenses, tâches en retard).
+    """
+
+    AT_LEAST = "at_least"
+    AT_MOST = "at_most"
+
+
 # Reprise textuelle dans les contraintes CHECK de la base : une seule source de vérité.
 ROLE_VALUES_SQL = ", ".join(f"'{role.value}'" for role in Role)
 MODULE_VALUES_SQL = ", ".join(f"'{module.value}'" for module in Module)
 LEVEL_VALUES_SQL = ", ".join(f"'{level.value}'" for level in PermissionLevel)
+GOAL_DIRECTION_VALUES_SQL = ", ".join(f"'{direction.value}'" for direction in GoalDirection)

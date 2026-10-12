@@ -966,6 +966,203 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/goals": {
+      "get": {
+        "summary": "List Goals",
+        "description": "Objectifs des modules visibles, avec leur progression calculée.",
+        "operationId": "list_goals_api_v1_organizations__organization_id__goals_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GoalOut"
+                  },
+                  "title": "Response List Goals Api V1 Organizations  Organization Id  Goals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Goal",
+        "description": "Crée un objectif (ou un budget) sur une métrique canonique.",
+        "operationId": "create_goal_api_v1_organizations__organization_id__goals_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/goals/{goal_id}": {
+      "patch": {
+        "summary": "Update Goal",
+        "description": "Modifie un objectif existant (champs partiels).",
+        "operationId": "update_goal_api_v1_organizations__organization_id__goals__goal_id__patch",
+        "parameters": [
+          {
+            "name": "goal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Goal Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Goal",
+        "description": "Supprime un objectif.",
+        "operationId": "delete_goal_api_v1_organizations__organization_id__goals__goal_id__delete",
+        "parameters": [
+          {
+            "name": "goal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Goal Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{organization_id}/pulse": {
       "get": {
         "summary": "Read Pulse",
@@ -1429,6 +1626,251 @@
         "type": "object",
         "title": "ForgotPasswordResponse",
         "description": "Toujours identique, que le compte existe ou non (anti-énumération)."
+      },
+      "GoalCreate": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/GoalDirection",
+            "default": "at_least"
+          },
+          "target_value": {
+            "type": "number",
+            "title": "Target Value"
+          },
+          "period_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Period Days",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "target_value"
+        ],
+        "title": "GoalCreate",
+        "description": "Définition d'un objectif à créer (cible sur une clé canonique)."
+      },
+      "GoalDirection": {
+        "type": "string",
+        "enum": [
+          "at_least",
+          "at_most"
+        ],
+        "title": "GoalDirection",
+        "description": "Sens d'un objectif (SPEC §4) : viser au moins la cible, ou rester en dessous.\n\n`at_least` pour une cible à atteindre (chiffre d'affaires, abonnés) ; `at_most`\npour un plafond à ne pas dépasser (budget de dépenses, tâches en retard)."
+      },
+      "GoalOut": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/GoalDirection",
+            "default": "at_least"
+          },
+          "target_value": {
+            "type": "number",
+            "title": "Target Value"
+          },
+          "period_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Period Days",
+            "default": 30
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/GoalProgress"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "target_value",
+          "id",
+          "progress",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "GoalOut",
+        "description": "Objectif complet : définition + progression calculée + horodatages."
+      },
+      "GoalProgress": {
+        "properties": {
+          "current_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Value"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "progress_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Percent"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus",
+            "default": "unknown"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "title": "GoalProgress",
+        "description": "Progression recalculée d'un objectif sur sa fenêtre glissante.\n\n`current_value` est agrégée selon le catalogue de métriques (somme pour un\nflux, dernière valeur pour un niveau, moyenne pour un taux). `progress_percent`\npeut dépasser 100 (cible dépassée) et vaut `None` si la cible est nulle."
+      },
+      "GoalStatus": {
+        "type": "string",
+        "enum": [
+          "achieved",
+          "on_track",
+          "off_track",
+          "unknown"
+        ],
+        "title": "GoalStatus",
+        "description": "État d'un objectif, calculé à la lecture (jamais stocké).\n\n- `achieved` : la cible est atteinte.\n- `off_track` : la cible n'est pas atteinte **et** la métrique s'en éloigne\n  (dérive par rapport à la fenêtre précédente équivalente).\n- `on_track` : la cible n'est pas encore atteinte mais la métrique progresse\n  ou se maintient.\n- `unknown` : aucune donnée sur la fenêtre (module pas encore synchronisé)."
+      },
+      "GoalUpdate": {
+        "properties": {
+          "metric_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalDirection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Value"
+          },
+          "period_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Days"
+          }
+        },
+        "type": "object",
+        "title": "GoalUpdate",
+        "description": "Mise à jour partielle : seuls les champs fournis sont modifiés.\n\nUn `label` explicitement `null` efface le libellé (retour au libellé i18n de\nla métrique côté interface) ; un champ omis garde sa valeur."
       },
       "HTTPValidationError": {
         "properties": {

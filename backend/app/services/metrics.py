@@ -20,7 +20,7 @@ from app.schemas.metrics import (
     MetricSeries,
 )
 from app.services.errors import ServiceProblem
-from app.services.metric_catalog import aggregation_for
+from app.services.metric_catalog import aggregation_for, reduce_values
 
 
 async def get_metric_series(
@@ -64,13 +64,7 @@ async def get_metric_series(
 
 def _aggregate(values: list[float], aggregation: MetricAggregation) -> float:
     """Réduit une fenêtre de valeurs (ordonnées chronologiquement) à une valeur."""
-    if not values:
-        return 0.0
-    if aggregation == MetricAggregation.LAST:
-        return values[-1]
-    if aggregation == MetricAggregation.AVERAGE:
-        return sum(values) / len(values)
-    return sum(values)
+    return reduce_values(values, aggregation)
 
 
 async def get_metric_comparison(

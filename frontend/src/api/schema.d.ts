@@ -458,6 +458,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Goals
+         * @description Objectifs des modules visibles, avec leur progression calculée.
+         */
+        get: operations["list_goals_api_v1_organizations__organization_id__goals_get"];
+        put?: never;
+        /**
+         * Create Goal
+         * @description Crée un objectif (ou un budget) sur une métrique canonique.
+         */
+        post: operations["create_goal_api_v1_organizations__organization_id__goals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/goals/{goal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Goal
+         * @description Supprime un objectif.
+         */
+        delete: operations["delete_goal_api_v1_organizations__organization_id__goals__goal_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Goal
+         * @description Modifie un objectif existant (champs partiels).
+         */
+        patch: operations["update_goal_api_v1_organizations__organization_id__goals__goal_id__patch"];
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/pulse": {
         parameters: {
             query?: never;
@@ -693,6 +741,120 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /**
+         * GoalCreate
+         * @description Définition d'un objectif à créer (cible sur une clé canonique).
+         */
+        GoalCreate: {
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label?: string | null;
+            /** @default at_least */
+            direction: components["schemas"]["GoalDirection"];
+            /** Target Value */
+            target_value: number;
+            /**
+             * Period Days
+             * @default 30
+             */
+            period_days: number;
+        };
+        /**
+         * GoalDirection
+         * @description Sens d'un objectif (SPEC §4) : viser au moins la cible, ou rester en dessous.
+         *
+         *     `at_least` pour une cible à atteindre (chiffre d'affaires, abonnés) ; `at_most`
+         *     pour un plafond à ne pas dépasser (budget de dépenses, tâches en retard).
+         * @enum {string}
+         */
+        GoalDirection: "at_least" | "at_most";
+        /**
+         * GoalOut
+         * @description Objectif complet : définition + progression calculée + horodatages.
+         */
+        GoalOut: {
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label?: string | null;
+            /** @default at_least */
+            direction: components["schemas"]["GoalDirection"];
+            /** Target Value */
+            target_value: number;
+            /**
+             * Period Days
+             * @default 30
+             */
+            period_days: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            progress: components["schemas"]["GoalProgress"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * GoalProgress
+         * @description Progression recalculée d'un objectif sur sa fenêtre glissante.
+         *
+         *     `current_value` est agrégée selon le catalogue de métriques (somme pour un
+         *     flux, dernière valeur pour un niveau, moyenne pour un taux). `progress_percent`
+         *     peut dépasser 100 (cible dépassée) et vaut `None` si la cible est nulle.
+         */
+        GoalProgress: {
+            /** Current Value */
+            current_value?: number | null;
+            /** Previous Value */
+            previous_value?: number | null;
+            /** Progress Percent */
+            progress_percent?: number | null;
+            /** @default unknown */
+            status: components["schemas"]["GoalStatus"];
+            /** Unit */
+            unit?: string | null;
+        };
+        /**
+         * GoalStatus
+         * @description État d'un objectif, calculé à la lecture (jamais stocké).
+         *
+         *     - `achieved` : la cible est atteinte.
+         *     - `off_track` : la cible n'est pas atteinte **et** la métrique s'en éloigne
+         *       (dérive par rapport à la fenêtre précédente équivalente).
+         *     - `on_track` : la cible n'est pas encore atteinte mais la métrique progresse
+         *       ou se maintient.
+         *     - `unknown` : aucune donnée sur la fenêtre (module pas encore synchronisé).
+         * @enum {string}
+         */
+        GoalStatus: "achieved" | "on_track" | "off_track" | "unknown";
+        /**
+         * GoalUpdate
+         * @description Mise à jour partielle : seuls les champs fournis sont modifiés.
+         *
+         *     Un `label` explicitement `null` efface le libellé (retour au libellé i18n de
+         *     la métrique côté interface) ; un champ omis garde sa valeur.
+         */
+        GoalUpdate: {
+            /** Metric Key */
+            metric_key?: string | null;
+            /** Label */
+            label?: string | null;
+            direction?: components["schemas"]["GoalDirection"] | null;
+            /** Target Value */
+            target_value?: number | null;
+            /** Period Days */
+            period_days?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1904,6 +2066,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetricComparison"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_goals_api_v1_organizations__organization_id__goals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_goal_api_v1_organizations__organization_id__goals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_goal_api_v1_organizations__organization_id__goals__goal_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_goal_api_v1_organizations__organization_id__goals__goal_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
                 };
             };
             /** @description Validation Error */

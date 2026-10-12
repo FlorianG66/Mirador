@@ -13,6 +13,8 @@ toutes les métriques produites par les connecteurs y figurent explicitement.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from app.schemas.metrics import MetricAggregation
 
 # Niveaux : la dernière valeur de la période fait foi (stock, solde, compteur).
@@ -85,3 +87,18 @@ DEFAULT_AGGREGATION = MetricAggregation.SUM
 def aggregation_for(metric_key: str) -> MetricAggregation:
     """Agrégation à appliquer à une métrique sur une période (flux par défaut)."""
     return METRIC_AGGREGATIONS.get(metric_key, DEFAULT_AGGREGATION)
+
+
+def reduce_values(values: Sequence[float], aggregation: MetricAggregation) -> float:
+    """Réduit une fenêtre de valeurs (ordonnées chronologiquement) à une valeur.
+
+    Partagé par la comparaison de périodes et les objectifs : une seule règle
+    de réduction pour tout le produit (aucune divergence possible).
+    """
+    if not values:
+        return 0.0
+    if aggregation == MetricAggregation.LAST:
+        return values[-1]
+    if aggregation == MetricAggregation.AVERAGE:
+        return sum(values) / len(values)
+    return sum(values)
