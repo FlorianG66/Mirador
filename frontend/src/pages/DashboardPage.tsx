@@ -14,7 +14,6 @@ import {
   Landmark,
   ListChecks,
   Share2,
-  Target,
   TriangleAlert,
   Wallet,
 } from 'lucide-react'
@@ -29,6 +28,7 @@ import { PageHeader } from '../components/ui/PageHeader.tsx'
 import { PeriodSelect } from '../components/ui/PeriodSelect.tsx'
 import { Skeleton } from '../components/ui/Skeleton.tsx'
 import { cn } from '../lib/utils.ts'
+import { GoalsPanel } from '../goals/GoalsPanel.tsx'
 import {
   DEFAULT_PERIOD_DAYS,
   PERIOD_OPTIONS,
@@ -300,28 +300,7 @@ function ActivityPanel({
   )
 }
 
-/** Emplacement des objectifs : état vide, l'édition arrive en phase 6. */
-function GoalsPanel({ className }: { className?: string }) {
-  const { t } = useTranslation()
-
-  return (
-    <Card className={cn('flex flex-col', className)}>
-      <CardHeader>
-        <CardTitle>{t('dashboard.goalsTitle')}</CardTitle>
-      </CardHeader>
-      <div className="flex-1 px-5 pb-5">
-        <EmptyState
-          icon={Target}
-          title={t('dashboard.goalsEmptyTitle')}
-          description={t('dashboard.goalsEmptyDescription')}
-          className="h-full"
-        />
-      </div>
-    </Card>
-  )
-}
-
-/** Squellette chargé pendant la première requête du Pouls. */
+/** Squelette chargé pendant la première requête du Pouls. */
 function PulseSkeleton() {
   return (
     <div className="space-y-4">

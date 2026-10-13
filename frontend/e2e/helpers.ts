@@ -81,5 +81,7 @@ export async function installApiMocks(
     }),
   )
 
+  await page.route('**/api/v1/organizations/*/goals', (route) => fulfill(route, 200, []))
+
   return state
 }

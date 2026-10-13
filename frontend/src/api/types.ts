@@ -75,6 +75,13 @@ export type SocialMetricKey =
  * que les autres modules : chaque clé est un suffixe `module.metric` du schéma,
  * jamais une invention du frontend.
  */
+export type Goal = components['schemas']['GoalOut']
+export type GoalCreate = components['schemas']['GoalCreate']
+export type GoalUpdate = components['schemas']['GoalUpdate']
+export type GoalDirection = components['schemas']['GoalDirection']
+export type GoalStatus = components['schemas']['GoalStatus']
+export type GoalProgress = components['schemas']['GoalProgress']
+
 export type ProjectMetricKey =
   | 'projects.tasks_done'
   | 'projects.tasks_created'
