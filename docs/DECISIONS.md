@@ -429,3 +429,15 @@ Créer, modifier ou supprimer un objectif exige `edit` sur le module préfixe de
 ## 2026-10-12 — Réduction de fenêtre partagée `reduce_values` (6a-iii)
 
 La comparaison de périodes et les objectifs réduisent une fenêtre de la même façon, via `metric_catalog.reduce_values` (le `_aggregate` de `metrics.py` y délègue), classée par le catalogue `sum`/`last`/`average`. Raison : une seule source de vérité pour l'agrégation évite toute divergence entre les deux fonctionnalités.
+
+## 2026-10-12 — Le panneau d'objectifs vit sur le tableau de bord (6a-iv)
+
+`GoalsPanel` est une carte de la vue d'ensemble (à côté du fil d'activité), pas une page dédiée. Raison : les objectifs sont un pilotage au quotidien, ils complètent le Pouls là où on le consulte ; une page dédiée n'apporterait rien au scénario MVP (le formulaire s'ouvre en place).
+
+## 2026-10-12 — Le formulaire d'objectif restreint l'indicateur aux KPI clés (6a-iv)
+
+Le sélecteur d'indicateur de `GoalForm` ne propose que les 8 KPI clés du Pouls (`KPI_META`) que l'utilisateur peut écrire, alors que le backend accepte toute clé canonique. Raison : une liste étiquetée en i18n (libellés réutilisés) plutôt qu'une chaîne libre ; le backend reste la source de vérité et un objectif existant hors liste reste éditable (clé ajoutée aux options).
+
+## 2026-10-12 — Actions d'écriture masquées côté UI, backend source de vérité (6a-iv)
+
+`canEditMetric` (admin = tout, sinon `edit` sur le module de la clé) conditionne l'affichage des boutons créer/modifier/supprimer, et la suppression demande une confirmation native. Raison : ne pas montrer d'actions vouées à un 403, mais le serveur applique seul la règle (le masquage n'est qu'un confort, jamais une sécurité).

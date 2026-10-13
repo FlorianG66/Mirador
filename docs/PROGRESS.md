@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Découpage retenu (chaque sous-phase = un pas livrable) : **6a** comparaison de périodes + objectifs/budgets avec alertes (6a-i backend comparaison ✅ commit `4c41e9e`, 6a-ii frontend comparaison ✅ commit `01c2220`, 6a-iii backend objectifs ✅ commit `831546e`, 6a-iv frontend objectifs), **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`.
-- **Prochaine action** : 6a-iv — objectifs/budgets côté frontend (liste, création/édition/suppression, progression et alerte de dérive).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). La sous-phase **6a est complète** : 6a-i backend comparaison `4c41e9e`, 6a-ii frontend comparaison `01c2220`, 6a-iii backend objectifs `831546e`, 6a-iv frontend objectifs `e114627`. Prochaine brique : **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`.
+- **Prochaine action** : 6b — recherche globale (Ctrl/Cmd+K) + dashboard personnalisable (drag & drop, redimensionnement, layouts sauvegardés).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -734,3 +734,27 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Frontend | ✅ `tsc -b` ✅ · `eslint` ✅ (aucun changement de code frontend, seulement le client généré) |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-13 — Sous-phase 6a-iv livrée (objectifs & budgets côté frontend)
+- Nouvel emplacement `src/goals/` : `GoalsPanel` (carte du tableau de bord à côté du fil d'activité, remplace l'état vide de la 5f), `GoalForm` (création **et** édition), `queries.ts` (`useGoals` + mutations `useCreateGoal`/`useUpdateGoal`/`useDeleteGoal` vers `POST`/`PATCH`/`DELETE` ; 204 contrôlé à la main pour la suppression, toute écriture invalide la liste) et `format.ts` (métadonnées des statuts i18n + teintes de badge/barre, options d'indicateur, droits d'écriture).
+- Affichage : nom (libellé ou nom du KPI ciblé), sens + cible unitée + fenêtre, progression (barre `role="progressbar"` + pourcentage, « sans donnée » si `progress_percent` nul) et statut `achieved`/`on_track`/`off_track`/`unknown` recalculés par le backend — la dérive (`off_track`) est mise en évidence en rouge (badge + barre). i18n `goals.*` FR/EN, aucun texte en dur (AGENTS.md §7, §8).
+- Droits : les actions créer/modifier/supprimer ne s'affichent qu'avec le droit d'écriture sur le module de l'indicateur (`canEditMetric` : admin = tout, sinon `edit`) ; la suppression demande confirmation (`window.confirm`) ; le masquage n'est qu'un confort d'interface, le backend applique seul la règle (6a-iii).
+- Formulaire : sélecteur d'indicateur **limité aux 8 KPI clés du Pouls** (`KPI_META`, libellés i18n réutilisés — une clé existante hors liste reste éditable), sens `at_least`/`at_most`, cible (nombre), fenêtre via `PeriodSelect` partagé (7/30/90 j, défaut 30), libellé optionnel (max 120).
+- Tests : 5 cas dans `DashboardPage.test.tsx` (affichage progression/statut, création avec retombée i18n du nom, édition PATCH, suppression DELETE après confirmation, actions masquées pour un membre en `view`) ; route `/goals` simulée (y compris `/goals/{id}` PATCH/DELETE) dans `App.test.tsx` et les mocks e2e.
+- Vérifs : Vitest **57 passed** (15 fichiers, +5 vs 6a-ii/iii) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **5 passed** · pre-commit ✅ (gitleaks inclus) · aucun changement backend ni régénération OpenAPI.
+- Commit : `e114627` — `feat: objectifs et budgets cote frontend (6a-iv)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phase 6b.
+- *Écart constaté : `DashboardPage.test.tsx` ne compilait pas (`waitFor` non importé) — corrigé avant exécution.*
+
+### Critères de la sous-phase 6a-iv — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **57 passed** (15 fichiers, +5 vs 6a-ii/iii) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| e2e Playwright | ✅ `npx playwright test` **5 passed** (mocks `/goals` ajoutés) |
+| Panneau d'objectifs | ✅ liste + progression + statut (dérive en évidence), création/édition/suppression, actions selon le droit d'écriture du module |
+| i18n | ✅ `goals.*` FR + EN, aucun texte en dur ; libellés d'indicateur réutilisés du Pouls |
+| Backend | ✅ inchangé (client OpenAPI à jour) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
