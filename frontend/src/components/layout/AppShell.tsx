@@ -6,7 +6,9 @@ import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../auth/context.ts'
 import { useRailCollapsed } from '../../hooks/useRailCollapsed.ts'
+import { SearchPalette } from '../../search/SearchPalette.tsx'
 import { Sidebar } from './Sidebar.tsx'
 import { Topbar } from './Topbar.tsx'
 import { PageTransition } from './PageTransition.tsx'
@@ -16,8 +18,10 @@ const RAIL_COLLAPSED = '4.75rem'
 
 export function AppShell() {
   const { t } = useTranslation()
+  const { permissions } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const { collapsed, toggle } = useRailCollapsed()
 
   const closeSidebar = () => setSidebarOpen(false)
@@ -59,13 +63,23 @@ export function AppShell() {
       ) : null}
 
       <div className="flex min-h-screen flex-col transition-[padding] duration-200 lg:pl-[var(--rail-w)]">
-        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
+        <Topbar
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onOpenSearch={() => setSearchOpen(true)}
+        />
         <main id="main-content" className="flex-1 p-4 lg:p-8">
           <PageTransition key={location.pathname}>
             <Outlet />
           </PageTransition>
         </main>
       </div>
+
+      <SearchPalette
+        open={searchOpen}
+        onOpen={() => setSearchOpen(true)}
+        onClose={() => setSearchOpen(false)}
+        permissions={permissions}
+      />
     </div>
   )
 }

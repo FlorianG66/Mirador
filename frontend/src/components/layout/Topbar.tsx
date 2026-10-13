@@ -1,7 +1,7 @@
 // Barre supérieure : ouverture du menu (mobile), fil d'ariane, puis langue,
 // thème et identité de l'utilisateur. Collée en haut (sticky) et translucide
 // pour laisser deviner le contenu qui défile dessous.
-import { ChevronRight, Menu } from 'lucide-react'
+import { ChevronRight, Menu, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { useAuth } from '../../auth/context.ts'
@@ -11,6 +11,7 @@ import { ThemeToggle } from './ThemeToggle.tsx'
 
 export interface TopbarProps {
   onOpenSidebar: () => void
+  onOpenSearch: () => void
 }
 
 // Libellés du fil d'ariane par route (i18n). Toute route inconnue retombe sur le
@@ -25,7 +26,7 @@ const CRUMB_KEYS: Record<string, string> = {
   '/team': 'nav.team',
 }
 
-export function Topbar({ onOpenSidebar }: TopbarProps) {
+export function Topbar({ onOpenSidebar, onOpenSearch }: TopbarProps) {
   const { t } = useTranslation()
   const { user, permissions } = useAuth()
   const location = useLocation()
@@ -55,6 +56,19 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       </nav>
 
       <div className="flex-1" />
+
+      <button
+        type="button"
+        onClick={onOpenSearch}
+        aria-label={t('search.open')}
+        className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      >
+        <Search aria-hidden="true" className="size-4" />
+        <span className="hidden lg:inline">{t('search.open')}</span>
+        <kbd className="hidden rounded border border-border bg-background px-1 font-mono text-[10px] text-muted md:inline">
+          Ctrl K
+        </kbd>
+      </button>
 
       <LanguageSwitcher />
       <ThemeToggle />

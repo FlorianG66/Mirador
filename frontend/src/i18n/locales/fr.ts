@@ -419,6 +419,12 @@ const fr = {
     description: "La page que vous cherchez n'existe pas ou a été déplacée.",
     backHome: "Retour à la vue d'ensemble",
   },
+  search: {
+    open: 'Rechercher',
+    title: 'Recherche globale',
+    placeholder: 'Modules, KPI, projets, paramètres…',
+    empty: 'Aucun résultat',
+  },
 }
 
 export default fr

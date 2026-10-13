@@ -417,6 +417,12 @@ const en = {
     description: 'The page you are looking for does not exist or has moved.',
     backHome: 'Back to overview',
   },
+  search: {
+    open: 'Search',
+    title: 'Global search',
+    placeholder: 'Modules, KPIs, projects, settings…',
+    empty: 'No results',
+  },
 }
 
 export default en
