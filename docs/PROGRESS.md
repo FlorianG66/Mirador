@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). La sous-phase **6a est complète** : 6a-i backend comparaison `4c41e9e`, 6a-ii frontend comparaison `01c2220`, 6a-iii backend objectifs `831546e`, 6a-iv frontend objectifs `e114627`. Prochaine brique : **6b** recherche globale (Ctrl/Cmd+K) + dashboard personnalisable, puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`.
-- **Prochaine action** : 6b — recherche globale (Ctrl/Cmd+K) + dashboard personnalisable (drag & drop, redimensionnement, layouts sauvegardés).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a et 6b-i sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, **6b-i recherche globale `bd6dcbf`**. Prochaine brique : **6b-ii** dashboard personnalisable, puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`.
+- **Prochaine action** : 6b-ii — dashboard personnalisable (widgets déplaçables/redimensionnables, mise en page sauvegardée par utilisateur, table `dashboard_layouts`).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -756,5 +756,29 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Panneau d'objectifs | ✅ liste + progression + statut (dérive en évidence), création/édition/suppression, actions selon le droit d'écriture du module |
 | i18n | ✅ `goals.*` FR + EN, aucun texte en dur ; libellés d'indicateur réutilisés du Pouls |
 | Backend | ✅ inchangé (client OpenAPI à jour) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-13 — Sous-phase 6b-i livrée (recherche globale Ctrl/Cmd+K)
+- Découpage de la 6b (volumineuse) en deux : **6b-i** recherche globale (SPEC §4, frontend seul) et **6b-ii** dashboard personnalisable (backend `dashboard_layouts` + widgets déplaçables/redimensionnables, à venir).
+- `src/search/items.ts` : index de recherche dérivé du **catalogue statique** de l'application (routes des modules + `KPI_META` du Pouls), filtré par les permissions courantes (`canSeeModule`, Équipe réservée aux admins) ; `normalizeText` (casse + accents, NFD) et `searchItems` (sous-chaîne sur le libellé **et** la ligne secondaire, bornée à 8). Un KPI navigue vers son module porteur ; « projets/tâches » sont couverts par la page et les KPI projets (aucune entité tâche dans le produit — décision notée).
+- `src/search/SearchPalette.tsx` : palette contrôlée par l'`AppShell` (props `open`/`onOpen`/`onClose`/`permissions`) — **Ctrl/Cmd+K** bascule, Échap ferme, focus déplacé sur la recherche à l'ouverture et rendu à l'élément précédent à la fermeture ; navigation flèches + Entrée ou clic (motif combobox accessible : `role="dialog"`/`combobox`/`listbox`/`option`, `aria-activedescendant`, `aria-selected`). Bouton « Rechercher » (icône + `kbd` « Ctrl K ») dans la `Topbar`.
+- i18n `search.*` FR/EN ; aucun backend, aucune régénération OpenAPI, aucune donnée d'API (index statique + permissions).
+- Tests : `items.test.ts` (8 — couverture admin/membre/null, filtrage casse/accents/ligne secondaire, limite) + `SearchPalette.test.tsx` (5 — Ctrl+K/Échap, filtre + Entrée, flèches, clic, permissions) ; e2e `search.spec.ts` (2 — Ctrl+K réel + bouton topbar).
+- Vérifs : Vitest **70 passed** (17 fichiers, +13 vs 6a-iv) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **7 passed** (a11y du dashboard inclus, aucune violation sérieuse) · pre-commit ✅ 11 hooks Passed (gitleaks inclus) · aucun changement backend.
+- Commit : `bd6dcbf` — `feat: recherche globale Ctrl/Cmd+K (6b-i)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; à suivre : **6b-ii**.
+
+### Critères de la sous-phase 6b-i — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **70 passed** (17 fichiers, +13 : 8 `items.test.ts` + 5 `SearchPalette.test.tsx`) |
+| Tests e2e | ✅ `npx playwright test` **7 passed** (+2 `search.spec.ts` ; a11y du dashboard scanné avec le nouveau bouton) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Raccourci | ✅ Ctrl/Cmd+K bascule la palette, Échap ferme ; bouton « Rechercher » (avec kbd) dans la topbar |
+| Index | ✅ pages (modules filtrés + Équipe admin + paramètres) + 8 KPI clés, filtrage insensible casse/accents, « projets/tâches » couverts par la page et les KPI projets |
+| i18n | ✅ `search.*` FR + EN, aucun texte en dur (kbd « Ctrl K » = nom de touche, convention non traduite, v. `DECISIONS.md`) |
+| Backend | ✅ inchangé (aucune API : l'index est statique, filtré par les permissions courantes) |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

@@ -441,3 +441,15 @@ Le sélecteur d'indicateur de `GoalForm` ne propose que les 8 KPI clés du Pouls
 ## 2026-10-12 — Actions d'écriture masquées côté UI, backend source de vérité (6a-iv)
 
 `canEditMetric` (admin = tout, sinon `edit` sur le module de la clé) conditionne l'affichage des boutons créer/modifier/supprimer, et la suppression demande une confirmation native. Raison : ne pas montrer d'actions vouées à un 403, mais le serveur applique seul la règle (le masquage n'est qu'un confort, jamais une sécurité).
+
+## 2026-10-13 — Recherche globale sans backend (6b-i)
+
+L'index de recherche est dérivé du catalogue statique de l'application (table des routes + `KPI_META` du Pouls), filtré par les permissions courantes ; il n'appelle aucune API et « projets/tâches » sont couverts par la page et les KPI projets. Raison : le produit ne stocke pas d'entités tâches à ce stade, et un index frontend reste instantané — le jour où la recherche devra couvrir du contenu métier, elle s'appuiera sur le backend.
+
+## 2026-10-13 — Un résultat KPI navigue vers son module porteur (6b-i)
+
+`MODULE_ROUTES` fait pointer chaque KPI vers la route de son module (le KPI y vit déjà sous forme de carte). Raison : la palette sert à rejoindre un endroit de l'application, pas à dupliquer une vue.
+
+## 2026-10-13 — Le libellé du raccourci clavier n'est pas traduit (6b-i)
+
+Le `kbd` de la topbar affiche « Ctrl K » quelle que soit la langue. Raison : un nom de touche est une convention d'UI (comme une icône), pas un texte métier ; le libellé accessible du bouton reste i18n (`search.open`).
