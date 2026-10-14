@@ -81,6 +81,24 @@ export async function installApiMocks(
     }),
   )
 
+  // Catalogue et disposition par défaut, cohérents avec un Pouls vide (le
+  // backend écarte l'activité pour un non-admin, pas ici : session admin).
+  await page.route('**/api/v1/organizations/*/dashboard', (route) =>
+    fulfill(route, 200, {
+      available_widgets: [
+        { widget_id: 'health', kind: 'health' },
+        { widget_id: 'goals', kind: 'goals' },
+        { widget_id: 'activity', kind: 'activity' },
+      ],
+      layout: [
+        { widget_id: 'health', x: 0, y: 0, w: 12, h: 2 },
+        { widget_id: 'goals', x: 0, y: 2, w: 6, h: 6 },
+        { widget_id: 'activity', x: 6, y: 2, w: 6, h: 6 },
+      ],
+      is_default: true,
+    }),
+  )
+
   await page.route('**/api/v1/organizations/*/goals', (route) => fulfill(route, 200, []))
 
   return state

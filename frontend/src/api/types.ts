@@ -22,6 +22,11 @@ export type Pulse = components['schemas']['PulseOut']
 export type PulseKpi = components['schemas']['PulseKpiOut']
 export type PulseHealth = components['schemas']['PulseHealthOut']
 export type AuditLog = components['schemas']['AuditLogOut']
+export type Dashboard = components['schemas']['DashboardOut']
+export type DashboardWidget = components['schemas']['DashboardWidgetOut']
+export type DashboardPlacement = components['schemas']['DashboardPlacement']
+export type DashboardLayoutUpdate = components['schemas']['DashboardLayoutUpdate']
+export type WidgetKind = components['schemas']['WidgetKind']
 
 /**
  * Les clés canoniques du panneau financier (sous-phase 5a). Sert à décrire le

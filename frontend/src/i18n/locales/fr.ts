@@ -50,9 +50,6 @@ const fr = {
     kpiEmptyTitle: 'Pas encore de données à synthétiser',
     kpiEmptyDescription: 'Synchronisez un module pour voir ses indicateurs ici.',
     activityTitle: 'Activité récente',
-    activityAdminOnlyTitle: 'Réservée aux administrateurs',
-    activityAdminOnlyDescription:
-      "Seuls les administrateurs voient le journal d'activité de l'organisation.",
     activityEmptyTitle: "Aucune activité pour l'instant",
     activityEmptyDescription: 'Les événements de vos modules apparaîtront ici.',
     actionInvitationCreated: 'Invitation envoyée',
@@ -65,6 +62,13 @@ const fr = {
     actionLegalDiverged: 'Écart détecté sur la fiche légale',
     actionUnknown: 'Événement',
     errorDescription: "Impossible de charger la vue d'ensemble. Réessayez dans un instant.",
+    healthTitle: "Santé de l'exploitation",
+    customize: 'Personnaliser',
+    editHint: 'Déplacez les widgets par leur en-tête, redimensionnez-les par le coin bas-droit.',
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    reset: 'Réinitialiser',
+    kpiNoData: 'Pas de donnée',
   },
   goals: {
     title: 'Objectifs',

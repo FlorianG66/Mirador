@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i et 6b-ii-a sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, **6b-ii-a persistance de la mise en page (backend)**. Prochaine brique : **6b-ii-b** (widgets déplaçables/redimensionnables côté frontend), puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a et 6b-ii-b sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**. Prochaine brique : **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
 - **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`.
-- **Prochaine action** : 6b-ii-b — dashboard personnalisable (widgets déplaçables/redimensionnables côté frontend) : `react-grid-layout@2.3.0`, mode édition, disposition par défaut/rechargement via l'API `GET`/`PUT`/`DELETE /organizations/{id}/dashboard`.
+- **Prochaine action** : 6c — notifications in-app + Web Push et export PDF (SPEC §4).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -807,3 +807,31 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Audit | ✅ `dashboard.layout.updated` / `dashboard.layout.reset` |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-14 — Sous-phase 6b-ii-b livrée (tableau de bord personnalisable, frontend)
+- Découpage retenu : **6b-ii-b** = le rendu frontend de la disposition écrite en 6b-ii-a (widgets déplaçables/redimensionnables). `react-grid-layout@2.3.0` est installé épinglé (`--save-exact`) — version stable vérifiée sur npm, réécriture TypeScript (points d'entrée `core`/`extras`/`legacy`/`react`/`responsive`), **aucune feuille de style livrée** (styles en ligne).
+- Nouveau dossier `src/dashboard/` : `layout.ts` (fonctions pures `toGridLayout`/`toPlacements`/`sameLayout`/`widgetTitleKey` + constantes `GRID_COLUMNS = 12`, `ROW_HEIGHT = 40`, `GRID_MARGIN = [16, 16]`, bornes alignées sur le backend), `widgets.tsx` (registre de rendu par genre — `HealthWidget`/`KpiWidget`/`GoalsPanel`/`ActivityWidget` — et type `WidgetData` assemblé une fois par la page), `DashboardGrid.tsx` (enveloppe `GridLayout`, largeur mesurée localement : `clientWidth` + `ResizeObserver` si présent, repli sur l'événement `resize`, largeur par défaut 1200 px) et `queries.ts` (`useDashboard`/`useSaveDashboard`/`useResetDashboard` → `GET`/`PUT`/`DELETE /organizations/{id}/dashboard`, écriture par mutation, remise à zéro par invalidation).
+- `DashboardPage` réécrite : la page ne compose plus une grille figée mais rend **la disposition servie par l'API** (items `i` = `widget_id`, mêmes unités de grille que le serveur, un widget absent du catalogue est ignoré). En lecture la grille est immobile ; le bouton « Personnaliser » ouvre le mode édition (poignée de déplacement `.widget-handle` par widget, redimensionnement par le coin bas-droit, boutons Enregistrer/Annuler/Réinitialiser). Le brouillon local n'est créé qu'au premier changement réel (`sameLayout`), toute nouvelle disposition serveur le réinitialise ; la comparaison de périodes et le panneau d'objectifs sont conservés tels quels (seuls les widgets KPI portent le sélecteur).
+- Décision : **aucune garde d'activité côté client** — le backend écarte `activity` du catalogue des non-admins et filtre la disposition enregistrée à la lecture (un seul arbitre des droits, le serveur) ; le composant ne revérifie donc pas le rôle (code mort évité).
+- i18n `dashboard.*` FR/EN complété (`healthTitle`, `customize`, `editHint`, `save`, `cancel`, `reset`, `kpiNoData`) ; suppression des clés `activityAdminOnly*` (devenues inutiles — le fil n'est plus jamais servi à un membre).
+- Tests : `layout.test.ts` (8 — conversion aller/retour, tri déterministe, comparaison par identifiant, clés i18n) ; `DashboardPage.test.tsx` réécrit (12 cas, dont **enregistrement de la disposition** — corps du `PUT` vérifié — et **remise à zéro** — `DELETE` vérifié ; le stub `/dashboard` reproduit le catalogue et la disposition par défaut du backend, filtrés par rôle) ; e2e `dashboard.spec.ts` (2 — affichage piloté par la disposition, puis **déplacement réel** d'un widget à la souris → `PUT` reflétant le déplacement → `DELETE`).
+- Outillage : délai des requêtes asynchrones de test porté à 5 s (`configure({ asyncUtilTimeout: 5000 })` dans `src/test/setup.ts`) — les pages à graphiques (Recharts sous jsdom) dépassaient le défaut de 1 s dès que la suite tourne en parallèle (échecs intermittents **préexistants**, vérifiés sur l'arbre propre avant mes changements).
+- Vérifs : Vitest **80 passed** (18 fichiers, +10 vs 6b-i : 8 `layout.test.ts` + 2 cas de page) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npx playwright test` **9 passed** (+2 `dashboard.spec.ts` ; a11y du dashboard rescané, aucune violation sérieuse) · suite backend **371 passed** (inchangée) · pre-commit ✅ 11 hooks Passed (gitleaks inclus).
+- Commit : (à compléter) — `feat: tableau de bord personnalisable (6b-ii-b)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6c (notifications + export PDF) à suivre.
+
+### Critères de la sous-phase 6b-ii-b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **80 passed** (18 fichiers, +10 : 8 `layout.test.ts` + 2 cas de page) |
+| Tests e2e | ✅ `npx playwright test` **9 passed** (+2 `dashboard.spec.ts` — déplacement réel, `PUT` puis `DELETE`) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Widgets | ✅ disposition servie par l'API rendue par genre (santé/KPI/objectifs/activité) ; catalogue filtré côté backend |
+| Mode édition | ✅ déplacement (poignée) + redimensionnement (coin bas-droit) ; Enregistrer/Annuler/Réinitialiser ; brouillon local tant que rien n'est enregistré |
+| Persistance | ✅ enregistrement par mutation (`PUT`) puis relecture ; remise à zéro (`DELETE`) ; disposition par défaut tant qu'aucune ligne n'existe |
+| Permissions | ✅ activité jamais servie à un membre (backend) ; aucune garde d'interface redondante (v. `DECISIONS.md`) |
+| i18n | ✅ `dashboard.*` FR + EN, aucun texte en dur |
+| Backend | ✅ inchangé (suite 371 passed) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ✅ job `frontend` ajouté à la CI (lint/types/tests/build ; e2e local — Edge) — pas encore exécuté (aucun remote GitHub) |

@@ -49,9 +49,6 @@ const en = {
     kpiEmptyTitle: 'No data to summarize yet',
     kpiEmptyDescription: 'Sync a module to see its indicators here.',
     activityTitle: 'Recent activity',
-    activityAdminOnlyTitle: 'Restricted to administrators',
-    activityAdminOnlyDescription:
-      'Only administrators can see the organization activity log.',
     activityEmptyTitle: 'No activity yet',
     activityEmptyDescription: 'Events from your modules will show up here.',
     actionInvitationCreated: 'Invitation sent',
@@ -64,6 +61,13 @@ const en = {
     actionLegalDiverged: 'Legal profile mismatch detected',
     actionUnknown: 'Event',
     errorDescription: 'Could not load the overview. Please try again in a moment.',
+    healthTitle: 'Operations health',
+    customize: 'Customize',
+    editHint: 'Move widgets by their header, resize them from the bottom-right corner.',
+    save: 'Save',
+    cancel: 'Cancel',
+    reset: 'Reset',
+    kpiNoData: 'No data',
   },
   goals: {
     title: 'Goals',

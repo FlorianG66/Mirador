@@ -1,7 +1,10 @@
-// Tests de la page « Vue d'ensemble » (sous-phase 5f) : KPI clés, santé
-// d'exploitation, fil d'activité (admin) et états vide/erreur. La comparaison de
-// périodes (phase 6a) est couverte par un test dédié. Même approche que les
-// autres pages : routeur mémoire + stub fetches + QueryClient sans retry.
+// Tests de la page « Vue d'ensemble » (sous-phases 5f, 6a, 6b-ii-b) : widgets du
+// Pouls (KPI clés, santé d'exploitation, fil d'activité admin) et panneau
+// d'objectifs, disposés par la grille personnalisable. La disposition et le
+// catalogue sont simulés comme le fait le backend (KPI des modules autorisés,
+// activité réservée aux admins) ; la comparaison de périodes a un test dédié.
+// Même approche que les autres pages : routeur mémoire + stub fetches +
+// QueryClient sans retry.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -30,6 +33,29 @@ interface GoalCreateBody {
   direction: string
   target_value: number
   period_days: number
+}
+
+/** Widget du catalogue simulé (schéma DashboardWidgetOut). */
+interface WidgetStub {
+  widget_id: string
+  kind: string
+  module?: string
+  metric_key?: string
+}
+
+/** Placement de la grille (schéma DashboardPlacement). */
+interface PlacementStub {
+  widget_id: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** Capture des écritures de disposition pour les tests de personnalisation. */
+interface LayoutSink {
+  saved?: unknown
+  resets: number
 }
 
 /** Objectif lu (GoalOut) : définition + progression calculée. */
@@ -65,6 +91,35 @@ function kpi(module: string, metricKey: string, unit: string, value: number): un
   }
 }
 
+/** Catalogue + disposition par défaut, calculés comme le fait le backend. */
+function dashboardBody(
+  pulse: PulseBody | 'error',
+  role: 'admin' | 'member',
+): { available_widgets: WidgetStub[]; layout: PlacementStub[]; is_default: boolean } {
+  const kpis = pulse === 'error' ? [] : pulse.kpis
+  const widgets: WidgetStub[] = [{ widget_id: 'health', kind: 'health' }]
+  const layout: PlacementStub[] = [{ widget_id: 'health', x: 0, y: 0, w: 12, h: 2 }]
+  kpis.forEach((entry, index) => {
+    const { module, metric_key: metricKey } = entry as { module: string; metric_key: string }
+    widgets.push({ widget_id: `kpi.${metricKey}`, kind: 'kpi', module, metric_key: metricKey })
+    layout.push({
+      widget_id: `kpi.${metricKey}`,
+      x: (index % 3) * 4,
+      y: 2 + Math.floor(index / 3) * 2,
+      w: 4,
+      h: 2,
+    })
+  })
+  widgets.push({ widget_id: 'goals', kind: 'goals' })
+  const panelY = 2 + Math.ceil(kpis.length / 3) * 2
+  layout.push({ widget_id: 'goals', x: 0, y: panelY, w: 6, h: 6 })
+  if (role === 'admin') {
+    widgets.push({ widget_id: 'activity', kind: 'activity' })
+    layout.push({ widget_id: 'activity', x: 6, y: panelY, w: 6, h: 6 })
+  }
+  return { available_widgets: widgets, layout, is_default: true }
+}
+
 // Réponse de l'endpoint de comparaison, au format du schéma OpenAPI.
 function comparisonBody(
   metricKey: string,
@@ -89,16 +144,43 @@ function comparisonBody(
   }
 }
 
+/** Construit la réponse de l'endpoint de disposition (GET/PUT/DELETE). */
+function dashboardRoute(
+  pulse: PulseBody | 'error',
+  role: 'admin' | 'member',
+  sink?: LayoutSink,
+): FetchRoute {
+  return {
+    match: /organizations\/[^/]+\/dashboard$/,
+    respond: (request) => {
+      const body = dashboardBody(pulse, role)
+      if (request.method === 'PUT') {
+        return request.json().then((payload: { widgets?: PlacementStub[] }) => {
+          if (sink) sink.saved = payload
+          return json({ ...body, layout: payload.widgets ?? [], is_default: false })
+        })
+      }
+      if (request.method === 'DELETE') {
+        if (sink) sink.resets += 1
+        return new Response(null, { status: 204 })
+      }
+      return json(body)
+    },
+  }
+}
+
 // Session simulée : rôle admin par défaut, surchargeable pour tester un membre.
 // `comparisons` : clé métrique → écart simulé ; une clé absente répond 404, ce qui
 // fait retomber la carte sur la dernière valeur du Pouls. `goals` : objectifs
 // renvoyés par le panneau ; un POST les ajoute et appelle `onGoalCreated`.
+// `layoutSink` : capture les écritures de disposition (personnalisation).
 function stubEnvironment(
   pulse: PulseBody | 'error',
   role: 'admin' | 'member' = 'admin',
   comparisons: Record<string, ComparisonEntry> = {},
   goals: unknown[] = [],
   onGoalCreated?: (body: GoalCreateBody) => void,
+  layoutSink?: LayoutSink,
 ) {
   const audit: FetchRoute[] = [
     {
@@ -119,6 +201,7 @@ function stubEnvironment(
       respond: () =>
         pulse === 'error' ? problem(500, 'Panne simulée') : json(pulse),
     },
+    dashboardRoute(pulse, role, layoutSink),
     {
       match: /metrics\/[^/]+\/comparison$/,
       respond: (request) => {
@@ -228,7 +311,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Invitation envoyée')).toBeInTheDocument()
   })
 
-  it('réserve le fil d’activité aux administrateurs', async () => {
+  it('n’offre pas le fil d’activité aux membres', async () => {
     stubEnvironment(
       {
         kpis: [kpi('finance', 'finance.revenue', 'EUR', 1_000)],
@@ -239,10 +322,12 @@ describe('DashboardPage', () => {
     )
     renderDashboard()
 
-    expect(await screen.findByText('Réservée aux administrateurs')).toBeInTheDocument()
+    // Le backend écarte l'activité du catalogue d'un membre : le widget n'existe pas.
+    expect(await screen.findByText("Chiffre d'affaires")).toBeInTheDocument()
+    expect(screen.queryByText('Activité récente')).not.toBeInTheDocument()
   })
 
-  it('affiche l’état vide et la santé en alerte sans donnée', async () => {
+  it('affiche la santé en alerte et l’état vide des objectifs sans donnée', async () => {
     stubEnvironment({
       kpis: [],
       health: { status: 'warning', modules_with_data: 0, modules_total: 4 },
@@ -250,8 +335,8 @@ describe('DashboardPage', () => {
     })
     renderDashboard()
 
-    expect(await screen.findByText('Pas encore de données à synthétiser')).toBeInTheDocument()
-    expect(screen.getByText('0/4 modules alimentés')).toBeInTheDocument()
+    expect(await screen.findByText('0/4 modules alimentés')).toBeInTheDocument()
+    expect(await screen.findByText('Aucun objectif défini')).toBeInTheDocument()
   })
 
   it('affiche l’erreur et un bouton réessayer en cas de panne', async () => {
@@ -291,6 +376,60 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '7 j' }))
     expect(screen.getByRole('button', { name: '7 j' })).toHaveAttribute('aria-pressed', 'true')
     expect(thirty).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('enregistre la disposition personnalisée', async () => {
+    const sink: LayoutSink = { resets: 0 }
+    stubEnvironment(
+      {
+        kpis: [kpi('finance', 'finance.revenue', 'EUR', 42_100)],
+        health: { status: 'good', modules_with_data: 1, modules_total: 1 },
+        activity: [],
+      },
+      'admin',
+      {},
+      [],
+      undefined,
+      sink,
+    )
+    renderDashboard()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Personnaliser' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() => expect(sink.saved).toBeDefined())
+    const widgets = (sink.saved as { widgets: PlacementStub[] }).widgets
+    // Sans déplacement, la disposition enregistrée reproduit celle reçue du backend.
+    expect(widgets).toContainEqual({ widget_id: 'health', x: 0, y: 0, w: 12, h: 2 })
+    expect(widgets).toContainEqual({
+      widget_id: 'kpi.finance.revenue',
+      x: 0,
+      y: 2,
+      w: 4,
+      h: 2,
+    })
+  })
+
+  it('réinitialise la disposition à la demande', async () => {
+    const sink: LayoutSink = { resets: 0 }
+    stubEnvironment(
+      {
+        kpis: [],
+        health: { status: 'warning', modules_with_data: 0, modules_total: 1 },
+        activity: [],
+      },
+      'admin',
+      {},
+      [],
+      undefined,
+      sink,
+    )
+    renderDashboard()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Personnaliser' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Réinitialiser' }))
+
+    await waitFor(() => expect(sink.resets).toBe(1))
   })
 
   it('affiche les objectifs avec progression et statut', async () => {

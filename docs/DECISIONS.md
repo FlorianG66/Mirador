@@ -469,3 +469,23 @@ Un `PUT` portant un widget inconnu répond 422, un widget connu mais non autoris
 ## 2026-10-14 — Grille à 12 colonnes, `x + w ≤ 12`, hauteur ≤ 24 (6b-ii-a)
 
 Le contrat est fixé côté schéma (`GRID_COLUMNS = 12`, `MAX_WIDGET_HEIGHT = 24`, `MAX_WIDGETS = 24`) et partagé avec `react-grid-layout` (6b-ii-b) ; la disposition par défaut range la santé en bandeau, les KPI par trois, puis objectifs et activité côte à côte. Raison : un seul espace de coordonnées entre le serveur (validation) et le client (rendu), sans conversion.
+
+## 2026-10-14 — Grille déplaçable et redimensionnable via `react-grid-layout` 2.3.0 (6b-ii-b)
+
+Dépendance épinglée `react-grid-layout@2.3.0` (version stable vérifiée sur npm) ; la v2 est une réécriture TypeScript renommée (points d'entrée `core`/`extras`/`legacy`/`react`/`responsive`) qui ne livre plus aucune feuille de style — tout est en styles en ligne. Raison : elle couvre exactement le besoin (déplacement + redimensionnement + compaction verticale, coordonnées en unités de grille) sans empiler `@dnd-kit` et un redimensionnement maison.
+
+## 2026-10-14 — Largeur de grille mesurée localement, sans dépendre de `ResizeObserver` (6b-ii-b)
+
+`DashboardGrid` embarque son propre `useContainerWidth` (réf. + `clientWidth`, observateur `ResizeObserver` si présent, repli sur l'événement `resize`, largeur par défaut 1200 px) au lieu du hook `useContainerWidth` fourni par la librairie. Raison : jsdom n'implémente pas `ResizeObserver` ; le repli garde les tests unitaires déterministes et la grille s'affiche même hors navigateur.
+
+## 2026-10-14 — Aucune garde d'activité côté client (6b-ii-b)
+
+Le composant de fil d'activité ne revérifie pas le rôle : le backend écarte `activity` du catalogue des non-admins et filtre la disposition enregistrée à la lecture. Raison : un seul arbitre des droits (le serveur, AGENTS.md §5) ; une garde d'interface serait du code mort (le widget n'arrive jamais) et ne protégerait rien.
+
+## 2026-10-14 — Délai des requêtes asynchrones de test porté à 5 s (6b-ii-b)
+
+`configure({ asyncUtilTimeout: 5000 })` dans `src/test/setup.ts` (au lieu du défaut de 1 s des `findBy*`). Raison : les pages à graphiques (Recharts sous jsdom) dépassaient le délai dès que la suite tourne en parallèle — échecs intermittents préexistants, sans rapport avec le code testé ; un délai plus large rend `npm test` fiable.
+
+## 2026-10-14 — Job `frontend` ajouté à la CI, tests e2e maintenus hors CI (6b-ii-b)
+
+Le workflow ne contenait qu'un job `gitleaks` et un job `backend` (le commentaire annonçait un job frontend « en phase 3 » jamais ajouté). Ajout d'un job `frontend` (Node 24, `actions/setup-node@v7`) : `npm ci`, `lint`, `typecheck`, `test`, `build`. Raison : la SPA a des tests et des types vérifiables automatiquement ; sans ce job la qualité frontend ne reposait que sur la vérification locale. Les tests e2e Playwright restent lancés à la main : la configuration vise le canal `msedge` du poste de dev, absent des exécuteurs GitHub (les brancher demanderait un Chromium téléchargé ; à prévoir quand un remote existera).
