@@ -1,5 +1,7 @@
-# CI : lint, types, tests, détection de secrets, audit des dépendances.
-# Le job frontend est ajouté en phase 3 quand le code existe.
+# CI : lint, types, tests, détection de secrets.
+# Le job `frontend` couvre la SPA (lint, types, tests, build) ; les tests e2e
+# Playwright n'y tournent pas encore (ils visent le navigateur Edge du poste de
+# dev — v. docs/DECISIONS.md).
 name: CI
 
 on:
@@ -55,3 +57,27 @@ jobs:
       - name: Tests + couverture (seuil 80 %)
         # Les tests lancent PostgreSQL via pgserver (binaires fournis par la wheel).
         run: pytest -q --cov=app
+
+  frontend:
+    name: Frontend (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Installer les dépendances (épinglées)
+        run: npm ci
+      - name: Lint (eslint)
+        run: npm run lint
+      - name: Types (tsc)
+        run: npm run typecheck
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build (vite)
+        run: npm run build
