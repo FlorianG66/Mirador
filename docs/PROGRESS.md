@@ -5,7 +5,7 @@
 ## État
 
 - **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a, 6b-ii-b et 6c-i sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**, **6c-i export PDF par l'impression du navigateur**. Prochaine brique : **6c-ii** notifications in-app (puis 6c-iii Web Push et règles d'alerte). La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`.
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`.
 - **Prochaine action** : 6c-ii — notifications in-app (SPEC §4) ; ensuite 6c-iii Web Push et règles d'alerte configurables.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
@@ -843,7 +843,7 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - Portée : export disponible sur la vue d'ensemble (avec la période) et les pages Finance/Web/Réseaux sociaux/Projets/Identité légale ; le bouton ad hoc de la fiche légale est remplacé par le composant partagé (clé `legal.exportPdf` et import `FileDown` supprimés). i18n `print.*` FR/EN.
 - Tests : `PageHeader.test.tsx` (4 — titre unique, absent sans `printable`, présence bouton + période, clic → `window.print`) ; e2e `print.spec.ts` (1 — émulation du média `print` : rail et bouton masqués, bandeau visible, titre conservé, retour écran).
 - Vérifs : `npm run typecheck` + `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · Vitest **84 passed** (19 fichiers) · e2e **10 passed** · backend inchangé (**371 passed**, non retesté — aucune modification backend) · pre-commit ✅ 11 hooks Passed (gitleaks inclus).
-- Commit : (à compléter) — `feat: export PDF par l'impression du navigateur (6c-i)`.
+- Commit : `992709c` — `feat: export PDF par l'impression du navigateur (6c-i)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6c-ii (notifications in-app) à suivre.
 
 ### Critères de la sous-phase 6c-i — vérité du terrain
