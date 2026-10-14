@@ -1163,6 +1163,128 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/dashboard": {
+      "get": {
+        "summary": "Read Dashboard",
+        "description": "Mise en page du membre (ou disposition par défaut) et catalogue autorisé.",
+        "operationId": "read_dashboard_api_v1_organizations__organization_id__dashboard_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save Dashboard",
+        "description": "Enregistre la mise en page du membre (remplace la précédente).",
+        "operationId": "save_dashboard_api_v1_organizations__organization_id__dashboard_put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardLayoutUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Reset Dashboard",
+        "description": "Remet la mise en page du membre à la disposition par défaut.",
+        "operationId": "reset_dashboard_api_v1_organizations__organization_id__dashboard_delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{organization_id}/pulse": {
       "get": {
         "summary": "Read Pulse",
@@ -1503,6 +1625,130 @@
         ],
         "title": "AuditLogOut",
         "description": "Entrée du journal des actions sensibles (verbatim, l'UI traduit)."
+      },
+      "DashboardLayoutUpdate": {
+        "properties": {
+          "widgets": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardPlacement"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "title": "Widgets"
+          }
+        },
+        "type": "object",
+        "title": "DashboardLayoutUpdate",
+        "description": "Corps du PUT : la liste complète des placements, sans doublon."
+      },
+      "DashboardOut": {
+        "properties": {
+          "available_widgets": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardWidgetOut"
+            },
+            "type": "array",
+            "title": "Available Widgets"
+          },
+          "layout": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardPlacement"
+            },
+            "type": "array",
+            "title": "Layout"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available_widgets",
+          "layout",
+          "is_default"
+        ],
+        "title": "DashboardOut",
+        "description": "Mise en page courante + catalogue des widgets autorisés pour le membre."
+      },
+      "DashboardPlacement": {
+        "properties": {
+          "widget_id": {
+            "type": "string",
+            "title": "Widget Id"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "H"
+          }
+        },
+        "type": "object",
+        "required": [
+          "widget_id",
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "DashboardPlacement",
+        "description": "Placement d'un widget sur la grille (coin haut-gauche, largeur, hauteur)."
+      },
+      "DashboardWidgetOut": {
+        "properties": {
+          "widget_id": {
+            "type": "string",
+            "title": "Widget Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WidgetKind"
+          },
+          "module": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Module"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "widget_id",
+          "kind"
+        ],
+        "title": "DashboardWidgetOut",
+        "description": "Entrée du catalogue : de quoi identifier et rendre un widget."
       },
       "DatabaseDetails": {
         "properties": {
@@ -3112,6 +3358,17 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WidgetKind": {
+        "type": "string",
+        "enum": [
+          "health",
+          "goals",
+          "activity",
+          "kpi"
+        ],
+        "title": "WidgetKind",
+        "description": "Genre d'un widget : détermine le composant frontend qui le rend."
       }
     }
   }

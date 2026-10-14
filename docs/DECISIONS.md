@@ -453,3 +453,19 @@ L'index de recherche est dérivé du catalogue statique de l'application (table 
 ## 2026-10-13 — Le libellé du raccourci clavier n'est pas traduit (6b-i)
 
 Le `kbd` de la topbar affiche « Ctrl K » quelle que soit la langue. Raison : un nom de touche est une convention d'UI (comme une icône), pas un texte métier ; le libellé accessible du bouton reste i18n (`search.open`).
+
+## 2026-10-14 — La disposition est stockée en JSONB, par (organisation, utilisateur) (6b-ii-a)
+
+Table tenant `dashboard_layouts` (migration `0009`, RLS activée/forcée + politique par organisation) : une ligne par couple `(organization_id, user_id)` — contrainte d'unicité — et la disposition en JSONB (`widgets` = liste de placements `{widget_id, x, y, w, h}`). Raison : la mise en page se lit et s'écrit d'un bloc (jamais une ligne par widget), et « sauvegardée par utilisateur » (SPEC §4) correspond exactement à cette clé.
+
+## 2026-10-14 — Le catalogue de widgets est côté backend, avec un identifiant canonique (6b-ii-a)
+
+`app/services/dashboard.py` définit le catalogue (santé `health`, KPI `kpi.<clé canonique>`, objectifs `goals`, activité `activity`) et la disposition par défaut ; il ne compose aucun libellé (le frontend traduit, AGENTS.md §7). Raison : la validation des widgets enregistrés (connu/inconnu) et le filtrage par permission (KPI des modules visibles, activité réservée aux admins) doivent tenir en un seul endroit, côté serveur.
+
+## 2026-10-14 — Écriture refusée (422/403), lecture filtrée (défense en profondeur) (6b-ii-a)
+
+Un `PUT` portant un widget inconnu répond 422, un widget connu mais non autorisé 403 ; à la lecture, un widget enregistré puis devenu interdit (droit retiré, rôle revu) est écarté de la réponse. Raison : un seul chemin d'écriture (pas de disposition « fantôme » impossible à expliquer), et la lecture ne dépend jamais de l'état des droits au moment de l'enregistrement.
+
+## 2026-10-14 — Grille à 12 colonnes, `x + w ≤ 12`, hauteur ≤ 24 (6b-ii-a)
+
+Le contrat est fixé côté schéma (`GRID_COLUMNS = 12`, `MAX_WIDGET_HEIGHT = 24`, `MAX_WIDGETS = 24`) et partagé avec `react-grid-layout` (6b-ii-b) ; la disposition par défaut range la santé en bandeau, les KPI par trois, puis objectifs et activité côte à côte. Raison : un seul espace de coordonnées entre le serveur (validation) et le client (rendu), sans conversion.

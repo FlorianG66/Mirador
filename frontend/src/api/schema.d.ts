@@ -506,6 +506,34 @@ export interface paths {
         patch: operations["update_goal_api_v1_organizations__organization_id__goals__goal_id__patch"];
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Dashboard
+         * @description Mise en page du membre (ou disposition par défaut) et catalogue autorisé.
+         */
+        get: operations["read_dashboard_api_v1_organizations__organization_id__dashboard_get"];
+        /**
+         * Save Dashboard
+         * @description Enregistre la mise en page du membre (remplace la précédente).
+         */
+        put: operations["save_dashboard_api_v1_organizations__organization_id__dashboard_put"];
+        post?: never;
+        /**
+         * Reset Dashboard
+         * @description Remet la mise en page du membre à la disposition par défaut.
+         */
+        delete: operations["reset_dashboard_api_v1_organizations__organization_id__dashboard_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/pulse": {
         parameters: {
             query?: never;
@@ -673,6 +701,54 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * DashboardLayoutUpdate
+         * @description Corps du PUT : la liste complète des placements, sans doublon.
+         */
+        DashboardLayoutUpdate: {
+            /** Widgets */
+            widgets?: components["schemas"]["DashboardPlacement"][];
+        };
+        /**
+         * DashboardOut
+         * @description Mise en page courante + catalogue des widgets autorisés pour le membre.
+         */
+        DashboardOut: {
+            /** Available Widgets */
+            available_widgets: components["schemas"]["DashboardWidgetOut"][];
+            /** Layout */
+            layout: components["schemas"]["DashboardPlacement"][];
+            /** Is Default */
+            is_default: boolean;
+        };
+        /**
+         * DashboardPlacement
+         * @description Placement d'un widget sur la grille (coin haut-gauche, largeur, hauteur).
+         */
+        DashboardPlacement: {
+            /** Widget Id */
+            widget_id: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** W */
+            w: number;
+            /** H */
+            h: number;
+        };
+        /**
+         * DashboardWidgetOut
+         * @description Entrée du catalogue : de quoi identifier et rendre un widget.
+         */
+        DashboardWidgetOut: {
+            /** Widget Id */
+            widget_id: string;
+            kind: components["schemas"]["WidgetKind"];
+            module?: components["schemas"]["Module"] | null;
+            /** Metric Key */
+            metric_key?: string | null;
         };
         /**
          * DatabaseDetails
@@ -1374,6 +1450,12 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * WidgetKind
+         * @description Genre d'un widget : détermine le composant frontend qui le rend.
+         * @enum {string}
+         */
+        WidgetKind: "health" | "goals" | "activity" | "kpi";
     };
     responses: never;
     parameters: never;
@@ -2199,6 +2281,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GoalOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_dashboard_api_v1_organizations__organization_id__dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_dashboard_api_v1_organizations__organization_id__dashboard_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DashboardLayoutUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_dashboard_api_v1_organizations__organization_id__dashboard_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

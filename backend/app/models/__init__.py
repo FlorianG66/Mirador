@@ -8,6 +8,7 @@ from app.models.audit_log import AuditLog
 from app.models.auth_challenge import AuthChallenge
 from app.models.backup_code import BackupCode
 from app.models.base import Base
+from app.models.dashboard_layout import DashboardLayout
 from app.models.enums import GoalDirection, Module, PermissionLevel, Role
 from app.models.goal import Goal
 from app.models.invitation import Invitation
@@ -26,6 +27,7 @@ __all__ = [
     "AuthChallenge",
     "BackupCode",
     "Base",
+    "DashboardLayout",
     "Goal",
     "GoalDirection",
     "Invitation",

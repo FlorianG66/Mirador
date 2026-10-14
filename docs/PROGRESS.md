@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a et 6b-i sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, **6b-i recherche globale `bd6dcbf`**. Prochaine brique : **6b-ii** dashboard personnalisable, puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i et 6b-ii-a sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, **6b-ii-a persistance de la mise en page (backend)**. Prochaine brique : **6b-ii-b** (widgets déplaçables/redimensionnables côté frontend), puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
 - **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`.
-- **Prochaine action** : 6b-ii — dashboard personnalisable (widgets déplaçables/redimensionnables, mise en page sauvegardée par utilisateur, table `dashboard_layouts`).
+- **Prochaine action** : 6b-ii-b — dashboard personnalisable (widgets déplaçables/redimensionnables côté frontend) : `react-grid-layout@2.3.0`, mode édition, disposition par défaut/rechargement via l'API `GET`/`PUT`/`DELETE /organizations/{id}/dashboard`.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -782,3 +782,28 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Backend | ✅ inchangé (aucune API : l'index est statique, filtré par les permissions courantes) |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-14 — Sous-phase 6b-ii-a livrée (persistance de la mise en page, backend)
+- Découpage de la 6b-ii en deux : **6b-ii-a** persistance de la mise en page (backend, SPEC §4, cette sous-phase) et **6b-ii-b** widgets déplaçables/redimensionnables (frontend, à venir).
+- Table tenant `dashboard_layouts` (migration Alembic `0009`, RLS activée et forcée + politique par organisation) — une ligne par couple `(organization_id, user_id)` (contrainte d'unicité), disposition en JSONB (`widgets` = liste de placements `{widget_id, x, y, w, h}`, contrainte `jsonb_typeof = 'array'`). `app/models/dashboard_layout.py`, `app/repositories/dashboard_layouts.py` (`get_for_user`, `upsert` ON CONFLICT, `delete_for_user` avec `RETURNING`).
+- `app/services/dashboard.py` porte le **catalogue** de widgets (`health`, KPI `kpi.<clé canonique>` des modules visibles — mêmes règles que le Pouls via `modules_for`, `goals`, fil d'activité `activity` réservé aux admins) et la **disposition par défaut** (santé en bandeau, KPI par trois, objectifs + activité côte à côte) ; aucun libellé composé côté backend.
+- Endpoints `GET`/`PUT`/`DELETE /api/v1/organizations/{id}/dashboard` (`app/routers/dashboard.py`, `app/schemas/dashboard.py`) : la mise en page est **personnelle** (aucun droit de module exigé), le `GET` renvoie `available_widgets` + `layout` (enregistrée ou par défaut, `is_default`), le `PUT` remplace la disposition du membre (widget inconnu → 422, widget non autorisé → 403, doublon → 422, `x + w > 12` ou hauteur hors bornes → 422), le `DELETE` restaure le défaut ; audit `dashboard.layout.updated`/`reset` (journalisé seulement si une disposition existait). À la lecture, un widget enregistré puis devenu interdit est écarté (défense en profondeur).
+- Grille fixée au schéma : `GRID_COLUMNS = 12`, `MAX_WIDGET_HEIGHT = 24`, `MAX_WIDGETS = 24` (partagés avec `react-grid-layout` en 6b-ii-b).
+- Client OpenAPI régénéré (`schema.json` + `schema.d.ts` : opérations `read_dashboard`/`save_dashboard`/`reset_dashboard` et schémas `DashboardOut`/`DashboardWidgetOut`/`DashboardPlacement`/`DashboardLayoutUpdate`/`WidgetKind`).
+- Tests : `tests/test_dashboard.py` (14) — défaut admin, catalogue filtré par module (finance), description du catalogue (genre/module/clé), enregistrement + relecture + audit, remise à zéro + audit, disposition propre à chaque utilisateur, widget inconnu (422), doublon (422), bornes de grille (422), activité interdite à un membre (403), module invisible (403), filtrage à la lecture d'un widget devenu interdit, 403 hors organisation, isolation RLS.
+- Vérifs : suite backend **371 passed** (+14, 387 s) · `ruff check`/`ruff format --check` OK · `mypy` 0 erreur · `tests/test_alembic.py` mis à jour (`HEAD_REVISION = "0009"`, `dashboard_layouts` dans `TENANT_TABLES`) · `frontend/openapi/schema.json` régénéré sans diff de type · `npm run typecheck`/`npm run lint` 0 erreur.
+- Commit : (à compléter) — `feat: persistance de la mise en page du tableau de bord (6b-ii-a)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6b-ii-b (frontend) à suivre.
+
+### Critères de la sous-phase 6b-ii-a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ pytest **371 passed** (dont 14 `test_dashboard.py`) |
+| Migrations | ✅ `test_alembic.py` (aller-retour `0001`→`0009`, RLS activée/forcée sur `dashboard_layouts`, `HEAD_REVISION = "0009"`) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` OK · `mypy` 0 erreur |
+| Client OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés (`schema.json` + `schema.d.ts`) |
+| Isolation tenant | ✅ test RLS dédié (une organisation ne voit pas les dispositions d'une autre) |
+| Permissions | ✅ catalogue filtré (KPI des modules visibles, activité admin) ; écriture refusée 422/403 ; lecture filtrée (défense en profondeur) |
+| Audit | ✅ `dashboard.layout.updated` / `dashboard.layout.reset` |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
