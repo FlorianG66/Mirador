@@ -5,7 +5,7 @@
 ## État
 
 - **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a et 6b-ii-b sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**. Prochaine brique : **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`.
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`.
 - **Prochaine action** : 6c — notifications in-app + Web Push et export PDF (SPEC §4).
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
@@ -817,7 +817,7 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - Tests : `layout.test.ts` (8 — conversion aller/retour, tri déterministe, comparaison par identifiant, clés i18n) ; `DashboardPage.test.tsx` réécrit (12 cas, dont **enregistrement de la disposition** — corps du `PUT` vérifié — et **remise à zéro** — `DELETE` vérifié ; le stub `/dashboard` reproduit le catalogue et la disposition par défaut du backend, filtrés par rôle) ; e2e `dashboard.spec.ts` (2 — affichage piloté par la disposition, puis **déplacement réel** d'un widget à la souris → `PUT` reflétant le déplacement → `DELETE`).
 - Outillage : délai des requêtes asynchrones de test porté à 5 s (`configure({ asyncUtilTimeout: 5000 })` dans `src/test/setup.ts`) — les pages à graphiques (Recharts sous jsdom) dépassaient le défaut de 1 s dès que la suite tourne en parallèle (échecs intermittents **préexistants**, vérifiés sur l'arbre propre avant mes changements).
 - Vérifs : Vitest **80 passed** (18 fichiers, +10 vs 6b-i : 8 `layout.test.ts` + 2 cas de page) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npx playwright test` **9 passed** (+2 `dashboard.spec.ts` ; a11y du dashboard rescané, aucune violation sérieuse) · suite backend **371 passed** (inchangée) · pre-commit ✅ 11 hooks Passed (gitleaks inclus).
-- Commit : (à compléter) — `feat: tableau de bord personnalisable (6b-ii-b)`.
+- Commit : `4140297` — `feat: tableau de bord personnalisable (6b-ii-b)` ; job `frontend` ajouté à la CI par `3cd213d` — `ci: ajoute le job frontend (lint, types, tests, build)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6c (notifications + export PDF) à suivre.
 
 ### Critères de la sous-phase 6b-ii-b — vérité du terrain
