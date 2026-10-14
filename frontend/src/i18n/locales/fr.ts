@@ -4,6 +4,11 @@ const fr = {
   app: {
     tagline: "Tableau de bord d'entreprise",
   },
+  print: {
+    action: 'Exporter en PDF',
+    generatedOn: 'Document généré le {{date}}',
+    period: 'Période : {{period}}',
+  },
   nav: {
     moduleLabel: 'Modules',
     settingsLabel: 'Paramètres',
@@ -372,7 +377,6 @@ const fr = {
     refreshError: 'Impossible de joindre le registre. Réessayez plus tard.',
     copy: 'Copier les mentions légales',
     copied: 'Copié',
-    exportPdf: 'Exporter en PDF',
     sourceNote: 'Source : annuaire officiel des entreprises (données publiques).',
     syncedAt: 'Synchronisé le {{date}}',
     notProvided: 'Non renseigné',

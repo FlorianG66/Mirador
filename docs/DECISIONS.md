@@ -489,3 +489,7 @@ Le composant de fil d'activité ne revérifie pas le rôle : le backend écarte 
 ## 2026-10-14 — Job `frontend` ajouté à la CI, tests e2e maintenus hors CI (6b-ii-b)
 
 Le workflow ne contenait qu'un job `gitleaks` et un job `backend` (le commentaire annonçait un job frontend « en phase 3 » jamais ajouté). Ajout d'un job `frontend` (Node 24, `actions/setup-node@v7`) : `npm ci`, `lint`, `typecheck`, `test`, `build`. Raison : la SPA a des tests et des types vérifiables automatiquement ; sans ce job la qualité frontend ne reposait que sur la vérification locale. Les tests e2e Playwright restent lancés à la main : la configuration vise le canal `msedge` du poste de dev, absent des exécuteurs GitHub (les brancher demanderait un Chromium téléchargé ; à prévoir quand un remote existera).
+
+## 2026-10-14 — Export PDF par l'impression du navigateur (6c-i)
+
+L'export PDF (« d'un module ou du dashboard », SPEC §4) s'appuie sur l'impression du navigateur (`window.print()` → « Enregistrer au format PDF »), comme le faisait déjà la fiche légale. Raison : aucune dépendance de génération PDF côté serveur (pas de moteur de rendu à installer ni à maintenir, pas de coût CPU), rendu identique à l'écran, feuille d'impression maîtrisée par les tokens de thème ; c'est l'option la plus simple retenue par ROADMAP (§ phase 6). Une génération serveur (WeasyPrint, reportlab) pourra être ajoutée plus tard pour un PDF programmatique (envoi par e-mail, pièce jointe) sans remettre en cause l'export côté client.

@@ -105,6 +105,7 @@ export function ProjectsPage() {
       <PageHeader
         title={t('nav.projects')}
         subtitle={t('projects.subtitle')}
+        printable
         actions={
           <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-xs text-muted">
             {t('projects.demoNote')}

@@ -91,6 +91,7 @@ export function FinancePage() {
       <PageHeader
         title={t('nav.finance')}
         subtitle={t('finance.subtitle')}
+        printable
         actions={
           <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-xs text-muted">
             {t('finance.demoNote')}

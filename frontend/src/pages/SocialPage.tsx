@@ -98,6 +98,7 @@ export function SocialPage() {
       <PageHeader
         title={t('nav.social')}
         subtitle={t('social.subtitle')}
+        printable
         actions={
           <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-xs text-muted">
             {t('social.demoNote')}

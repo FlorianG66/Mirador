@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a et 6b-ii-b sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**. Prochaine brique : **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a, 6b-ii-b et 6c-i sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**, **6c-i export PDF par l'impression du navigateur**. Prochaine brique : **6c-ii** notifications in-app (puis 6c-iii Web Push et règles d'alerte). La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
 - **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`.
-- **Prochaine action** : 6c — notifications in-app + Web Push et export PDF (SPEC §4).
+- **Prochaine action** : 6c-ii — notifications in-app (SPEC §4) ; ensuite 6c-iii Web Push et règles d'alerte configurables.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -835,3 +835,28 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Backend | ✅ inchangé (suite 371 passed) |
 | pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
 | CI frontend | ✅ job `frontend` ajouté à la CI (lint/types/tests/build ; e2e local — Edge) — pas encore exécuté (aucun remote GitHub) |
+
+### 2026-10-14 — Sous-phase 6c-i livrée (export PDF par l'impression du navigateur, frontend)
+- Objectif : « export PDF d'un module ou du dashboard » (SPEC §4). Décision retenue (ROADMAP : privilégier la simplicité) : s'appuyer sur l'impression du navigateur (« Enregistrer au format PDF »), comme la fiche légale le faisait déjà — aucune dépendance de génération PDF côté serveur (pas de moteur de rendu à installer ni de coût CPU), rendu fidèle à l'écran. Décision détaillée : `DECISIONS.md`.
+- Composants partagés : `PrintButton` (icône imprimante + libellé i18n, appelle `window.print()`, masqué à l'impression) et `PrintHeader` (bandeau affiché uniquement à l'impression : nom du produit, date de génération, période rappelée). `PageHeader` gagne une option `printable` (bouton + bandeau) et la période optionnelle `printPeriod` ; les actions (boutons) sont masquées à l'impression et le titre reste l'en-tête du document — un premier essai qui répétait le titre créait deux titres de niveau 1, corrigé pour n'en laisser qu'un.
+- Feuille de style `src/index.css` : section `@media print` qui force le thème clair sous `.dark` (sinon texte clair illisible sur fond blanc), neutralise le halo de fond, masque rail/barre supérieure/actions (utilitaire `print:hidden`) et fixe les marges (`@page`). L'`AppShell` retire la gouttière du rail (`print:pl-0`) et les marges de `main` (`print:p-0`) à l'impression.
+- Portée : export disponible sur la vue d'ensemble (avec la période) et les pages Finance/Web/Réseaux sociaux/Projets/Identité légale ; le bouton ad hoc de la fiche légale est remplacé par le composant partagé (clé `legal.exportPdf` et import `FileDown` supprimés). i18n `print.*` FR/EN.
+- Tests : `PageHeader.test.tsx` (4 — titre unique, absent sans `printable`, présence bouton + période, clic → `window.print`) ; e2e `print.spec.ts` (1 — émulation du média `print` : rail et bouton masqués, bandeau visible, titre conservé, retour écran).
+- Vérifs : `npm run typecheck` + `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · Vitest **84 passed** (19 fichiers) · e2e **10 passed** · backend inchangé (**371 passed**, non retesté — aucune modification backend) · pre-commit ✅ 11 hooks Passed (gitleaks inclus).
+- Commit : (à compléter) — `feat: export PDF par l'impression du navigateur (6c-i)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6c-ii (notifications in-app) à suivre.
+
+### Critères de la sous-phase 6c-i — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **84 passed** (19 fichiers, +4 `PageHeader.test.tsx`) |
+| Tests e2e | ✅ `npx playwright test` **10 passed** (+1 `print.spec.ts` — média `print`) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Export PDF | ✅ bouton « Exporter en PDF » sur la vue d'ensemble, les modules Finance/Web/Réseaux sociaux/Projets et la fiche légale |
+| Impression | ✅ `@media print` : interface masquée, thème clair forcé, bandeau de document (produit, date, période) |
+| i18n | ✅ `print.*` FR + EN ; clés obsolètes nettoyées (`legal.exportPdf`) |
+| Accessibilité | ✅ un seul titre de niveau 1 par page ; e2e a11y du tableau de bord toujours sans violation sérieuse |
+| Backend | ✅ inchangé (suite 371 passed) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |

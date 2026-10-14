@@ -42,7 +42,7 @@ export function AppShell() {
     >
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:shadow-raised"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:shadow-raised print:hidden"
       >
         {t('common.skipToContent')}
       </a>
@@ -58,16 +58,16 @@ export function AppShell() {
         <div
           aria-hidden="true"
           onClick={closeSidebar}
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden print:hidden"
         />
       ) : null}
 
-      <div className="flex min-h-screen flex-col transition-[padding] duration-200 lg:pl-[var(--rail-w)]">
+      <div className="flex min-h-screen flex-col transition-[padding] duration-200 lg:pl-[var(--rail-w)] print:pl-0">
         <Topbar
           onOpenSidebar={() => setSidebarOpen(true)}
           onOpenSearch={() => setSearchOpen(true)}
         />
-        <main id="main-content" className="flex-1 p-4 lg:p-8">
+        <main id="main-content" className="flex-1 p-4 lg:p-8 print:p-0">
           <PageTransition key={location.pathname}>
             <Outlet />
           </PageTransition>

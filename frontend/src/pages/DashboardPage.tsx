@@ -149,6 +149,8 @@ export function DashboardPage() {
       <PageHeader
         title={t('dashboard.title')}
         subtitle={t('dashboard.subtitle')}
+        printable
+        printPeriod={t('dashboard.periodDays', { days: periodDays })}
         actions={
           editing ? (
             <>

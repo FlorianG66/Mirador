@@ -3,6 +3,11 @@ const en = {
   app: {
     tagline: 'Business dashboard',
   },
+  print: {
+    action: 'Export to PDF',
+    generatedOn: 'Document generated on {{date}}',
+    period: 'Period: {{period}}',
+  },
   nav: {
     moduleLabel: 'Modules',
     settingsLabel: 'Settings',
@@ -371,7 +376,6 @@ const en = {
     refreshError: 'Could not reach the registry. Please try again later.',
     copy: 'Copy legal notice',
     copied: 'Copied',
-    exportPdf: 'Export to PDF',
     sourceNote: 'Source: official company directory (public data).',
     syncedAt: 'Synced on {{date}}',
     notProvided: 'Not provided',
