@@ -5,7 +5,7 @@
 ## État
 
 - **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i et 6b-ii-a sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, **6b-ii-a persistance de la mise en page (backend)**. Prochaine brique : **6b-ii-b** (widgets déplaçables/redimensionnables côté frontend), puis **6c** notifications (in-app + Web Push) + export PDF. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`.
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`.
 - **Prochaine action** : 6b-ii-b — dashboard personnalisable (widgets déplaçables/redimensionnables côté frontend) : `react-grid-layout@2.3.0`, mode édition, disposition par défaut/rechargement via l'API `GET`/`PUT`/`DELETE /organizations/{id}/dashboard`.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
@@ -792,7 +792,7 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - Client OpenAPI régénéré (`schema.json` + `schema.d.ts` : opérations `read_dashboard`/`save_dashboard`/`reset_dashboard` et schémas `DashboardOut`/`DashboardWidgetOut`/`DashboardPlacement`/`DashboardLayoutUpdate`/`WidgetKind`).
 - Tests : `tests/test_dashboard.py` (14) — défaut admin, catalogue filtré par module (finance), description du catalogue (genre/module/clé), enregistrement + relecture + audit, remise à zéro + audit, disposition propre à chaque utilisateur, widget inconnu (422), doublon (422), bornes de grille (422), activité interdite à un membre (403), module invisible (403), filtrage à la lecture d'un widget devenu interdit, 403 hors organisation, isolation RLS.
 - Vérifs : suite backend **371 passed** (+14, 387 s) · `ruff check`/`ruff format --check` OK · `mypy` 0 erreur · `tests/test_alembic.py` mis à jour (`HEAD_REVISION = "0009"`, `dashboard_layouts` dans `TENANT_TABLES`) · `frontend/openapi/schema.json` régénéré sans diff de type · `npm run typecheck`/`npm run lint` 0 erreur.
-- Commit : (à compléter) — `feat: persistance de la mise en page du tableau de bord (6b-ii-a)`.
+- Commit : `3f26777` — `feat: persistance de la mise en page du tableau de bord (6b-ii-a)`.
 - **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6b-ii-b (frontend) à suivre.
 
 ### Critères de la sous-phase 6b-ii-a — vérité du terrain
