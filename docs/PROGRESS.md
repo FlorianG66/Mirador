@@ -873,3 +873,9 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
   `from sqlalchemy.engine import make_url` puis `make_url(database_url).set(database=database_name).render_as_string(hide_password=False)`.
 - **Second point à vérifier** : le workflow matche `phase-*` (`.github/workflows/ci.yml`, `on.push.branches`) mais **0 run** a été créé pour `phase-6-transverse`. À confirmer/lever en ouvrant une PR vers `main` (le déclencheur `pull_request`, sans filtre, fera tourner la CI sur le contenu de la branche).
 - **Prochaine action** : 6c-ii (notifications in-app). Avant le merge de la phase 6 : appliquer le correctif CI ci-dessus et obtenir une CI verte.
+
+### 2026-10-16 — Reprise de session : analyse de l'état, aucune modification de code
+- Relecture de `AGENTS.md`, `ROADMAP.md` (phase 6) et de ce fichier : prochaine brique confirmée **6c-ii** (notifications in-app, SPEC §4), puis **6c-iii** (Web Push + règles d'alerte configurables).
+- **Rien n'a changé dans le code** : `phase-6-transverse` toujours sur `0e6b2bf`, arbre de travail propre, à jour avec `origin`.
+- Deux suites possibles, **non arbitrées** (décision laissée au mainteneur) : (a) appliquer le correctif de la **CI rouge** (`_with_database` → `make_url`, cf. entrée du 2026-10-15), prérequis au merge de la phase 6 ; (b) démarrer **6c-ii**.
+- Pause demandée : aucun commit, aucun push.
