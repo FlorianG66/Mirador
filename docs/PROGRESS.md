@@ -879,3 +879,10 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - **Rien n'a changé dans le code** : `phase-6-transverse` toujours sur `0e6b2bf`, arbre de travail propre, à jour avec `origin`.
 - Deux suites possibles, **non arbitrées** (décision laissée au mainteneur) : (a) appliquer le correctif de la **CI rouge** (`_with_database` → `make_url`, cf. entrée du 2026-10-15), prérequis au merge de la phase 6 ; (b) démarrer **6c-ii**.
 - Pause demandée : aucun commit, aucun push.
+
+### 2026-10-18 — Correctif de la CI rouge (harnais de tests Alembic, hors périmètre 6c-ii)
+- Arbitrage du mainteneur : **correctif CI d'abord**, puis 6c-ii (notifications in-app, périmètre « événements existants » — pas de table `alert_rules` avant la 6c-iii).
+- `backend/tests/conftest.py` : `_with_database` remplace la découpe `rsplit("/", 1)` par `make_url(database_url).set(database=database_name).render_as_string(hide_password=False)` — sous Linux, pgserver renvoie une URL **à socket Unix** (`…?host=/tmp/…`) et la découpe coupait dans le paramètre, produisant un socket inexistant (`FileNotFoundError` sur les 7 tests d'Alembic de la CI ; le vert local Windows en TCP masquait le défaut, AGENTS.md §2 « ne jamais deviner » — le diagnostic avait été confirmé sur les logs de la CI).
+- Test de non-régression : `test_with_database_preserves_unix_socket_url` (`tests/test_alembic.py`) nourrit une URL à socket Unix factice et vérifie que la base est remplacée **sans** casser `?host=` (le bug est invisible sous Windows, il faut le cibler directement).
+- Vérifs : `pytest tests/test_alembic.py` → **8 passed** · `ruff check .` + `ruff format --check` ✅ · `mypy` strict 0 erreur (106 fichiers) · suite backend complète lancée en arrière-plan.
+- **Non fait** : push + déclenchement de la CI (PR draft vers `main` à ouvrir pour que le trigger `pull_request` exécute la workflow — le trigger `phase-*` n'a jamais déclenché de run) ; 6c-ii.

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from sqlalchemy.engine import make_url
+
 from alembic import command
-from tests.conftest import alembic_config, fetch_scalar, upgrade_to_head
+from tests.conftest import _with_database, alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
 HEAD_REVISION = "0009"
@@ -22,6 +24,22 @@ TENANT_TABLES = (
 )
 # Globals d'identité (comme `users` et `sessions`) : hors RLS, phase 2c.
 IDENTITY_TABLES = ("auth_challenges", "backup_codes", "password_reset_tokens")
+
+
+def test_with_database_preserves_unix_socket_url() -> None:
+    """Non-régression (CI Linux) : la base change sans casser `?host=` de l'URL à socket.
+
+    Sous Linux, pgserver renvoie `postgresql://…@/postgres?host=/tmp/…` ; une découpe
+    `rsplit("/", 1)` coupait dans le paramètre et produisait un socket inexistant
+    (`FileNotFoundError` sur les 7 tests d'Alembic de la CI — invisible sous Windows).
+    """
+    socket_url = "postgresql+asyncpg://postgres:@/postgres?host=/tmp/mirador-pg-abc123"
+
+    result = _with_database(socket_url, "mirador_rt_deadbeef")
+
+    parsed = make_url(result)
+    assert parsed.database == "mirador_rt_deadbeef"
+    assert parsed.query["host"] == "/tmp/mirador-pg-abc123"
 
 
 def test_upgrade_head_then_downgrade_base_round_trip(alembic_test_database_url: str) -> None:

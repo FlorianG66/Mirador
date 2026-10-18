@@ -15,6 +15,7 @@ import pytest
 from alembic.config import Config
 from fastapi import FastAPI
 from sqlalchemy import text
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from starlette.requests import Request
 
@@ -60,8 +61,13 @@ def _raw_pg_url(database_url: str) -> str:
 
 
 def _with_database(database_url: str, database_name: str) -> str:
-    """URL du même serveur PostgreSQL mais d'une autre base (isolation des tests d'Alembic)."""
-    return database_url.rsplit("/", 1)[0] + "/" + database_name
+    """URL du même serveur PostgreSQL mais d'une autre base (isolation des tests d'Alembic).
+
+    On passe par `make_url` et non par une découpe de chaîne : sous Linux, pgserver
+    renvoie une URL à socket Unix (`…?host=/tmp/…`) où un `rsplit("/", 1)` couperait
+    *dans* le paramètre `?host=` et produirait un chemin de socket inexistant.
+    """
+    return make_url(database_url).set(database=database_name).render_as_string(hide_password=False)
 
 
 async def _run_sql(sql: str, database_url: str) -> None:
