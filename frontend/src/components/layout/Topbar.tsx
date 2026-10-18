@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { useAuth } from '../../auth/context.ts'
 import { PROJECT_NAME } from '../../constants.ts'
+import { NotificationBell } from '../../notifications/NotificationBell.tsx'
 import { LanguageSwitcher } from './LanguageSwitcher.tsx'
 import { ThemeToggle } from './ThemeToggle.tsx'
 
@@ -72,6 +73,7 @@ export function Topbar({ onOpenSidebar, onOpenSearch }: TopbarProps) {
 
       <LanguageSwitcher />
       <ThemeToggle />
+      <NotificationBell />
 
       <div className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pr-3 pl-1">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground uppercase">

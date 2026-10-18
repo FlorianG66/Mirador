@@ -98,3 +98,6 @@ export type ProjectMetricKey =
   | 'projects.tasks_by_status'
   | 'projects.person_load'
   | 'projects.upcoming_milestones'
+
+export type Notification = components['schemas']['NotificationOut']
+export type NotificationList = components['schemas']['NotificationListOut']

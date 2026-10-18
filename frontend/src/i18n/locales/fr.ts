@@ -410,6 +410,27 @@ const fr = {
     errorDescription:
       'Impossible de charger la fiche légale. Réessayez dans un instant.',
   },
+  notifications: {
+    open: 'Notifications',
+    openUnread_one: 'Notifications ({{count}} non lue)',
+    openUnread_other: 'Notifications ({{count}} non lues)',
+    title: 'Notifications',
+    loading: 'Chargement…',
+    loadError: 'Impossible de charger les notifications.',
+    emptyTitle: 'Aucune notification',
+    emptyDescription: "Les événements importants de votre entreprise apparaîtront ici.",
+    markAllRead: 'Tout marquer comme lu',
+    unread: 'Non lue',
+    goalAchievedTitle: 'Objectif atteint',
+    goalAchievedBody: '« {{metric}} » a atteint sa cible de {{target}}.',
+    goalOffTrackTitle: 'Objectif en dérive',
+    goalOffTrackBody: "« {{metric}} » s'éloigne de sa cible de {{target}}.",
+    legalDivergedTitle: 'Écart sur la fiche légale',
+    legalDivergedBody:
+      'Une valeur saisie manuellement diffère du registre officiel. Consultez la fiche légale.',
+    unknownTitle: 'Notification',
+    unknownBody: 'Un événement est survenu dans votre organisation.',
+  },
   placeholder: {
     title: 'Module en construction',
     description: 'Ce module arrivera dans une prochaine phase — le backend est déjà prêt.',

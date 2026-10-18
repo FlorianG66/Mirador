@@ -37,3 +37,11 @@ test('a11y : tableau de bord authentifié sans violation sérieuse', async ({ pa
   ).toBeVisible()
   await expectNoSeriousViolations(page)
 })
+
+test('a11y : panneau de notifications ouvert sans violation sérieuse', async ({ page }) => {
+  await installApiMocks(page, { loggedIn: true })
+  await page.goto('/')
+  await page.getByRole('button', { name: /Notifications/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Notifications' })).toBeVisible()
+  await expectNoSeriousViolations(page)
+})
