@@ -17,6 +17,7 @@ from app.models.legal_profile import LegalProfile
 from app.models.membership import Membership
 from app.models.metric_snapshot import MetricSnapshot
 from app.models.module_permission import ModulePermission
+from app.models.notification import Notification
 from app.models.organization import Organization
 from app.models.password_reset_token import PasswordResetToken
 from app.models.session import UserSession
@@ -37,6 +38,7 @@ __all__ = [
     "MetricSnapshot",
     "Module",
     "ModulePermission",
+    "Notification",
     "Organization",
     "PasswordResetToken",
     "PermissionLevel",

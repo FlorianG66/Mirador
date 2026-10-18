@@ -259,6 +259,13 @@ async def refresh_profile(
             resource_id=str(profile.id),
             payload={"fields": diverged},
         )
+        try:
+            from app.services import notifications as notifications_service
+
+            await notifications_service.notify_legal_diverged(session, organization_id, diverged)
+        except Exception:
+            # Notifier ne doit jamais faire échouer le rafraîchissement de la fiche.
+            pass
     await audit_service.record(
         session,
         organization_id=organization_id,

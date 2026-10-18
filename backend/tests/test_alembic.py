@@ -8,7 +8,7 @@ from alembic import command
 from tests.conftest import _with_database, alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
-HEAD_REVISION = "0009"
+HEAD_REVISION = "f2f1e655c879"
 
 # Tables soumises à Row-Level Security : elles portent toutes organization_id.
 TENANT_TABLES = (
@@ -21,6 +21,7 @@ TENANT_TABLES = (
     "legal_identifiers",
     "goals",
     "dashboard_layouts",
+    "notifications",
 )
 # Globals d'identité (comme `users` et `sessions`) : hors RLS, phase 2c.
 IDENTITY_TABLES = ("auth_challenges", "backup_codes", "password_reset_tokens")

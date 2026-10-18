@@ -202,6 +202,18 @@ async def update_goal(
     return await _to_out(session, membership.organization_id, goal)
 
 
+async def list_goals_with_progress(
+    session: AsyncSession, organization_id: uuid.UUID
+) -> list[tuple[Goal, GoalProgress]]:
+    """Objectifs d'une organisation avec leur progression (sans filtre de permission).
+
+    Réservé aux traitements système (évaluation des alertes, worker) : la liste
+    exposée aux utilisateurs passe par `list_goals`, qui filtre par module visible.
+    """
+    goals = await goals_repository.list_for_organization(session, organization_id)
+    return [(goal, await _progress(session, organization_id, goal)) for goal in goals]
+
+
 async def delete_goal(session: AsyncSession, *, membership: Membership, goal_id: uuid.UUID) -> None:
     """Supprime un objectif ; exige `edit` sur son module."""
     goal = await _get_or_404(session, membership.organization_id, goal_id)
