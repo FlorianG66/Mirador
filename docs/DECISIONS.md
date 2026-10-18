@@ -493,3 +493,19 @@ Le workflow ne contenait qu'un job `gitleaks` et un job `backend` (le commentair
 ## 2026-10-14 — Export PDF par l'impression du navigateur (6c-i)
 
 L'export PDF (« d'un module ou du dashboard », SPEC §4) s'appuie sur l'impression du navigateur (`window.print()` → « Enregistrer au format PDF »), comme le faisait déjà la fiche légale. Raison : aucune dépendance de génération PDF côté serveur (pas de moteur de rendu à installer ni à maintenir, pas de coût CPU), rendu identique à l'écran, feuille d'impression maîtrisée par les tokens de thème ; c'est l'option la plus simple retenue par ROADMAP (§ phase 6). Une génération serveur (WeasyPrint, reportlab) pourra être ajoutée plus tard pour un PDF programmatique (envoi par e-mail, pièce jointe) sans remettre en cause l'export côté client.
+
+## 2026-10-18 — Notifications : d'abord les événements existants, pas de règles configurables (6c-ii)
+
+La sous-phase 6c-ii branche le **canal** de notification sans introduire la moindre règle configurable : les notifications naissent uniquement d'événements que le produit produit déjà — `goal.achieved` / `goal.off_track` (statut d'un objectif recalculé à chaque écriture de métrique) et `legal.diverged` (valeur manuelle divergeante du registre). Raison : ROADMAP découpe 6c-ii (canal) et 6c-iii (règles d'alerte) ; mêler les deux ferait entrer la table `alert_rules` par la porte de derrière et doublerait le périmètre. Une fois le canal en place, 6c-iii n'a plus qu'à produire les mêmes lignes d'un autre endroit.
+
+## 2026-10-18 — Notifications : table dédiée, une ligne par destinataire (6c-ii)
+
+Nouvelle table tenant `notifications` (migration `f2f1e655c879`, RLS activée et forcée + politique par organisation) : `kind` (clé stable, jamais un texte affiché), `params` JSONB (de quoi interpoler le message), `link` (route interne du module), `dedup_key` (texte libre, utilisé pour l'idempotence) et `read_at` (NULL = non lue). Une ligne **par destinataire** plutôt qu'un enregistrement « lu par » partagé : la lecture est l'action la plus fréquente, le filtrage par utilisateur est un index simple, et l'audit d'un événement diffusé à plusieurs ne se complique pas. Aucun texte côté backend (AGENTS.md §6) : `kind` est une clé i18n et le frontend compose le libellé.
+
+## 2026-10-18 — Notifications : émission par le worker, pas à la lecture (6c-ii)
+
+L'émission de `goal.achieved` / `goal.off_track` a lieu dans le service, appelée par le **worker de synchronisation** juste après l'écriture des métriques et avant le `commit()` unique — jamais lors d'un `GET` (une notification doit correspondre à un état écrit, pas au moment où on la consulte). Les destinataires d'un objectif sont les administrateurs **et** les membres ayant `edit` sur le module de la clé de métrique ; un écart légal ne notifie que les administrateurs (la fiche légale est la leur). L'écart légal est la seule émission appelée depuis un routeur applicatif (le rafraîchissement du registre), en best-effort : une notification qui échoue ne doit pas faire échouer l'enregistrement du registre.
+
+## 2026-10-18 — Notifications : déduplication en base des non-lues (6c-ii)
+
+Deux événements successifs du même type pour le même destinataire ne créent des lignes que si l'une est lue. Le `dedup_key` (par ex. `legal:diverged:unread:<org>:<user>`) est comparé par le repository ; s'il existe une non-lue, elle est **mise à jour** (`params`, `link`) au lieu d'être empilée. Raison : une divergence de registre qui dure produirait sinon une notification par synchronisation, et le lecteur serait noyé. Aucun test de purge automatique : la suppression des notifications lues est une décision d'exploitation (ROADMAP 6c-iii), et la fonction `cleanup_old_read` n'a pas été gardée — du code non utilisé sans besoin concret n'a rien à faire dans la base.
