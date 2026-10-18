@@ -40,6 +40,9 @@ def test_with_database_preserves_unix_socket_url() -> None:
     parsed = make_url(result)
     assert parsed.database == "mirador_rt_deadbeef"
     assert parsed.query["host"] == "/tmp/mirador-pg-abc123"
+    # `set_main_option` passe par ConfigParser : le `%` de l'URL encodée doit être
+    # échappé `%%`, sinon la construction de la config lève ValueError.
+    assert alembic_config(result).get_main_option("sqlalchemy.url") is not None
 
 
 def test_upgrade_head_then_downgrade_base_round_trip(alembic_test_database_url: str) -> None:

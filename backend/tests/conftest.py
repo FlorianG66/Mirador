@@ -46,7 +46,10 @@ def alembic_config(database_url: str) -> Config:
     """Configuration Alembic pointant explicitement sur la base passée."""
     config = Config(str(BACKEND_ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
-    config.set_main_option("sqlalchemy.url", database_url)
+    # `set_main_option` passe par ConfigParser : un `%` littéral (URL encodée d'une
+    # socket Unix, ex. `?host=%2Ftmp%2F…`) doit être doublé, sinon l'interpolation
+    # de ConfigParser lève « invalid interpolation syntax ».
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
     return config
 
 
