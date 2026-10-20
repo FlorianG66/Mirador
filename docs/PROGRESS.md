@@ -4,10 +4,10 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a, 6b-ii-b, 6c-i, 6c-ii, 6c-iii-a et 6c-iii-b sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**, **6c-i export PDF par l'impression du navigateur**, **6c-ii notifications in-app (backend + frontend)**, **6c-iii-a règles d'alerte configurables (backend + frontend)**, **6c-iii-b notifications Web Push (backend + frontend)** — **la phase 6 est complète**. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, correctifs CI `68e54d6` + `8781779` (CI verte, PR #9 draft ouverte vers `main`), 6c-ii notifications in-app `4738b86` (backend) + `06f5717` (frontend), **6c-iii-a règles d'alerte configurables `a3f302e`**.
-- **Prochaine action** : phase 6 close — attendre le feu vert du mainteneur pour merger la PR #9 (`phase-6-transverse` → `main`), puis attaquer la phase suivante de la ROADMAP.
-- **Reste avant merge de la phase 6** : feu vert du mainteneur pour la PR #9 (`phase-6-transverse` → `main`).
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). **Phase 6 complète et mergée sur `main`** (merge `c813f9f`, PR #9) — toutes les sous-phases livrées : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`. La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
+- **Branche** : `main` (tête `c813f9f`, synchro avec `origin/main`). La branche `phase-6-transverse` est conservée, mergée.
+- **Prochaine action** : lire la **phase 7** dans `docs/ROADMAP.md` (et les sections de `docs/SPEC.md` qu'elle référence) et proposer un plan court avant d'exécuter.
+- **Reste avant merge** : néant — la phase 6 est mergée sur `main`.
 - **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
 - **Dette connue — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (draft `phase-6-transverse` → `main`, 3/3 jobs). Reste avant merge : feu vert du mainteneur.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
@@ -966,6 +966,9 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - **Piège rencontré (e2e)** : la première passe Playwright a échoué en 11 tests (`ERR_CONNECTION_REFUSED` sur `localhost:5173`) — le serveur Vite de `webServer` n'était pas encore prêt (course au démarrage, connu sur ce poste). Relance avec le serveur déjà lancé : **13 passed**. Aucun code en cause.
 - Commit : `4a640c8` — `feat: notifications Web Push (6c-iii-b)`.
 - **Non fait** : merge sur `main` (PR #9 en draft : feu vert du mainteneur requis).
+
+### 2026-10-20 — Phase 6 mergée sur `main` (PR #9)
+- Feu vert du mainteneur donné : PR #9 (`phase-6-transverse` → `main`) sortie du draft puis mergée en **merge commit** `c813f9f` (CI verte sur le dernier commit : 3/3 jobs ; `mergeStateStatus` CLEAN, `mergeable` MERGEABLE). La branche `phase-6-transverse` est conservée. `main` local resynchronisé (`git pull --ff-only`).
 
 ### Critères de la sous-phase 6c-iii-b — vérité du terrain
 | Critère | État |
