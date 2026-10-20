@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_legal_registry, get_session
+from app.core.deps import get_legal_registry, get_push_sender, get_session
 from app.core.permissions import require_module
 from app.models.enums import Module, PermissionLevel, Role
 from app.models.membership import Membership
@@ -21,6 +21,7 @@ from app.repositories import organizations as organizations_repository
 from app.schemas.legal import LegalProfileOut, LegalProfileUpdate
 from app.services import legal as legal_service
 from app.services.legal_registry import LegalRegistry
+from app.services.push import PushSender
 
 router = APIRouter(prefix="/organizations/{organization_id}/legal")
 
@@ -28,6 +29,7 @@ SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 CanView = Annotated[Membership, Depends(require_module(Module.LEGAL, PermissionLevel.VIEW))]
 CanEdit = Annotated[Membership, Depends(require_module(Module.LEGAL, PermissionLevel.EDIT))]
 RegistryDependency = Annotated[LegalRegistry, Depends(get_legal_registry)]
+PushSenderDependency = Annotated[PushSender | None, Depends(get_push_sender)]
 
 
 async def _organization_siren(session: AsyncSession, membership: Membership) -> str | None:
@@ -65,7 +67,10 @@ async def update_legal_profile(
 
 @router.post("/refresh", response_model=LegalProfileOut)
 async def refresh_legal_profile(
-    session: SessionDependency, membership: CanEdit, registry: RegistryDependency
+    session: SessionDependency,
+    membership: CanEdit,
+    registry: RegistryDependency,
+    push_sender: PushSenderDependency,
 ) -> LegalProfileOut:
     """Recharge la fiche depuis le registre, sans écraser la saisie manuelle."""
     return await legal_service.refresh_profile(
@@ -74,4 +79,5 @@ async def refresh_legal_profile(
         organization_siren=await _organization_siren(session, membership),
         actor_user_id=membership.user_id,
         registry=registry,
+        push_sender=push_sender,
     )

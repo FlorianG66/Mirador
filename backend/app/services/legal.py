@@ -33,6 +33,7 @@ from app.schemas.legal import (
     LegalProfileUpdate,
 )
 from app.services import audit as audit_service
+from app.services import push as push_service
 from app.services.errors import ServiceProblem
 from app.services.legal_registry import LegalRegistry, LegalRegistryError
 
@@ -177,6 +178,7 @@ async def refresh_profile(
     organization_siren: str | None,
     actor_user_id: uuid.UUID,
     registry: LegalRegistry,
+    push_sender: push_service.PushSender | None = None,
 ) -> LegalProfileOut:
     """Recharge la fiche depuis le registre, sans écraser la saisie manuelle.
 
@@ -262,7 +264,9 @@ async def refresh_profile(
         try:
             from app.services import notifications as notifications_service
 
-            await notifications_service.notify_legal_diverged(session, organization_id, diverged)
+            await notifications_service.notify_legal_diverged(
+                session, organization_id, diverged, push_sender=push_sender
+            )
         except Exception:
             # Notifier ne doit jamais faire échouer le rafraîchissement de la fiche.
             pass

@@ -20,6 +20,8 @@ dependencies = [
     "email-validator==2.3.0",
     # Connexion Google (phase 2e) : échange du code OIDC et userinfo (déjà utilisé en test).
     "httpx==0.28.1",
+    # Web Push (phase 6c-iii-b) : protocole VAPID + chiffrement des messages.
+    "pywebpush==2.5.0",
 ]
 
 [project.optional-dependencies]
@@ -61,3 +63,9 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.12"
 strict = true
 files = ["app"]
+
+# `pywebpush` n'expose pas de marqueur `py.typed` : on l'importe sans stubs
+# (l'appel est isolé dans `WebPushSender`, jamais utilisé en test).
+[[tool.mypy.overrides]]
+module = ["pywebpush.*"]
+ignore_missing_imports = true

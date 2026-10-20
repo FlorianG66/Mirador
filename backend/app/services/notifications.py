@@ -1,12 +1,15 @@
-"""Service des notifications in-app (phase 6c-ii).
+"""Service des notifications in-app (phase 6c-ii, étendu Web Push en 6c-iii-b).
 
 Déclenche des notifications depuis les événements déjà produits :
 - Objectifs : `goal.achieved` et `goal.off_track` (via `services.goals`).
 - Fiche légale : `legal.diverged` au rafraîchissement du registre.
+- Règles d'alerte : `alert.threshold` (via `services.alert_rules`).
 
-Les règles d'alerte configurables (`alert_rules`) arrivent en 6c-iii : ici, seuls
-les événements existants génèrent des notifications. Aucun texte n'est figé ici :
-`kind` est une clé i18n et `params` porte de quoi l'interpoler côté frontend.
+Depuis la 6c-iii-b, chaque notification créée est aussi **poussée** (Web Push) vers
+les abonnements du destinataire, via un `PushSender` injectable (faux en test,
+`None` = canal désactivé). L'envoi est best-effort : il ne fait jamais échouer
+l'écriture de la notification in-app. Aucun texte n'est figé ici : `kind` est une
+clé i18n et `params` porte de quoi l'interpoler côté frontend ou service worker.
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ from app.repositories import notifications as notifications_repository
 from app.schemas.goals import GoalStatus
 from app.schemas.metrics import metric_prefix
 from app.services import goals as goals_service
+from app.services import push as push_service
 
 #: Route frontend associée au module concerné (cible du clic sur la notification).
 _MODULE_LINKS: dict[str, str] = {
@@ -37,6 +41,34 @@ _MODULE_LINKS: dict[str, str] = {
 def module_link(module: Module) -> str:
     """Route frontend d'un module (cible du clic sur une notification)."""
     return _MODULE_LINKS.get(module.value, f"/{module.value}")
+
+
+async def push_notification(
+    session: AsyncSession,
+    *,
+    push_sender: push_service.PushSender | None,
+    organization_id: uuid.UUID,
+    user_id: uuid.UUID,
+    kind: str,
+    params: dict[str, object],
+    link: str | None,
+) -> None:
+    """Pousse une notification vers les abonnements d'un destinataire (best-effort).
+
+    Ne lève jamais : un échec de Web Push ne doit pas empêcher l'écriture de la
+    notification in-app, qui reste la source de vérité du canal.
+    """
+    try:
+        await push_service.send_to_user(
+            session,
+            sender=push_sender,
+            organization_id=organization_id,
+            user_id=user_id,
+            message=push_service.message_for(kind, params, link),
+        )
+    except Exception:
+        # Journalisation ailleurs (service push) : on protège seulement la transaction.
+        pass
 
 
 async def admins_and_editors_on(
@@ -63,12 +95,18 @@ async def admins_and_editors_on(
     return recipients
 
 
-async def evaluate_goal_notifications(session: AsyncSession, organization_id: uuid.UUID) -> None:
+async def evaluate_goal_notifications(
+    session: AsyncSession,
+    organization_id: uuid.UUID,
+    *,
+    push_sender: push_service.PushSender | None = None,
+) -> None:
     """Émet les notifications d'objectif (atteint / en dérive) pour une organisation.
 
     Idempotent : une notification non lue déjà émise pour le même objectif et le
     même état n'est jamais dupliquée (`dedup_key`). Les destinataires sont les
     administrateurs et les membres ayant `edit` sur le module de l'objectif.
+    Chaque notification nouvelle est aussi poussée (Web Push, best-effort).
     """
     for goal, progress in await goals_service.list_goals_with_progress(session, organization_id):
         if progress.status == GoalStatus.ACHIEVED:
@@ -82,6 +120,12 @@ async def evaluate_goal_notifications(session: AsyncSession, organization_id: uu
         prefix = metric_prefix(goal.metric_key)
         link = module_link(Module(prefix))
         recipients = await admins_and_editors_on(session, organization_id, Module(prefix))
+        params = {
+            "metric_key": goal.metric_key,
+            "target_value": goal.target_value,
+            "period_days": goal.period_days,
+            "direction": goal.direction,
+        }
         for uid in recipients:
             existing = await notifications_repository.get_existing_dedup(
                 session, organization_id=organization_id, user_id=uid, dedup_key=dedup
@@ -93,24 +137,34 @@ async def evaluate_goal_notifications(session: AsyncSession, organization_id: uu
                 organization_id=organization_id,
                 user_id=uid,
                 kind=kind,
-                params={
-                    "metric_key": goal.metric_key,
-                    "target_value": goal.target_value,
-                    "period_days": goal.period_days,
-                    "direction": goal.direction,
-                },
+                params=params,
                 link=link,
                 dedup_key=dedup,
+            )
+            await push_notification(
+                session,
+                push_sender=push_sender,
+                organization_id=organization_id,
+                user_id=uid,
+                kind=kind,
+                params=params,
+                link=link,
             )
 
 
 async def notify_legal_diverged(
-    session: AsyncSession, organization_id: uuid.UUID, diverged_fields: list[dict[str, object]]
+    session: AsyncSession,
+    organization_id: uuid.UUID,
+    diverged_fields: list[dict[str, object]],
+    *,
+    push_sender: push_service.PushSender | None = None,
 ) -> None:
     """Notifie les administrateurs qu'une valeur manuelle diverge du registre.
 
     Une seule notification non lue par administrateur : les écarts suivants
-    mettent à jour les champs concernés au lieu d'empiler des doublons.
+    mettent à jour les champs concernés au lieu d'empiler des doublons. Seules
+    les notifications nouvelles sont poussées (une mise à jour n'a pas à rappeler
+    l'attention deux fois).
     """
     members = await memberships_repository.list_members(session, organization_id=organization_id)
     for member in members:
@@ -136,4 +190,13 @@ async def notify_legal_diverged(
             params={"fields": diverged_fields},
             link="/legal",
             dedup_key=dedup,
+        )
+        await push_notification(
+            session,
+            push_sender=push_sender,
+            organization_id=organization_id,
+            user_id=member.user_id,
+            kind="legal.diverged",
+            params={"fields": diverged_fields},
+            link="/legal",
         )

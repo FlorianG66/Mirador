@@ -465,7 +465,9 @@ async def test_le_worker_de_synchro_evalue_les_objectifs(
         synced.append(org_id)
         return 0
 
-    async def fake_evaluate(session: AsyncSession, org_id: uuid.UUID) -> None:
+    async def fake_evaluate(
+        session: AsyncSession, org_id: uuid.UUID, *, push_sender: object = None
+    ) -> None:
         evaluated.append(org_id)
 
     monkeypatch.setattr(sync_worker, "sync_organization", fake_sync)

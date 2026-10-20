@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     # Worker de données fictives (phase 4) : intervalle de synchronisation des
     # connecteurs, en minutes. 0 = planificateur désactivé (ex. tests).
     sync_interval_minutes: int = 5
+    # Web Push (phase 6c-iii-b) : clés VAPID. Vide = Web Push inactif (la clé
+    # publique renvoie 404 et aucun message n'est poussé) — jamais de vraie clé
+    # en test ni dans le dépôt (AGENTS.md §5). `vapid_subject` est l'URL de
+    # contact exigée par les services de push ; à défaut, `app_base_url` sert.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = ""
 
     @property
     def google_redirect_uri(self) -> str:

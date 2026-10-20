@@ -206,6 +206,22 @@ const en = {
     title: 'Settings',
     description: 'Manage your account settings.',
   },
+  push: {
+    title: 'Background notifications',
+    description:
+      'Receive alerts and important events on this device, even when the app is closed.',
+    statusEnabled: 'Notifications are enabled on this device.',
+    statusDisabled: 'Notifications are not enabled on this device yet.',
+    statusDenied:
+      'You blocked notifications in your browser. Allow them in the site settings to enable them.',
+    statusUnsupported: 'This browser does not support background notifications.',
+    statusUnavailable: 'Background notifications are not available on this server.',
+    enable: 'Enable notifications',
+    enabling: 'Enabling…',
+    disable: 'Disable',
+    disabling: 'Disabling…',
+    error: 'Could not change notifications on this device. Please try again shortly.',
+  },
   forbidden: {
     title: 'Access denied',
     description: "You don't have the required permissions to view this page.",

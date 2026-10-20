@@ -208,6 +208,25 @@ const fr = {
     title: 'Paramètres',
     description: 'Gérez les paramètres de votre compte.',
   },
+  push: {
+    title: 'Notifications hors onglet',
+    description:
+      "Recevez les alertes et événements importants sur cet appareil, même quand l'application est fermée.",
+    statusEnabled: 'Les notifications sont activées sur cet appareil.',
+    statusDisabled: 'Les notifications ne sont pas encore activées sur cet appareil.',
+    statusDenied:
+      "Vous avez refusé les notifications dans votre navigateur. Autorisez-les dans les réglages du site pour les activer.",
+    statusUnsupported:
+      "Ce navigateur ne prend pas en charge les notifications hors onglet.",
+    statusUnavailable:
+      "Les notifications hors onglet ne sont pas disponibles sur ce serveur.",
+    enable: 'Activer les notifications',
+    enabling: 'Activation…',
+    disable: 'Désactiver',
+    disabling: 'Désactivation…',
+    error:
+      "Impossible de modifier les notifications sur cet appareil. Réessayez dans un instant.",
+  },
   forbidden: {
     title: 'Accès refusé',
     description: "Vous n'avez pas les droits nécessaires pour voir cette page.",

@@ -530,6 +530,16 @@ Comme les objectifs (6a-iii), la valeur d'une règle se recalcule en agrégeant 
 
 Technique retenue pour la 6c-iii-b : PWA + service worker + clés VAPID, abonnement stocké dans une table tenant `push_subscriptions` (RLS) et envoi derrière une interface `PushSender` (un faux en test). Raison : c'est la seule voie standard pour notifier hors de l'onglet ouvert, et l'interface injectable garantit qu'aucun vrai service de push ni vraie clé n'est requis en test ou en CI (AGENTS.md §5).
 
+Dépendance : `pywebpush==2.5.0` (dernière stable, vérifiée sur PyPI), épinglée dans `backend/pyproject.toml`. Raison : c'est l'implémentation de référence du protocole Web Push (VAPID + chiffrement `aes128gcm`, RFC 8291/8292) en Python, activement maintenue ; `mypy` l'ignore faute de `py.typed` (override ciblé, l'appel reste isolé dans `WebPushSender`).
+
+## 2026-10-20 — Web Push : envoi best-effort et abonnements caducs (6c-iii-b)
+
+Le push est émis **au même endroit** que la notification in-app (service `notifications`, une fois la ligne non dupliquée créée), via l'émetteur posé sur `app.state.push_sender` (`None` = canal désactivé). L'envoi est **best-effort** : une erreur de push ne fait jamais échouer l'écriture in-app. Un service qui répond 404/410 (abonnement caduc) fait supprimer la ligne. Raison : l'in-app reste la source de vérité ; ne pas laisser un appareil mort bloquer la synchro ni accumuler des abonnements fantômes.
+
+## 2026-10-20 — Service worker : libellés génériques, pas de duplication des KPI (6c-iii-b)
+
+Le service worker (`frontend/public/sw.js`) vit hors du bundle React : il ne peut pas importer i18next. Il traduit le `kind` par une table FR/EN explicite (jamais la clé brute) mais affiche un corps **générique** pour les événements liés à une métrique, plutôt que de recopier les libellés de KPI (`src/pulse/format.ts`). Raison : dupliquer la source de vérité des indicateurs dans un fichier public non testé garantirait une divergence ; le libellé complet et formaté est affiché dès l'ouverture de l'application (centre de notifications).
+
 ## 2026-10-19 — `kind` de notification traduit par table explicite, jamais la clé brute (6c-iii-a)
 
 Le `kind` backend `alert.threshold` est traduit par une entrée explicite de `TITLE_BODY_KEYS` (`frontend/src/notifications/format.ts`), avec deux variantes haut/bas choisies sur `params.comparison`. Raison : i18next lit le point comme un séparateur de chemin — la clé brute ne peut pas servir de clé i18n ; une table explicite garde une erreur visible (jamais un texte non traduit) et suit la règle posée en 6c-ii.

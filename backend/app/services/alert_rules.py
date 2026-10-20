@@ -33,6 +33,7 @@ from app.schemas.alert_rules import AlertRuleCreate, AlertRuleOut, AlertRuleUpda
 from app.schemas.metrics import metric_prefix
 from app.services import audit as audit_service
 from app.services import notifications as notifications_service
+from app.services import push as push_service
 from app.services.errors import ServiceProblem
 from app.services.metric_catalog import aggregation_for, reduce_values
 
@@ -203,13 +204,19 @@ async def delete_alert_rule(
     )
 
 
-async def evaluate_alert_rules(session: AsyncSession, organization_id: uuid.UUID) -> None:
+async def evaluate_alert_rules(
+    session: AsyncSession,
+    organization_id: uuid.UUID,
+    *,
+    push_sender: push_service.PushSender | None = None,
+) -> None:
     """Émet les notifications des règles franchies pour une organisation.
 
     Réservé au worker de synchronisation (jamais appelé depuis un `GET`).
     Idempotent : une notification non lue déjà émise pour la même règle n'est pas
     dupliquée (`dedup_key`). Les destinataires sont les administrateurs et les
-    membres ayant `edit` sur le module de la métrique surveillée.
+    membres ayant `edit` sur le module de la métrique surveillée. Chaque
+    notification nouvelle est aussi poussée (Web Push, best-effort).
     """
     rules = await alert_rules_repository.list_for_organization(
         session, organization_id, enabled_only=True
@@ -251,4 +258,13 @@ async def evaluate_alert_rules(session: AsyncSession, organization_id: uuid.UUID
                 params=params,
                 link=link,
                 dedup_key=dedup,
+            )
+            await notifications_service.push_notification(
+                session,
+                push_sender=push_sender,
+                organization_id=organization_id,
+                user_id=user_id,
+                kind="alert.threshold",
+                params=params,
+                link=link,
             )

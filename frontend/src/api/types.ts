@@ -106,3 +106,7 @@ export type AlertRule = components['schemas']['AlertRuleOut']
 export type AlertRuleCreate = components['schemas']['AlertRuleCreate']
 export type AlertRuleUpdate = components['schemas']['AlertRuleUpdate']
 export type AlertComparison = components['schemas']['AlertComparison']
+
+export type PushPublicKey = components['schemas']['PushPublicKeyOut']
+export type PushSubscribe = components['schemas']['PushSubscribeIn']
+export type PushSubscriptionOut = components['schemas']['PushSubscriptionOut']

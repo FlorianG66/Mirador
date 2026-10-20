@@ -518,6 +518,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/push/public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Key
+         * @description Clé VAPID publique ; 404 si Web Push n'est pas configuré sur ce serveur.
+         */
+        get: operations["get_public_key_api_v1_organizations__organization_id__push_public_key_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/push/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe
+         * @description Enregistre l'abonnement d'un navigateur pour l'appelant (idempotent).
+         */
+        post: operations["subscribe_api_v1_organizations__organization_id__push_subscriptions_post"];
+        /**
+         * Unsubscribe
+         * @description Retire l'abonnement d'un endpoint pour l'appelant (idempotent).
+         */
+        delete: operations["unsubscribe_api_v1_organizations__organization_id__push_subscriptions_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/goals": {
         parameters: {
             query?: never;
@@ -1587,6 +1631,63 @@ export interface components {
             activity?: components["schemas"]["AuditLogOut"][];
         };
         /**
+         * PushKeysIn
+         * @description Clés publiques du client (chiffrement du contenu, RFC 8291).
+         */
+        PushKeysIn: {
+            /** P256Dh */
+            p256dh: string;
+            /** Auth */
+            auth: string;
+        };
+        /**
+         * PushPublicKeyOut
+         * @description Clé VAPID publique à remettre au navigateur avant tout abonnement.
+         */
+        PushPublicKeyOut: {
+            /** Public Key */
+            public_key: string;
+        };
+        /**
+         * PushSubscribeIn
+         * @description Corps d'abonnement : ce que `PushSubscription.toJSON()` produit côté navigateur.
+         */
+        PushSubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["PushKeysIn"];
+            /** User Agent */
+            user_agent?: string | null;
+        };
+        /**
+         * PushSubscriptionOut
+         * @description Abonnement enregistré (l'endpoint et l'utilisateur suffisent à l'identifier).
+         */
+        PushSubscriptionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Endpoint */
+            endpoint: string;
+            /** User Agent */
+            user_agent: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PushUnsubscribeIn
+         * @description Corps de désabonnement : l'endpoint seul identifie l'abonnement.
+         */
+        PushUnsubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
+        };
+        /**
          * RegisterRequest
          * @description Inscription : crée le compte, l'organisation et le rattachement admin.
          */
@@ -2462,6 +2563,105 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_key_api_v1_organizations__organization_id__push_public_key_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushPublicKeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    subscribe_api_v1_organizations__organization_id__push_subscriptions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscribeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushSubscriptionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_api_v1_organizations__organization_id__push_subscriptions_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushUnsubscribeIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {

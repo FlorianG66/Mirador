@@ -10,6 +10,7 @@ import { ApiError, api, unwrap } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
+import { PushToggle } from '../push/PushToggle.tsx'
 
 interface SetupState {
   secret: string
@@ -137,6 +138,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
       <AlertRulesPanel />
+      <PushToggle />
     </div>
   )
 }

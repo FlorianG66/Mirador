@@ -17,6 +17,7 @@ from app.models.session import UserSession
 from app.models.user import User
 from app.repositories import sessions as sessions_repository
 from app.services.legal_registry import LegalRegistry
+from app.services.push import PushSender
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
@@ -50,6 +51,12 @@ def get_legal_registry(request: Request) -> LegalRegistry:
     """Registre d'identité légale porté par l'application (transport injectable en test)."""
     registry: LegalRegistry = request.app.state.legal_registry
     return registry
+
+
+def get_push_sender(request: Request) -> PushSender | None:
+    """Émetteur Web Push porté par l'application (`None` si le canal est désactivé)."""
+    sender: PushSender | None = request.app.state.push_sender
+    return sender
 
 
 async def get_current_session(

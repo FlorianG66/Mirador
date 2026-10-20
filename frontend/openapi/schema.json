@@ -1085,6 +1085,140 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/push/public-key": {
+      "get": {
+        "summary": "Get Public Key",
+        "description": "Clé VAPID publique ; 404 si Web Push n'est pas configuré sur ce serveur.",
+        "operationId": "get_public_key_api_v1_organizations__organization_id__push_public_key_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPublicKeyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/push/subscriptions": {
+      "post": {
+        "summary": "Subscribe",
+        "description": "Enregistre l'abonnement d'un navigateur pour l'appelant (idempotent).",
+        "operationId": "subscribe_api_v1_organizations__organization_id__push_subscriptions_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Unsubscribe",
+        "description": "Retire l'abonnement d'un endpoint pour l'appelant (idempotent).",
+        "operationId": "unsubscribe_api_v1_organizations__organization_id__push_subscriptions_delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushUnsubscribeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{organization_id}/goals": {
       "get": {
         "summary": "List Goals",
@@ -3736,6 +3870,129 @@
         ],
         "title": "PulseOut",
         "description": "Réponse du Pouls : KPI clés, santé et fil d'activité (réservé aux admins)."
+      },
+      "PushKeysIn": {
+        "properties": {
+          "p256dh": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "P256Dh"
+          },
+          "auth": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Auth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "p256dh",
+          "auth"
+        ],
+        "title": "PushKeysIn",
+        "description": "Clés publiques du client (chiffrement du contenu, RFC 8291)."
+      },
+      "PushPublicKeyOut": {
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "title": "Public Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_key"
+        ],
+        "title": "PushPublicKeyOut",
+        "description": "Clé VAPID publique à remettre au navigateur avant tout abonnement."
+      },
+      "PushSubscribeIn": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/PushKeysIn"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "title": "PushSubscribeIn",
+        "description": "Corps d'abonnement : ce que `PushSubscription.toJSON()` produit côté navigateur."
+      },
+      "PushSubscriptionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "endpoint",
+          "user_agent",
+          "created_at"
+        ],
+        "title": "PushSubscriptionOut",
+        "description": "Abonnement enregistré (l'endpoint et l'utilisateur suffisent à l'identifier)."
+      },
+      "PushUnsubscribeIn": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint"
+        ],
+        "title": "PushUnsubscribeIn",
+        "description": "Corps de désabonnement : l'endpoint seul identifie l'abonnement."
       },
       "RegisterRequest": {
         "properties": {

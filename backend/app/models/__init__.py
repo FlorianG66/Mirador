@@ -21,6 +21,7 @@ from app.models.module_permission import ModulePermission
 from app.models.notification import Notification
 from app.models.organization import Organization
 from app.models.password_reset_token import PasswordResetToken
+from app.models.push_subscription import PushSubscription
 from app.models.session import UserSession
 from app.models.user import User
 
@@ -45,6 +46,7 @@ __all__ = [
     "Organization",
     "PasswordResetToken",
     "PermissionLevel",
+    "PushSubscription",
     "Role",
     "User",
     "UserSession",
