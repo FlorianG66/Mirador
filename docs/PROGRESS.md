@@ -964,7 +964,7 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - **Vérifs** : `pytest tests/test_push.py tests/test_alembic.py` **19 passed** · suite backend complète **408 passed** (384,37 s, +11 vs 6c-iii-a) · `ruff check` + `ruff format --check` ✅ · `mypy app` 0 erreur (121 fichiers) · Vitest **107 passed** (24 fichiers, +12 vs 6c-iii-a) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **13 passed** · `pre-commit run` ✅ (11 hooks, gitleaks « no leaks found ») · client OpenAPI régénéré (`export_openapi.py` + `generate:api`, types `Push*` ajoutés à `src/api/types.ts`).
 - **Piège rencontré (test)** : le premier test d'activation échouait en « Invalid characterError » — la clé VAPID factice du test n'était pas du base64url valide, donc `atob` levait. Corrigé en utilisant une vraie chaîne base64url. Aucun impact sur le code de production.
 - **Piège rencontré (e2e)** : la première passe Playwright a échoué en 11 tests (`ERR_CONNECTION_REFUSED` sur `localhost:5173`) — le serveur Vite de `webServer` n'était pas encore prêt (course au démarrage, connu sur ce poste). Relance avec le serveur déjà lancé : **13 passed**. Aucun code en cause.
-- Commit : **__COMMIT__**.
+- Commit : `4a640c8` — `feat: notifications Web Push (6c-iii-b)`.
 - **Non fait** : merge sur `main` (PR #9 en draft : feu vert du mainteneur requis).
 
 ### Critères de la sous-phase 6c-iii-b — vérité du terrain
