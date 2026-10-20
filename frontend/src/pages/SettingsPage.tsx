@@ -1,13 +1,16 @@
 // Page Paramètres (sous-phase 3d-b) : gestion de la double authentification.
 // Active le TOTP (POST /auth/2fa/enable), affiche le QR et les codes de secours,
-// ou le désactive (POST /auth/2fa/disable).
+// ou le désactive (POST /auth/2fa/disable). Depuis 6c-iii, la page héberge aussi
+// les règles d'alerte configurables.
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation } from '@tanstack/react-query'
+import { AlertRulesPanel } from '../alertRules/AlertRulesPanel'
 import { ApiError, api, unwrap } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
+import { PushToggle } from '../push/PushToggle.tsx'
 
 interface SetupState {
   secret: string
@@ -134,6 +137,8 @@ export function SettingsPage() {
           )}
         </CardContent>
       </Card>
+      <AlertRulesPanel />
+      <PushToggle />
     </div>
   )
 }

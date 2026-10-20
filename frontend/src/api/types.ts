@@ -10,6 +10,9 @@ export type PermissionLevel = components['schemas']['PermissionLevel']
 export type Role = components['schemas']['Role']
 export type MetricPoint = components['schemas']['MetricPoint']
 export type MetricSeries = components['schemas']['MetricSeries']
+export type MetricAggregation = components['schemas']['MetricAggregation']
+export type MetricComparison = components['schemas']['MetricComparison']
+export type MetricComparisonSummary = components['schemas']['MetricComparisonSummary']
 export type LegalProfile = components['schemas']['LegalProfileOut']
 export type LegalProfileUpdate = components['schemas']['LegalProfileUpdate']
 export type LegalDirector = components['schemas']['LegalDirectorOut']
@@ -19,6 +22,11 @@ export type Pulse = components['schemas']['PulseOut']
 export type PulseKpi = components['schemas']['PulseKpiOut']
 export type PulseHealth = components['schemas']['PulseHealthOut']
 export type AuditLog = components['schemas']['AuditLogOut']
+export type Dashboard = components['schemas']['DashboardOut']
+export type DashboardWidget = components['schemas']['DashboardWidgetOut']
+export type DashboardPlacement = components['schemas']['DashboardPlacement']
+export type DashboardLayoutUpdate = components['schemas']['DashboardLayoutUpdate']
+export type WidgetKind = components['schemas']['WidgetKind']
 
 /**
  * Les clés canoniques du panneau financier (sous-phase 5a). Sert à décrire le
@@ -72,6 +80,13 @@ export type SocialMetricKey =
  * que les autres modules : chaque clé est un suffixe `module.metric` du schéma,
  * jamais une invention du frontend.
  */
+export type Goal = components['schemas']['GoalOut']
+export type GoalCreate = components['schemas']['GoalCreate']
+export type GoalUpdate = components['schemas']['GoalUpdate']
+export type GoalDirection = components['schemas']['GoalDirection']
+export type GoalStatus = components['schemas']['GoalStatus']
+export type GoalProgress = components['schemas']['GoalProgress']
+
 export type ProjectMetricKey =
   | 'projects.tasks_done'
   | 'projects.tasks_created'
@@ -83,3 +98,15 @@ export type ProjectMetricKey =
   | 'projects.tasks_by_status'
   | 'projects.person_load'
   | 'projects.upcoming_milestones'
+
+export type Notification = components['schemas']['NotificationOut']
+export type NotificationList = components['schemas']['NotificationListOut']
+
+export type AlertRule = components['schemas']['AlertRuleOut']
+export type AlertRuleCreate = components['schemas']['AlertRuleCreate']
+export type AlertRuleUpdate = components['schemas']['AlertRuleUpdate']
+export type AlertComparison = components['schemas']['AlertComparison']
+
+export type PushPublicKey = components['schemas']['PushPublicKeyOut']
+export type PushSubscribe = components['schemas']['PushSubscribeIn']
+export type PushSubscriptionOut = components['schemas']['PushSubscriptionOut']

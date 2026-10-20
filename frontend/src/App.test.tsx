@@ -42,6 +42,10 @@ beforeEach(() => {
           activity: [],
         }),
     },
+    {
+      match: /organizations\/[^/]+\/goals$/,
+      respond: () => json([]),
+    },
   ])
 })
 

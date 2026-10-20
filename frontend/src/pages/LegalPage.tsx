@@ -4,7 +4,7 @@
 // du navigateur) et la saisie manuelle. Réservée aux administrateurs pour
 // l'édition ; les dirigeants restent visibles des seuls administrateurs.
 import { useState } from 'react'
-import { Building2, Check, Copy, FileDown, Pencil, RefreshCw } from 'lucide-react'
+import { Building2, Check, Copy, Pencil, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/context.ts'
 import type { LegalProfile, LegalProfileUpdate } from '../api/types.ts'
@@ -141,6 +141,7 @@ export function LegalPage() {
       <PageHeader
         title={t('nav.legal')}
         subtitle={t('legal.subtitle')}
+        printable
         actions={
           <>
             {canEdit ? (
@@ -263,12 +264,6 @@ export function LegalPage() {
                 {mentions !== '' ? mentions : t('legal.notProvided')}
               </pre>
               <p className="mt-3 text-xs text-muted">{t('legal.sourceNote')}</p>
-              <div className="mt-4">
-                <Button variant="ghost" size="sm" onClick={() => window.print()}>
-                  <FileDown aria-hidden="true" className="size-4" />
-                  {t('legal.exportPdf')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </>

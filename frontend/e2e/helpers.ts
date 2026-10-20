@@ -37,6 +37,16 @@ const modules = {
   legal: 'edit',
 }
 
+/** Notification fictive servie par les mocks (schéma NotificationOut). */
+interface E2eNotification {
+  id: string
+  kind: string
+  params: Record<string, unknown>
+  link: string
+  read_at: string | null
+  created_at: string
+}
+
 /** Installe les mocks API sur une page et renvoie l'état pilotable. */
 export async function installApiMocks(
   page: Page,
@@ -78,6 +88,65 @@ export async function installApiMocks(
       kpis: [],
       health: { status: 'unknown', modules_with_data: 0, modules_total: 0 },
       activity: [],
+    }),
+  )
+
+  // Catalogue et disposition par défaut, cohérents avec un Pouls vide (le
+  // backend écarte l'activité pour un non-admin, pas ici : session admin).
+  await page.route('**/api/v1/organizations/*/dashboard', (route) =>
+    fulfill(route, 200, {
+      available_widgets: [
+        { widget_id: 'health', kind: 'health' },
+        { widget_id: 'goals', kind: 'goals' },
+        { widget_id: 'activity', kind: 'activity' },
+      ],
+      layout: [
+        { widget_id: 'health', x: 0, y: 0, w: 12, h: 2 },
+        { widget_id: 'goals', x: 0, y: 2, w: 6, h: 6 },
+        { widget_id: 'activity', x: 6, y: 2, w: 6, h: 6 },
+      ],
+      is_default: true,
+    }),
+  )
+
+  await page.route('**/api/v1/organizations/*/goals', (route) => fulfill(route, 200, []))
+
+  // Notifications in-app (sous-phase 6c-ii) : une notification non lue « objectif
+  // atteint », servie par la même source que les écritures de marquage — ainsi le
+  // compteur de non-lus retombe après « tout marquer comme lu ». Données fictives.
+  let notifications: E2eNotification[] = [
+    {
+      id: 'f0f0f0f0-0000-4000-8000-000000000001',
+      kind: 'goal.achieved',
+      params: {
+        metric_key: 'finance.revenue',
+        target_value: 100000,
+        period_days: 30,
+        direction: 'at_least',
+      },
+      link: '/finance',
+      read_at: null,
+      created_at: '2026-10-19T08:00:00Z',
+    },
+  ]
+  const markAllRead = () => {
+    notifications = notifications.map((item) => ({ ...item, read_at: '2026-10-19T09:00:00Z' }))
+  }
+
+  await page.route('**/api/v1/organizations/*/notifications/read-all', (route) => {
+    markAllRead()
+    return route.fulfill({ status: 204, body: '' })
+  })
+
+  await page.route('**/api/v1/organizations/*/notifications/*/read', (route) => {
+    markAllRead()
+    return route.fulfill({ status: 204, body: '' })
+  })
+
+  await page.route('**/api/v1/organizations/*/notifications', (route) =>
+    fulfill(route, 200, {
+      items: notifications,
+      unread_count: notifications.filter((item) => item.read_at === null).length,
     }),
   )
 

@@ -6,8 +6,8 @@ import { vi } from 'vitest'
 export interface FetchRoute {
   /** Chemin de l'URL (pathname) à faire correspondre. */
   match: RegExp
-  /** Réponse simulée ; peut lever pour simuler une panne réseau. */
-  respond: (request: Request) => Response
+  /** Réponse simulée ; peut lever pour simuler une panne réseau, ou être asynchrone. */
+  respond: (request: Request) => Response | Promise<Response>
 }
 
 /** Remplace fetch global par un faux qui suit `routes` (jeton d'accès non simulé). */

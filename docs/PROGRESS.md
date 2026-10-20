@@ -4,10 +4,13 @@
 
 ## État
 
-- **Phase en cours** : 5 — Modules MVP (ROADMAP ligne 50, une sous-phase par module) ; chaque module viendra avec ses endpoints métier, sa page, ses widgets, ses états chargement/vide/erreur, le polling 5 min et les animations sobres. Sous-phases : 5a Finance ✅, 5b Web analytics ✅, 5c Réseaux sociaux ✅, 5d Projets & tâches ✅, 5e Identité légale ✅ (5e-a socle backend ✅, 5e-b persistance + endpoints ✅, 5e-c page frontend `/legal` ✅), 5f Vue d'ensemble « Pouls » ✅ (backend agrégat `/pulse` + page d'accueil réécrite). **Phase 5 clôturée et mergée sur `main`** (5a → 5f, merge `dcb7c9d`).
-- **Branche** : `main` (pointe sur le merge `dcb7c9d` « merge: phase 5 — modules MVP (5a → 5f) ») ; la branche `phase-5-modules-mvp` (créée depuis `main` = `cc840c9`) reste en place — 5a `92f2b11`, 5b `f3c75af`, 5c `3b27329`, 5d `c767cdf` + docs `95fe034`, 5e-a `fcb1c92` + docs `af6b74b`, 5e-b `eb821a4` + docs `9f6926b`, 5e-c `206a0c7`, 5f `a1d65e1` + fix `a6f9c96`, docs `479ca93`/`71f9273`.
-- **Prochaine action** : ouvrir la phase 6 « Fonctions transverses » sur une nouvelle branche (`phase-6-...`) — 6a comparaison de périodes + objectifs/budgets avec alertes de dérive, 6b recherche globale (Ctrl/Cmd+K) + dashboard personnalisable.
-- **À ne pas faire** : ouvrir la phase 6 avant que ce fichier (clôture phase 5) soit commité.
+- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). Les sous-phases **6a, 6b-i, 6b-ii-a, 6b-ii-b, 6c-i, 6c-ii, 6c-iii-a et 6c-iii-b sont complètes** (voir Historique) : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i recherche globale `bd6dcbf`, 6b-ii-a persistance de la mise en page (backend) `3f26777`, **6b-ii-b tableau de bord personnalisable (frontend)**, **6c-i export PDF par l'impression du navigateur**, **6c-ii notifications in-app (backend + frontend)**, **6c-iii-a règles d'alerte configurables (backend + frontend)**, **6c-iii-b notifications Web Push (backend + frontend)** — **la phase 6 est complète**. La phase 5 est clôturée et mergée sur `main` (5a → 5f, merge `dcb7c9d`).
+- **Branche** : `phase-6-transverse` (créée depuis `main` = `4c1b221` ; la phase 5 reste sur `main`/`phase-5-modules-mvp`) — 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, correctifs CI `68e54d6` + `8781779` (CI verte, PR #9 draft ouverte vers `main`), 6c-ii notifications in-app `4738b86` (backend) + `06f5717` (frontend), **6c-iii-a règles d'alerte configurables `a3f302e`**.
+- **Prochaine action** : phase 6 close — attendre le feu vert du mainteneur pour merger la PR #9 (`phase-6-transverse` → `main`), puis attaquer la phase suivante de la ROADMAP.
+- **Reste avant merge de la phase 6** : feu vert du mainteneur pour la PR #9 (`phase-6-transverse` → `main`).
+- **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
+- **Dette connue — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (draft `phase-6-transverse` → `main`, 3/3 jobs). Reste avant merge : feu vert du mainteneur.
+- **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
 | Critère | État |
@@ -667,3 +670,317 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - Décisions consignées dans `docs/DECISIONS.md` au fil des sous-phases (Recharts et les 8 clés finance, répartitions web/social/projets sommant la métrique parente, abonnés cumulés, stock de tâches ouvertes, registre légal à transport injectable, provenance par champ, Pouls minimal).
 - Merge sur `main` : `git merge --no-ff phase-5-modules-mvp` → `dcb7c9d` (`main` passe de `cc840c9` à `dcb7c9d`) ; aucun push (aucun remote GitHub configuré).
 - **Non fait** : push (aucun remote GitHub) ; phase 6 « Fonctions transverses » à ouvrir sur une nouvelle branche.
+
+## Phase 6 — Fonctions transverses
+
+### 2026-10-12 — Sous-phase 6a-i : comparaison de périodes (backend)
+- Catalogue d'agrégation `app/services/metric_catalog.py` : chaque clé connue → `sum` (flux), `last` (niveau/stock), `average` (taux/durée) ; repli `sum` pour une clé inconnue. Test de couverture : toute clé produite par les quatre connecteurs doit y figurer (aucune omission silencieuse).
+- Schémas `MetricAggregation`/`MetricComparisonSummary`/`MetricComparison` ; service `metrics.get_metric_comparison` (une seule lecture de la double fenêtre `[end − 2×days, end]`, frontière `end − days`) ; route `GET /organizations/{id}/metrics/{metric_key}/comparison?days=&end=`.
+- Tests : `tests/test_metric_catalog.py` (8) + `tests/connectors/test_metric_comparison.py` (10) — répartition des fenêtres, somme/dernière valeur/moyenne, écart et pourcentage (`null` si base nulle), jours hors bornes, 403 droits/organisation, 422 clé, 404 sans donnée.
+- Client OpenAPI régénéré (`schema.json` + `schema.d.ts`).
+- Commit : `4c41e9e` — `feat: comparaison de periodes par metrique (6a-i)`.
+- **Non fait** : sélecteur de période et affichage frontend (6a-ii) ; objectifs/budgets avec alertes (6a-iii/iv).
+
+### Critères de la sous-phase 6a-i — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend (sous-phase) | ✅ `tests/test_metric_catalog.py` **8 passed** · `tests/connectors/test_metric_comparison.py` **10 passed** |
+| Suite backend complète | ✅ `pytest -q` **342 passed** (22 min 33 s ; suite DB lourde) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict **96 fichiers**, 0 erreur |
+| Frontend | ✅ `tsc -b` ✅ · `eslint` ✅ · Vitest **14 fichiers / 50 tests passed** |
+| Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés |
+
+### 2026-10-12 — Sous-phase 6a-ii : sélecteur de période et comparaison (frontend)
+- Composant `src/components/ui/PeriodSelect.tsx` : groupe de boutons accessible (`role="group"`, `aria-pressed`, anneau de focus), sans état interne — même patron que `LanguageSwitcher`. Constantes `PERIOD_OPTIONS` (7 j / 30 j / 90 j) et `DEFAULT_PERIOD_DAYS` dans `src/metrics/queries.ts`.
+- `src/metrics/queries.ts` : clé de cache `metricsKeys.comparison` et fonction `fetchMetricComparison(organizationId, metricKey, days)` (endpoint `GET /metrics/{clé}/comparison`), plus les alias de types `MetricAggregation`/`MetricComparison`/`MetricComparisonSummary` (`src/api/types.ts`).
+- `src/pages/DashboardPage.tsx` : sélecteur de période au-dessus de la grille de KPI (masqué sans donnée) ; `useQueries` déclenche une comparaison par KPI visible (clés dérivées du Pouls), la carte affiche l'agrégat de la fenêtre (`summary.current_value`) et l'écart `change_percent` ; un 404 « aucune donnée sur la fenêtre » retombe sur la valeur et la tendance à deux points du Pouls, jamais sur une erreur. i18n `dashboard.periodLabel`/`dashboard.periodDays` (FR/EN).
+- Tests : `src/components/ui/PeriodSelect.test.tsx` (1) + `src/pages/DashboardPage.test.tsx` (5, dont un test de comparaison : valeur/écart de la période, défaut 30 j, bascule vers 7 j) ; route de comparaison simulée dans le stub (404 = pas de donnée). Aucun changement e2e (le Pouls simulé n'expose aucun KPI).
+- Vérifs : Vitest **52 passed** (15 fichiers, +2 vs 6a-i) · `tsc -b` ✅ · `eslint` ✅ · `npm run build` ✅ · `npx playwright test` **5 passed** · pas de changement backend.
+- Commit : `01c2220` — `feat: selecteur de periode et comparaison sur le tableau de bord (6a-ii)`.
+- **Non fait** : objectifs/budgets avec alertes (6a-iii/iv).
+
+### Critères de la sous-phase 6a-ii — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend (sous-phase) | ✅ `PeriodSelect.test.tsx` **1 passed** · `DashboardPage.test.tsx` **5 passed** |
+| Suite frontend complète | ✅ Vitest **52 passed** (15 fichiers, +2 vs 6a-i) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` (ESLint) 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| e2e Playwright | ✅ `npx playwright test` **5 passed** (login 3 + a11y 2) |
+| Sélecteur de période | ✅ 7 j / 30 j / 90 j, défaut 30 j, accessible (`role="group"`, `aria-pressed`) |
+| Comparaison affichée | ✅ valeur = `summary.current_value`, écart = `summary.change_percent` ; repli sur la dernière valeur du Pouls si 404/chargement |
+| i18n | ✅ `dashboard.periodLabel` / `dashboard.periodDays` FR + EN, aucun texte en dur |
+| pre-commit | ⏳ à lancer avant commit |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-12 — Sous-phase 6a-iii : objectifs & budgets (backend)
+- Persistance : `app/models/goal.py` — table tenant `goals` (`metric_key` canonique, `label` libre optionnel, `direction`, `target_value`, `period_days` 1–365) + contraintes `CHECK` (`goals_key_format` sur `METRIC_KEY_REGEX`, `goals_direction_known`, `goals_period_days_range`) ; `app/models/enums.py` gagne `GoalDirection` (`at_least`/`at_most`) et `GOAL_DIRECTION_VALUES_SQL` ; migration `0008_phase6_goals_and_rls.py` (table + index `organization_id` + RLS `ENABLE`/`FORCE` + politique par organisation).
+- Couche service : `app/repositories/goals.py` (`list_for_organization`, `get_by_id`, `create`, `delete`) ; `app/schemas/goals.py` : `GoalStatus` (`achieved`/`on_track`/`off_track`/`unknown`), `GoalCreate`, `GoalUpdate` (mise à jour partielle via `model_fields_set` ; `label: null` efface), `GoalOut` ; `app/services/goals.py` (progression recalculée à la lecture) ; `app/routers/goals.py`.
+- Progression/dérive (SPEC muette — règle documentée dans `DECISIONS.md`) : progression = valeur agrégée de la fenêtre courante / cible (`progress_percent`, `null` si cible nulle) ; statut `achieved` (cible atteinte), `off_track` (non atteinte **et** métrique s'éloignant de la fenêtre précédente équivalente), `on_track`, `unknown` (aucune donnée). La réduction de fenêtre est factorisée dans `metric_catalog.reduce_values` (même code que `metrics._aggregate`) — aucune divergence entre comparaison (6a-i) et objectifs.
+- Endpoints `GET`/`POST` (201)/`PATCH`/`DELETE` (204) `/organizations/{id}/goals` : la lecture ne montre que les objectifs des modules visibles (comme le Pouls, jamais de 403) ; créer/modifier/supprimer exige `edit` sur le module préfixe de `metric_key` (vérifié dans le service) ; audit `goal.created`/`goal.updated`/`goal.deleted`.
+- Tests : `tests/test_goals.py` (15) — `achieved`, `on_track`/`off_track` selon la direction, `at_most` (budget), `unknown` sans donnée, `progress_percent` (`null` si cible nulle), 422 clé/`period_days`/direction, 403 droits et module, 404 objectif absent, lecture restreinte aux modules visibles, audit des trois actions, isolation RLS entre deux organisations. `tests/test_alembic.py` (`HEAD_REVISION` = `0008`, `TENANT_TABLES` += `goals`) et `tests/conftest.py` (TRUNCATE) mis à jour.
+- Client OpenAPI régénéré (`schema.json` + `schema.d.ts` : opérations `list_/create_/update_/delete_goal` et schémas `GoalCreate`/`GoalUpdate`/`GoalOut`/`GoalStatus`).
+- Commit : `831546e` — `feat: objectifs et budgets avec alerte de derive (6a-iii)`.
+- **Non fait** : frontend objectifs (6a-iv) ; push (aucun remote GitHub), merge sur `main` (sans feu vert).
+
+### Critères de la sous-phase 6a-iii — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend (sous-phase) | ✅ `tests/test_goals.py` **15 passed** |
+| Suite backend complète | ✅ `pytest -q` **357 passed** (299 s, +15 vs 6a-i) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict **101 fichiers**, 0 erreur |
+| Persistance | ✅ table `goals` + migration `0008` ; RLS activée/forcée, isolation testée entre deux organisations |
+| Endpoints | ✅ `GET`/`POST`/`PATCH`/`DELETE /organizations/{id}/goals`, gardés par le module de la métrique, audit `goal.*` |
+| Progression & dérive | ✅ agrégation via `metric_catalog.reduce_values` ; statut `achieved`/`on_track`/`off_track`/`unknown` |
+| Entrées | ✅ clé canonique (422), `period_days` 1–365, `direction` `at_least`/`at_most` |
+| Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés |
+| Frontend | ✅ `tsc -b` ✅ · `eslint` ✅ (aucun changement de code frontend, seulement le client généré) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-13 — Sous-phase 6a-iv livrée (objectifs & budgets côté frontend)
+- Nouvel emplacement `src/goals/` : `GoalsPanel` (carte du tableau de bord à côté du fil d'activité, remplace l'état vide de la 5f), `GoalForm` (création **et** édition), `queries.ts` (`useGoals` + mutations `useCreateGoal`/`useUpdateGoal`/`useDeleteGoal` vers `POST`/`PATCH`/`DELETE` ; 204 contrôlé à la main pour la suppression, toute écriture invalide la liste) et `format.ts` (métadonnées des statuts i18n + teintes de badge/barre, options d'indicateur, droits d'écriture).
+- Affichage : nom (libellé ou nom du KPI ciblé), sens + cible unitée + fenêtre, progression (barre `role="progressbar"` + pourcentage, « sans donnée » si `progress_percent` nul) et statut `achieved`/`on_track`/`off_track`/`unknown` recalculés par le backend — la dérive (`off_track`) est mise en évidence en rouge (badge + barre). i18n `goals.*` FR/EN, aucun texte en dur (AGENTS.md §7, §8).
+- Droits : les actions créer/modifier/supprimer ne s'affichent qu'avec le droit d'écriture sur le module de l'indicateur (`canEditMetric` : admin = tout, sinon `edit`) ; la suppression demande confirmation (`window.confirm`) ; le masquage n'est qu'un confort d'interface, le backend applique seul la règle (6a-iii).
+- Formulaire : sélecteur d'indicateur **limité aux 8 KPI clés du Pouls** (`KPI_META`, libellés i18n réutilisés — une clé existante hors liste reste éditable), sens `at_least`/`at_most`, cible (nombre), fenêtre via `PeriodSelect` partagé (7/30/90 j, défaut 30), libellé optionnel (max 120).
+- Tests : 5 cas dans `DashboardPage.test.tsx` (affichage progression/statut, création avec retombée i18n du nom, édition PATCH, suppression DELETE après confirmation, actions masquées pour un membre en `view`) ; route `/goals` simulée (y compris `/goals/{id}` PATCH/DELETE) dans `App.test.tsx` et les mocks e2e.
+- Vérifs : Vitest **57 passed** (15 fichiers, +5 vs 6a-ii/iii) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **5 passed** · pre-commit ✅ (gitleaks inclus) · aucun changement backend ni régénération OpenAPI.
+- Commit : `e114627` — `feat: objectifs et budgets cote frontend (6a-iv)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; sous-phase 6b.
+- *Écart constaté : `DashboardPage.test.tsx` ne compilait pas (`waitFor` non importé) — corrigé avant exécution.*
+
+### Critères de la sous-phase 6a-iv — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **57 passed** (15 fichiers, +5 vs 6a-ii/iii) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| e2e Playwright | ✅ `npx playwright test` **5 passed** (mocks `/goals` ajoutés) |
+| Panneau d'objectifs | ✅ liste + progression + statut (dérive en évidence), création/édition/suppression, actions selon le droit d'écriture du module |
+| i18n | ✅ `goals.*` FR + EN, aucun texte en dur ; libellés d'indicateur réutilisés du Pouls |
+| Backend | ✅ inchangé (client OpenAPI à jour) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-13 — Sous-phase 6b-i livrée (recherche globale Ctrl/Cmd+K)
+- Découpage de la 6b (volumineuse) en deux : **6b-i** recherche globale (SPEC §4, frontend seul) et **6b-ii** dashboard personnalisable (backend `dashboard_layouts` + widgets déplaçables/redimensionnables, à venir).
+- `src/search/items.ts` : index de recherche dérivé du **catalogue statique** de l'application (routes des modules + `KPI_META` du Pouls), filtré par les permissions courantes (`canSeeModule`, Équipe réservée aux admins) ; `normalizeText` (casse + accents, NFD) et `searchItems` (sous-chaîne sur le libellé **et** la ligne secondaire, bornée à 8). Un KPI navigue vers son module porteur ; « projets/tâches » sont couverts par la page et les KPI projets (aucune entité tâche dans le produit — décision notée).
+- `src/search/SearchPalette.tsx` : palette contrôlée par l'`AppShell` (props `open`/`onOpen`/`onClose`/`permissions`) — **Ctrl/Cmd+K** bascule, Échap ferme, focus déplacé sur la recherche à l'ouverture et rendu à l'élément précédent à la fermeture ; navigation flèches + Entrée ou clic (motif combobox accessible : `role="dialog"`/`combobox`/`listbox`/`option`, `aria-activedescendant`, `aria-selected`). Bouton « Rechercher » (icône + `kbd` « Ctrl K ») dans la `Topbar`.
+- i18n `search.*` FR/EN ; aucun backend, aucune régénération OpenAPI, aucune donnée d'API (index statique + permissions).
+- Tests : `items.test.ts` (8 — couverture admin/membre/null, filtrage casse/accents/ligne secondaire, limite) + `SearchPalette.test.tsx` (5 — Ctrl+K/Échap, filtre + Entrée, flèches, clic, permissions) ; e2e `search.spec.ts` (2 — Ctrl+K réel + bouton topbar).
+- Vérifs : Vitest **70 passed** (17 fichiers, +13 vs 6a-iv) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **7 passed** (a11y du dashboard inclus, aucune violation sérieuse) · pre-commit ✅ 11 hooks Passed (gitleaks inclus) · aucun changement backend.
+- Commit : `bd6dcbf` — `feat: recherche globale Ctrl/Cmd+K (6b-i)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; à suivre : **6b-ii**.
+
+### Critères de la sous-phase 6b-i — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **70 passed** (17 fichiers, +13 : 8 `items.test.ts` + 5 `SearchPalette.test.tsx`) |
+| Tests e2e | ✅ `npx playwright test` **7 passed** (+2 `search.spec.ts` ; a11y du dashboard scanné avec le nouveau bouton) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Raccourci | ✅ Ctrl/Cmd+K bascule la palette, Échap ferme ; bouton « Rechercher » (avec kbd) dans la topbar |
+| Index | ✅ pages (modules filtrés + Équipe admin + paramètres) + 8 KPI clés, filtrage insensible casse/accents, « projets/tâches » couverts par la page et les KPI projets |
+| i18n | ✅ `search.*` FR + EN, aucun texte en dur (kbd « Ctrl K » = nom de touche, convention non traduite, v. `DECISIONS.md`) |
+| Backend | ✅ inchangé (aucune API : l'index est statique, filtré par les permissions courantes) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-14 — Sous-phase 6b-ii-a livrée (persistance de la mise en page, backend)
+- Découpage de la 6b-ii en deux : **6b-ii-a** persistance de la mise en page (backend, SPEC §4, cette sous-phase) et **6b-ii-b** widgets déplaçables/redimensionnables (frontend, à venir).
+- Table tenant `dashboard_layouts` (migration Alembic `0009`, RLS activée et forcée + politique par organisation) — une ligne par couple `(organization_id, user_id)` (contrainte d'unicité), disposition en JSONB (`widgets` = liste de placements `{widget_id, x, y, w, h}`, contrainte `jsonb_typeof = 'array'`). `app/models/dashboard_layout.py`, `app/repositories/dashboard_layouts.py` (`get_for_user`, `upsert` ON CONFLICT, `delete_for_user` avec `RETURNING`).
+- `app/services/dashboard.py` porte le **catalogue** de widgets (`health`, KPI `kpi.<clé canonique>` des modules visibles — mêmes règles que le Pouls via `modules_for`, `goals`, fil d'activité `activity` réservé aux admins) et la **disposition par défaut** (santé en bandeau, KPI par trois, objectifs + activité côte à côte) ; aucun libellé composé côté backend.
+- Endpoints `GET`/`PUT`/`DELETE /api/v1/organizations/{id}/dashboard` (`app/routers/dashboard.py`, `app/schemas/dashboard.py`) : la mise en page est **personnelle** (aucun droit de module exigé), le `GET` renvoie `available_widgets` + `layout` (enregistrée ou par défaut, `is_default`), le `PUT` remplace la disposition du membre (widget inconnu → 422, widget non autorisé → 403, doublon → 422, `x + w > 12` ou hauteur hors bornes → 422), le `DELETE` restaure le défaut ; audit `dashboard.layout.updated`/`reset` (journalisé seulement si une disposition existait). À la lecture, un widget enregistré puis devenu interdit est écarté (défense en profondeur).
+- Grille fixée au schéma : `GRID_COLUMNS = 12`, `MAX_WIDGET_HEIGHT = 24`, `MAX_WIDGETS = 24` (partagés avec `react-grid-layout` en 6b-ii-b).
+- Client OpenAPI régénéré (`schema.json` + `schema.d.ts` : opérations `read_dashboard`/`save_dashboard`/`reset_dashboard` et schémas `DashboardOut`/`DashboardWidgetOut`/`DashboardPlacement`/`DashboardLayoutUpdate`/`WidgetKind`).
+- Tests : `tests/test_dashboard.py` (14) — défaut admin, catalogue filtré par module (finance), description du catalogue (genre/module/clé), enregistrement + relecture + audit, remise à zéro + audit, disposition propre à chaque utilisateur, widget inconnu (422), doublon (422), bornes de grille (422), activité interdite à un membre (403), module invisible (403), filtrage à la lecture d'un widget devenu interdit, 403 hors organisation, isolation RLS.
+- Vérifs : suite backend **371 passed** (+14, 387 s) · `ruff check`/`ruff format --check` OK · `mypy` 0 erreur · `tests/test_alembic.py` mis à jour (`HEAD_REVISION = "0009"`, `dashboard_layouts` dans `TENANT_TABLES`) · `frontend/openapi/schema.json` régénéré sans diff de type · `npm run typecheck`/`npm run lint` 0 erreur.
+- Commit : `3f26777` — `feat: persistance de la mise en page du tableau de bord (6b-ii-a)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6b-ii-b (frontend) à suivre.
+
+### Critères de la sous-phase 6b-ii-a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ pytest **371 passed** (dont 14 `test_dashboard.py`) |
+| Migrations | ✅ `test_alembic.py` (aller-retour `0001`→`0009`, RLS activée/forcée sur `dashboard_layouts`, `HEAD_REVISION = "0009"`) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` OK · `mypy` 0 erreur |
+| Client OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés (`schema.json` + `schema.d.ts`) |
+| Isolation tenant | ✅ test RLS dédié (une organisation ne voit pas les dispositions d'une autre) |
+| Permissions | ✅ catalogue filtré (KPI des modules visibles, activité admin) ; écriture refusée 422/403 ; lecture filtrée (défense en profondeur) |
+| Audit | ✅ `dashboard.layout.updated` / `dashboard.layout.reset` |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI backend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-14 — Sous-phase 6b-ii-b livrée (tableau de bord personnalisable, frontend)
+- Découpage retenu : **6b-ii-b** = le rendu frontend de la disposition écrite en 6b-ii-a (widgets déplaçables/redimensionnables). `react-grid-layout@2.3.0` est installé épinglé (`--save-exact`) — version stable vérifiée sur npm, réécriture TypeScript (points d'entrée `core`/`extras`/`legacy`/`react`/`responsive`), **aucune feuille de style livrée** (styles en ligne).
+- Nouveau dossier `src/dashboard/` : `layout.ts` (fonctions pures `toGridLayout`/`toPlacements`/`sameLayout`/`widgetTitleKey` + constantes `GRID_COLUMNS = 12`, `ROW_HEIGHT = 40`, `GRID_MARGIN = [16, 16]`, bornes alignées sur le backend), `widgets.tsx` (registre de rendu par genre — `HealthWidget`/`KpiWidget`/`GoalsPanel`/`ActivityWidget` — et type `WidgetData` assemblé une fois par la page), `DashboardGrid.tsx` (enveloppe `GridLayout`, largeur mesurée localement : `clientWidth` + `ResizeObserver` si présent, repli sur l'événement `resize`, largeur par défaut 1200 px) et `queries.ts` (`useDashboard`/`useSaveDashboard`/`useResetDashboard` → `GET`/`PUT`/`DELETE /organizations/{id}/dashboard`, écriture par mutation, remise à zéro par invalidation).
+- `DashboardPage` réécrite : la page ne compose plus une grille figée mais rend **la disposition servie par l'API** (items `i` = `widget_id`, mêmes unités de grille que le serveur, un widget absent du catalogue est ignoré). En lecture la grille est immobile ; le bouton « Personnaliser » ouvre le mode édition (poignée de déplacement `.widget-handle` par widget, redimensionnement par le coin bas-droit, boutons Enregistrer/Annuler/Réinitialiser). Le brouillon local n'est créé qu'au premier changement réel (`sameLayout`), toute nouvelle disposition serveur le réinitialise ; la comparaison de périodes et le panneau d'objectifs sont conservés tels quels (seuls les widgets KPI portent le sélecteur).
+- Décision : **aucune garde d'activité côté client** — le backend écarte `activity` du catalogue des non-admins et filtre la disposition enregistrée à la lecture (un seul arbitre des droits, le serveur) ; le composant ne revérifie donc pas le rôle (code mort évité).
+- i18n `dashboard.*` FR/EN complété (`healthTitle`, `customize`, `editHint`, `save`, `cancel`, `reset`, `kpiNoData`) ; suppression des clés `activityAdminOnly*` (devenues inutiles — le fil n'est plus jamais servi à un membre).
+- Tests : `layout.test.ts` (8 — conversion aller/retour, tri déterministe, comparaison par identifiant, clés i18n) ; `DashboardPage.test.tsx` réécrit (12 cas, dont **enregistrement de la disposition** — corps du `PUT` vérifié — et **remise à zéro** — `DELETE` vérifié ; le stub `/dashboard` reproduit le catalogue et la disposition par défaut du backend, filtrés par rôle) ; e2e `dashboard.spec.ts` (2 — affichage piloté par la disposition, puis **déplacement réel** d'un widget à la souris → `PUT` reflétant le déplacement → `DELETE`).
+- Outillage : délai des requêtes asynchrones de test porté à 5 s (`configure({ asyncUtilTimeout: 5000 })` dans `src/test/setup.ts`) — les pages à graphiques (Recharts sous jsdom) dépassaient le défaut de 1 s dès que la suite tourne en parallèle (échecs intermittents **préexistants**, vérifiés sur l'arbre propre avant mes changements).
+- Vérifs : Vitest **80 passed** (18 fichiers, +10 vs 6b-i : 8 `layout.test.ts` + 2 cas de page) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npx playwright test` **9 passed** (+2 `dashboard.spec.ts` ; a11y du dashboard rescané, aucune violation sérieuse) · suite backend **371 passed** (inchangée) · pre-commit ✅ 11 hooks Passed (gitleaks inclus).
+- Commit : `4140297` — `feat: tableau de bord personnalisable (6b-ii-b)` ; job `frontend` ajouté à la CI par `3cd213d` — `ci: ajoute le job frontend (lint, types, tests, build)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6c (notifications + export PDF) à suivre.
+
+### Critères de la sous-phase 6b-ii-b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **80 passed** (18 fichiers, +10 : 8 `layout.test.ts` + 2 cas de page) |
+| Tests e2e | ✅ `npx playwright test` **9 passed** (+2 `dashboard.spec.ts` — déplacement réel, `PUT` puis `DELETE`) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Widgets | ✅ disposition servie par l'API rendue par genre (santé/KPI/objectifs/activité) ; catalogue filtré côté backend |
+| Mode édition | ✅ déplacement (poignée) + redimensionnement (coin bas-droit) ; Enregistrer/Annuler/Réinitialiser ; brouillon local tant que rien n'est enregistré |
+| Persistance | ✅ enregistrement par mutation (`PUT`) puis relecture ; remise à zéro (`DELETE`) ; disposition par défaut tant qu'aucune ligne n'existe |
+| Permissions | ✅ activité jamais servie à un membre (backend) ; aucune garde d'interface redondante (v. `DECISIONS.md`) |
+| i18n | ✅ `dashboard.*` FR + EN, aucun texte en dur |
+| Backend | ✅ inchangé (suite 371 passed) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ✅ job `frontend` ajouté à la CI (lint/types/tests/build ; e2e local — Edge) — pas encore exécuté (aucun remote GitHub) |
+
+### 2026-10-14 — Sous-phase 6c-i livrée (export PDF par l'impression du navigateur, frontend)
+- Objectif : « export PDF d'un module ou du dashboard » (SPEC §4). Décision retenue (ROADMAP : privilégier la simplicité) : s'appuyer sur l'impression du navigateur (« Enregistrer au format PDF »), comme la fiche légale le faisait déjà — aucune dépendance de génération PDF côté serveur (pas de moteur de rendu à installer ni de coût CPU), rendu fidèle à l'écran. Décision détaillée : `DECISIONS.md`.
+- Composants partagés : `PrintButton` (icône imprimante + libellé i18n, appelle `window.print()`, masqué à l'impression) et `PrintHeader` (bandeau affiché uniquement à l'impression : nom du produit, date de génération, période rappelée). `PageHeader` gagne une option `printable` (bouton + bandeau) et la période optionnelle `printPeriod` ; les actions (boutons) sont masquées à l'impression et le titre reste l'en-tête du document — un premier essai qui répétait le titre créait deux titres de niveau 1, corrigé pour n'en laisser qu'un.
+- Feuille de style `src/index.css` : section `@media print` qui force le thème clair sous `.dark` (sinon texte clair illisible sur fond blanc), neutralise le halo de fond, masque rail/barre supérieure/actions (utilitaire `print:hidden`) et fixe les marges (`@page`). L'`AppShell` retire la gouttière du rail (`print:pl-0`) et les marges de `main` (`print:p-0`) à l'impression.
+- Portée : export disponible sur la vue d'ensemble (avec la période) et les pages Finance/Web/Réseaux sociaux/Projets/Identité légale ; le bouton ad hoc de la fiche légale est remplacé par le composant partagé (clé `legal.exportPdf` et import `FileDown` supprimés). i18n `print.*` FR/EN.
+- Tests : `PageHeader.test.tsx` (4 — titre unique, absent sans `printable`, présence bouton + période, clic → `window.print`) ; e2e `print.spec.ts` (1 — émulation du média `print` : rail et bouton masqués, bandeau visible, titre conservé, retour écran).
+- Vérifs : `npm run typecheck` + `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · Vitest **84 passed** (19 fichiers) · e2e **10 passed** · backend inchangé (**371 passed**, non retesté — aucune modification backend) · pre-commit ✅ 11 hooks Passed (gitleaks inclus).
+- Commit : `992709c` — `feat: export PDF par l'impression du navigateur (6c-i)`.
+- **Non fait** : push (aucun remote GitHub), merge sur `main` (sans feu vert) ; 6c-ii (notifications in-app) à suivre.
+
+### Critères de la sous-phase 6c-i — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests frontend | ✅ Vitest **84 passed** (19 fichiers, +4 `PageHeader.test.tsx`) |
+| Tests e2e | ✅ `npx playwright test` **10 passed** (+1 `print.spec.ts` — média `print`) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Export PDF | ✅ bouton « Exporter en PDF » sur la vue d'ensemble, les modules Finance/Web/Réseaux sociaux/Projets et la fiche légale |
+| Impression | ✅ `@media print` : interface masquée, thème clair forcé, bandeau de document (produit, date, période) |
+| i18n | ✅ `print.*` FR + EN ; clés obsolètes nettoyées (`legal.exportPdf`) |
+| Accessibilité | ✅ un seul titre de niveau 1 par page ; e2e a11y du tableau de bord toujours sans violation sérieuse |
+| Backend | ✅ inchangé (suite 371 passed) |
+| pre-commit | ✅ 11 hooks Passed (gitleaks inclus) |
+| CI frontend | ⚠️ job écrit, pas d'exécution (aucun remote GitHub) |
+
+### 2026-10-15 — Premier push sur GitHub (dépôt public) et état réel de la CI
+- Dépôt créé : `https://github.com/FlorianG66/Mirador` (**public**), remote `origin` ajouté, branche par défaut `main`. Poussés : `main` = `4c1b221`, `phase-6-transverse` = `08eea66` (arbre de travail propre, branches en suivi de `origin`). Aucun merge sur `main`.
+- Conformité dépôt public (AGENTS §5) vérifiée **avant** le push : `LICENSE` (FSL 1.0 → Apache 2.0 après 2 ans, SPEC §12), `SECURITY.md`, `.github/dependabot.yml`, workflow CI, `.env.example` présents ; `.env` bien ignoré ; **gitleaks sur tout l'historique** (60 commits, 1,77 Mo) → « no leaks found ».
+- Paramètres de sécurité du dépôt : secret scanning ✅, push protection ✅, Dependabot alertes ✅ et mises à jour de sécurité ✅ activés. (`secret_scanning_non_provider_patterns` et `secret_scanning_validity_checks` restent `disabled` : réglages GitHub Advanced Security, ignorés via l'API.)
+- **La CI n'avait jamais tourné** (aucun remote jusqu'ici) : premier passage réel, et il est **rouge**. Job `Détection de secrets` ✅ ; job `Backend` ❌ — `7 failed, 317 passed` : les 7 échecs sont tous dans `tests/test_alembic.py`, en `FileNotFoundError` sur `create_unix_connection`.
+- **Cause identifiée** : `_with_database` (`backend/tests/conftest.py`) fait `database_url.rsplit("/", 1)[0] + "/" + database_name`. Sous Windows, `pgserver.get_uri()` renvoie une URL TCP (`postgresql://postgres:@127.0.0.1:PORT/postgres`) et la découpe tombe au bon endroit. Sous Linux, `pgserver` renvoie une URL **à socket Unix** (`postgresql://postgres:@/postgres?host=/tmp/mirador-pg-xxxx`) : le `rsplit("/", 1)` coupe alors *dans* le paramètre `?host=`, ce qui produit un chemin de socket inexistant. Seuls les tests Alembic utilisent cette fonction — d'où 317 tests verts et 7 rouges. Le vert local est donc **trompeur** : c'est un défaut de portabilité du harnais de test, pas du code applicatif.
+- **Correctif identifié, non appliqué** (décision du mainteneur : « ne rien faire maintenant ») : remplacer la découpe par une manipulation d'URL, qui préserve `?host=` —
+  `from sqlalchemy.engine import make_url` puis `make_url(database_url).set(database=database_name).render_as_string(hide_password=False)`.
+- **Second point à vérifier** : le workflow matche `phase-*` (`.github/workflows/ci.yml`, `on.push.branches`) mais **0 run** a été créé pour `phase-6-transverse`. À confirmer/lever en ouvrant une PR vers `main` (le déclencheur `pull_request`, sans filtre, fera tourner la CI sur le contenu de la branche).
+- **Prochaine action** : 6c-ii (notifications in-app). Avant le merge de la phase 6 : appliquer le correctif CI ci-dessus et obtenir une CI verte.
+
+### 2026-10-16 — Reprise de session : analyse de l'état, aucune modification de code
+- Relecture de `AGENTS.md`, `ROADMAP.md` (phase 6) et de ce fichier : prochaine brique confirmée **6c-ii** (notifications in-app, SPEC §4), puis **6c-iii** (Web Push + règles d'alerte configurables).
+- **Rien n'a changé dans le code** : `phase-6-transverse` toujours sur `0e6b2bf`, arbre de travail propre, à jour avec `origin`.
+- Deux suites possibles, **non arbitrées** (décision laissée au mainteneur) : (a) appliquer le correctif de la **CI rouge** (`_with_database` → `make_url`, cf. entrée du 2026-10-15), prérequis au merge de la phase 6 ; (b) démarrer **6c-ii**.
+- Pause demandée : aucun commit, aucun push.
+
+### 2026-10-18 — Correctif de la CI rouge (harnais de tests Alembic, hors périmètre 6c-ii)
+- Arbitrage du mainteneur : **correctif CI d'abord**, puis 6c-ii (notifications in-app, périmètre « événements existants » — pas de table `alert_rules` avant la 6c-iii).
+- `backend/tests/conftest.py` : `_with_database` remplace la découpe `rsplit("/", 1)` par `make_url(database_url).set(database=database_name).render_as_string(hide_password=False)` — sous Linux, pgserver renvoie une URL **à socket Unix** (`…?host=/tmp/…`) et la découpe coupait dans le paramètre, produisant un socket inexistant (`FileNotFoundError` sur les 7 tests d'Alembic de la CI ; le vert local Windows en TCP masquait le défaut, AGENTS.md §2 « ne jamais deviner » — le diagnostic avait été confirmé sur les logs de la CI).
+- Test de non-régression : `test_with_database_preserves_unix_socket_url` (`tests/test_alembic.py`) nourrit une URL à socket Unix factice et vérifie que la base est remplacée **sans** casser `?host=` (le bug est invisible sous Windows, il faut le cibler directement).
+- Vérifs : `pytest tests/test_alembic.py` → **8 passed** · `ruff check .` + `ruff format --check` ✅ · `mypy` strict 0 erreur (106 fichiers) · suite backend complète **372 passed** (265 s).
+- **Second échec CI en route** : le premier correctif a bien débloqué les URLs à socket Unix, mais la CI est restée rouge sur une `ValueError: invalid interpolation syntax` — l'URL encodée contient `%` (`?host=%2Ftmp%2F…`) et `set_main_option` d'Alembic passe par l'interpolation pyformat de ConfigParser. Correctif : `alembic_config` échappe `%` → `%%` (documenté par Alembic lui-même : « A raw percent sign … must be escaped »), aller/retour vérifié (`get_main_option` rend `%` à nouveau). Test de non-régression étendu (construction de la config avec une URL à socket Unix).
+- **CI VERT LE 2026-10-18** (premier vert de l'historique, PR #9 draft `phase-6-transverse` → `main`) : les 3 jobs passent — Détection de secrets ✅ · Backend ✅ (372 tests sur ubuntu-latest, couverture 87 % ≥ 80 %) · Frontend ✅ (lint, types, Vitest, build). Le trigger `pull_request` déclenche bien la workflow (et le trigger `phase-*` sur push fonctionne désormais aussi — les 0 run antérieurs s'expliquaient par l'absence de push récent sur la branche à l'époque du constat).
+- Commits : `68e54d6` (`make_url`) puis `8781779` (échappement `%%`).
+- **Non fait** : merge sur `main` (PR #9 en draft, feu vert mainteneur requis) ; 6c-ii (notifications in-app, périmètre « événements existants ») à démarrer.
+
+### 2026-10-19 — Sous-phase 6c-ii livrée (notifications in-app, backend + frontend)
+- **Périmètre arbitré** : le canal de notification naît uniquement des **événements déjà produits** — `goal.achieved` / `goal.off_track` (statut d'objectif recalculé à chaque écriture de métriques) et `legal.diverged` (valeur manuelle divergeante du registre). La table `alert_rules` (règles configurables) reste pour la 6c-iii : rien n'a été écrit pour elle (justification : `DECISIONS.md`, 2026-10-18).
+- **Modèle** : table tenant `notifications` (migration Alembic `f2f1e655c879`, `down_revision = "0009"`, HEAD) — une ligne par destinataire, `kind` (clé stable, jamais un affichage), `params` JSONB, `link` (route interne du module), `dedup_key` (idempotence) et `read_at` (NULL = non lue) ; RLS **ENABLE + FORCE** + politique par organisation, index `(organization_id, user_id, read_at)`.
+- **Émission** (`app/services/notifications.py`) : `evaluate_goal_notifications` est appelée par `sync_all_organizations` juste avant le `commit()` — jamais sur un `GET` ; `notify_legal_diverged` part du service légal, en best-effort (une notification qui échoue ne casse pas l'enregistrement du registre). Destinataires d'un objectif : administrateurs + membres ayant `edit` sur le module de la métrique (`_admins_and_editors_on`, même règle que l'écriture) ; écart légal : administrateurs seulement. La déduplication est en base (`get_existing_dedup`) : une non-lue du même événement ne se duplique pas et un écart qui dure met à jour sa notification.
+- **Lecture** (`app/routers/notifications.py`) : `GET /organizations/{id}/notifications` (page + `unread_count`), `POST .../notifications/{id}/read`, `POST .../notifications/read-all` (204). Aucun accès hors destinataire (test d'isolation) ; aucune garde de module (la liste est personnelle) ; aucune logique métier (repository).
+- **Frontend** : `src/notifications/` — `NotificationBell` (cloche et badge dans la barre supérieure, panneau `role="dialog"` nommé, fermeture au **clic extérieur, à Échap et après navigation**) ; chaque élément se marque lu en naviguant vers le module de la notification. `queries.ts` (clé par organisation, polling 5 min, mutations invalidant la liste, corps 204 contrôlé explicitement) et `format.ts` (table `kind` → clés i18n — le point d'une clé interdit l'appel direct à `t()` —, valeurs formatées par `goals/format.ts`) ; i18n `notifications.*` FR/EN ; intégration dans `Topbar.tsx`.
+- **Refactors actés au passage** (documentés dans `DECISIONS`/`ARCHITECTURE`) : `goals_service.list_goals_with_progress` publique (remplace `_goals_list_unfiltered`), `notify_legal_diverged` (remplace le nom `_oneshot`), `cleanup_old_read` supprimée du repository (aucun appelant), `_goals_links()` remplacée par la constante module `_MODULE_LINKS`.
+- **Bug corrigé pendant la sous-phase** : `expectNoContent` recevait la promesse `api.POST(...)` mais lisait `result.response` (undefined) — la mutation échouait silencieusement et le badge restait affiché après « tout marquer comme lu ». Corrigé en attendant la réponse ; le test de composant qui l'a révélé reste en place.
+- **Vérifs** : `pytest tests/test_notifications.py` **13 passed** · suite backend complète **385 passed** (333 s) · `ruff check` + `ruff format --check` + `mypy` strict ✅ · Vitest **89 passed** (20 fichiers) · `tsc -b` + `eslint` ✅ · `npm run build` ✅ · e2e Playwright **13 passed** (dont la nouvelle spec `notifications.spec.ts` et le scan a11y du panneau ouvert) · client OpenAPI régénéré (`schema.json` + `schema.d.ts`).
+- **Flake constaté (hors périmètre 6c-ii)** : lors du passage avec couverture, `tests/connectors/test_scheduler.py::test_un_echec_du_travail_ne_arrete_pas_la_boucle` a échoué une fois (`assert attempts` après `asyncio.sleep(0.03)`) — test **temporel** (boucle à 10 ms, marge de 3 ms) et non lié au code de la sous-phase ; il passe seul (**5 passed** dans le fichier) et la suite complète est rejouée pour confirmer.
+- Commits : `4738b86` (backend) + `06f5717` (frontend).
+- **Non fait** : merge sur `main` (PR #9 en draft : feu vert du mainteneur requis) ; 6c-iii (Web Push et règles d'alerte configurables).
+
+### Critères de la sous-phase 6c-ii — vérité du terrain
+| Critère | État |
+|---|---|
+| Périmètre | ✅ événements seulement (`goal.achieved`/`goal.off_track`, `legal.diverged`) ; aucune table `alert_rules` |
+| Aucun texte en dur côté backend | ✅ `kind` = clé stable, `params` = données JSON ; les libellés vivent côté frontend (i18n) |
+| Persistance | ✅ table `notifications` + migration `f2f1e655c879` (HEAD) ; RLS activée et forcée ; politique par organisation |
+| Isolation tenant | ✅ test dédié « une organisation ne peut pas marquer ni lire les notifications d'une autre » |
+| Tests backend | ✅ `tests/test_notifications.py` **13 passed** ; suite complète **385 passed** |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict ✅ |
+| Tests frontend | ✅ `NotificationBell.test.tsx` (5) ; Vitest **89 passed** (20 fichiers) |
+| Lint/types frontend | ✅ `tsc -b` ✅ · `eslint` 0 erreur |
+| Tests e2e | ✅ suite **13 passed** (2 nouvelles : compteur + panneau/navigation ; 1 scan a11y du panneau) |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Couverture backend | ✅ 87,17 % ≥ 80 % (`pytest -q --cov=app` → « Required test coverage of 80.0% reached. Total coverage: 87.17% ») |
+| pre-commit | ✅ (gitleaks inclus) |
+| CI | ⏳ non rejouée depuis ces commits (PR #9 ouverte ; les jobs frontend et backend couvriront la branche au push)
+
+### 2026-10-20 — Sous-phase 6c-iii-a livrée (règles d'alerte configurables, backend + frontend)
+- **Découpage arbitré** : la 6c-iii (volumineuse) est scindée en **6c-iii-a** (règles d'alerte configurables : table `alert_rules` + CRUD + évaluation + UI — cette sous-phase) et **6c-iii-b** (Web Push : PWA, service worker, VAPID, table `push_subscriptions`, envoi derrière une interface `PushSender` injectable — à venir). Raison : un schéma neuf, des endpoints, un branchement worker **et** une brique navigateur entièrement différente, c'est trop pour une session (AGENTS.md §2). Justification : `DECISIONS.md` (2026-10-19).
+- **Modèle** : table tenant `alert_rules` (migration Alembic `0010`, `down_revision = "f2f1e655c879"`) — règle de **seuil** générique : `metric_key` canonique, `comparison` (`above`/`below`), `threshold`, fenêtre glissante `period_days` (1–365, contrainte `CHECK`), `enabled` (défaut vrai) et `label` libre optionnel. Contraintes `CHECK` alignées sur les autres tables (`alert_rules_key_format` sur `METRIC_KEY_REGEX`, `alert_rules_comparison_known`, `alert_rules_period_days_range`) ; RLS **ENABLE + FORCE** + politique par organisation, index `organization_id`. `app/models/alert_rule.py`, `app/models/enums.py` (nouveau `AlertComparison` `above`/`below` + `ALERT_COMPARISON_VALUES_SQL`), `app/repositories/alert_rules.py` (`list_for_organization` (option `enabled_only`), `get_by_id`, `create`, `delete`).
+- **Service** (`app/services/alert_rules.py`) : la valeur de la règle **n'est pas stockée** — elle se recalcule en agrégeant la fenêtre courante via `metric_catalog.reduce_values` (même réduction que les objectifs, 6a-iii), puis se compare au seuil dans le sens choisi (`_is_triggered`) ; une métrique sans donnée sur la fenêtre ne déclenche rien. CRUD : lecture limitée aux modules visibles (comme le Pouls, jamais de 403), création/modification/suppression exigeant `edit` sur le module préfixe de `metric_key` (vérifié dans le service, seul à connaître la clé après lecture du corps ; une modification qui change la clé vérifie aussi le nouveau module). Audit `alert_rule.created`/`updated`/`deleted`.
+- **Émission** : `evaluate_alert_rules` est appelée par le **worker de synchronisation** (`sync_all_organizations`) juste après `evaluate_goal_notifications` et avant le `commit()` unique — jamais lors d'un `GET` (une alerte correspond à un état écrit). Le `kind` émis est `alert.threshold` ; les destinataires sont les administrateurs **et** les membres ayant `edit` sur le module de la métrique ; la déduplication réutilise le mécanisme du canal 6c-ii (`dedup_key = alert_rule:<id>:<sens>` sur les non-lues, mise à jour au lieu d'empilement). Refactor acté au passage : `app/services/notifications.py` expose désormais `module_link()` et `admins_and_editors_on()` publiquement (logique de route/destinataires partagée, aucune duplication), documenté dans `DECISIONS`/`ARCHITECTURE`.
+- **Endpoints** (`app/routers/alert_rules.py`) : `GET`/`POST` (201)/`PATCH`/`DELETE` (204) `/api/v1/organizations/{id}/alert-rules` ; aucun `try/except` (les refus remontent en `ServiceProblem`), aucune logique métier dans les routes. `app/schemas/alert_rules.py` : `AlertRuleCreate` (validators sur `metric_key`/`period_days`/`threshold`), `AlertRuleUpdate` (partiel via `model_fields_set`, `label: null` efface) et `AlertRuleOut`. Router monté dans `app/main.py`.
+- **Frontend** : nouveau dossier `src/alertRules/` — `queries.ts` (`useAlertRules` + mutations `useCreateAlertRule`/`useUpdateAlertRule`/`useDeleteAlertRule` ; 204 de suppression contrôlé à la main, toute écriture invalide la liste), `format.ts` (libellé = libellé saisi sinon libellé i18n de l'indicateur ; sens du seuil via table explicite `alertRules.comparisonAbove`/`Below` ; droits d'écriture réutilisant `canEditMetric`/`goalMetricOptions` des objectifs), `AlertRuleForm.tsx` (création **et** édition ; sélecteur d'indicateur limité aux 8 KPI clés du Pouls que l'utilisateur peut écrire, fenêtre via `PeriodSelect` partagé) et `AlertRulesPanel.tsx` (carte de la page Paramètres : liste avec sens/seuil/portée/état, création/édition, activation-désactivation par `PATCH` partiel, suppression après confirmation). Le `kind` backend `alert.threshold` est traduit par `src/notifications/format.ts` (table `TITLE_BODY_KEYS` + variantes haut/bas `ALERT_THRESHOLD_KEYS` selon `params.comparison`) — jamais la clé brute (le point serait lu comme un séparateur de chemin par i18next). `AlertRulesPanel` branché dans `SettingsPage.tsx` ; i18n `alertRules.*` + `notifications.alertThreshold*` FR/EN, aucun texte en dur.
+- **Tests** : `tests/test_alert_rules.py` (12 — CRUD, permissions par module, évaluation déclenchée/non déclenchée/sans donnée, déduplication des non-lues, destinataires admins + éditeurs, isolation RLS entre organisations) ; `frontend/src/alertRules/AlertRulesPanel.test.tsx` (6). Infra mise à jour : `tests/conftest.py` (TRUNCATE), `tests/test_alembic.py` (`HEAD_REVISION = "0010"`, `alert_rules` dans `TENANT_TABLES`).
+- **Vérifs** : `pytest tests/test_alert_rules.py` **12 passed** · `pytest tests/test_alembic.py tests/test_notifications.py` **21 passed** · suite backend complète **397 passed** (290,72 s, +12 vs 6c-ii) · `ruff check` + `ruff format --check` ✅ · `mypy app` 0 erreur (116 fichiers) · Vitest **95 passed** (21 fichiers, +6 vs 6c-ii) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **13 passed** · client OpenAPI régénéré (`export_openapi.py` + `generate:api`).
+- **Piège rencontré (environnement)** : la première exécution de la suite complète a échoué en 397 erreurs — `initdb` refusait de démarrer (`CalledProcessError`). Cause : des clusters `mirador-pg-*` orphelins d'exécutions interrompues (4 processus `postgres` + ~50 Mo chacun) avaient rempli le disque (**6,4 Mo libres**). Correctif : processus tués et répertoires purgés → ~385 Mo libres, suite de nouveau verte (`tests/test_alert_rules.py` 12 passed).
+- Commit : `a3f302e` — `feat: regles d'alerte configurables (6c-iii-a)`.
+- **Non fait** : 6c-iii-b (Web Push) ; merge sur `main` (PR #9 en draft : feu vert du mainteneur requis).
+
+### Critères de la sous-phase 6c-iii-a — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ `tests/test_alert_rules.py` **12 passed** (+ `test_alembic`/`test_notifications` 21 passed) ; suite complète **397 passed** (290,72 s, +12 vs 6c-ii) |
+| Persistance | ✅ table `alert_rules` + migration `0010` ; RLS activée/forcée ; politique par organisation ; isolation testée |
+| Endpoints | ✅ `GET`/`POST`/`PATCH`/`DELETE /organizations/{id}/alert-rules`, lecture filtrée par module visible, écriture sous `edit`, audit `alert_rule.*` |
+| Règle de seuil | ✅ valeur recalculée (jamais stockée) via `metric_catalog.reduce_values` ; sens `above`/`below` ; `period_days` 1–365 |
+| Émission | ✅ `alert.threshold` par le worker (jamais sur `GET`) ; destinataires admins + éditeurs du module ; déduplication en base |
+| Aucun texte en dur côté backend | ✅ `kind` = clé stable, `params` = données JSON ; libellés côté frontend (i18n) |
+| Tests frontend | ✅ `AlertRulesPanel.test.tsx` (6) ; Vitest **95 passed** (21 fichiers) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Tests e2e | ✅ `npx playwright test` **13 passed** |
+| Build | ✅ `npm run build` OK (avertissement « chunk > 500 kB » préexistant) |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict 0 erreur (116 fichiers) |
+| Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés |
+| pre-commit | ⏳ à lancer avant commit |
+| CI | ⚠️ job écrit, pas d'exécution sur ce commit (PR #9 ouverte) |
+
+### 2026-10-20 — Sous-phase 6c-iii-b livrée (notifications Web Push, backend + frontend)
+- **Découpage** : seconde moitié de la 6c-iii (la première, 6c-iii-a, a livré les règles d'alerte). Justification : `DECISIONS.md` (2026-10-19).
+- **Modèle** : table tenant `push_subscriptions` (migration Alembic `0011`, `down_revision = "0010"`) — un abonnement **par navigateur** : `endpoint` (contrainte `UNIQUE`, un réabonnement met à jour la ligne au lieu d'en empiler une), clés de chiffrement `p256dh`/`auth`, `user_id` et `user_agent` (diagnostic). RLS **ENABLE + FORCE** + politique par organisation, indexes `organization_id` / `user_id`. `app/models/push_subscription.py` (enregistré dans `app/models/__init__.py`), `app/repositories/push_subscriptions.py` (`upsert` ON CONFLICT endpoint, `list_for_user`, `delete_by_endpoint` filtré par `user_id`).
+- **Service** (`app/services/push.py`) : protocole `PushSender` (interface) et résultat `PushOutcome` (`delivered`/`gone`/`failed`) ; `WebPushSender` implémente l'interface via `pywebpush` (VAPID + chiffrement `aes128gcm`, clés/sujet lus dans `Settings`) ; un **faux** émetteur vit dans les helpers de test (aucun vrai service ni vraie clé en test/CI). Le message poussé ne porte **jamais de texte** : `kind` + `params` + `link`. L'abonnement est **personnel** : `subscribe`/`unsubscribe`/`public_key` ne dépendent que du membre appelant, aucun droit de module.
+- **Émission** : `app/services/notifications.py` expose `push_notification()`, appelé **au même endroit** que la création de la notification in-app (objectifs, écart légal, alerte de seuil). L'envoi est **best-effort** : une erreur de push ne fait jamais échouer l'écriture in-app ; un endpoint caduc (404/410) fait supprimer la ligne. Émetteur injecté via `app.state.push_sender` (`None` = canal désactivé, clé VAPID absente) ; `sync_all_organizations`, `legal.refresh_profile` et `evaluate_alert_rules` acceptent tous `push_sender` et le propagent.
+- **Endpoints** (`app/routers/push.py`) : `GET /api/v1/organizations/{id}/push/public-key` (404 si non configuré sur le serveur), `POST` (201) / `DELETE` (204) `/api/v1/organizations/{id}/push/subscriptions`. `app/schemas/push.py` ; dépendance `get_push_sender` dans `app/core/deps.py`.
+- **Frontend** : l'application devient une **PWA** — `public/manifest.webmanifest`, `public/icon.svg`, lien manifest + icône dans `index.html` — avec un **service worker** `public/sw.js` (événements `push` et `notificationclick`, table FR/EN explicite des `kind` pour ne jamais afficher la clé brute ; corps **génériques** pour les événements liés à une métrique afin de ne pas dupliquer la source de vérité des KPI). Nouveau dossier `src/push/` — `register.ts` (enregistrement du SW en production, support navigateur, conversion de la clé VAPID base64url, abonnement/désabonnement), `queries.ts` (clé VAPID publique — 404 = canal absent, enregistrement/suppression de l'abonnement), `usePushSubscription.ts` (machine à états `unsupported`/`loading`/`disabled`/`enabled`/`denied`/`unavailable`, activation/désactivation), `PushToggle.tsx` (carte de la page Paramètres). `main.tsx` enregistre le SW ; i18n `push.*` FR/EN, aucun texte en dur.
+- **Dépendance** : `pywebpush==2.5.0` (dernière stable, vérifiée sur PyPI) épinglée ; `mypy` l'ignore faute de `py.typed` (override ciblé), l'appel reste isolé dans `WebPushSender`. `pip-audit` : aucune vulnérabilité connue.
+- **Tests** : `tests/test_push.py` (12 — clé publique/404, abonnement idempotent, désabonnement, propriété de l'abonnement, isolation RLS, envoi best-effort, purge des endpoints caducs, branchement du worker) ; `frontend/src/push/register.test.ts` (5), `swAlignment.test.ts` (2 — la table de `kind` du service worker reste alignée sur `src/notifications/format.ts`) et `PushToggle.test.tsx` (5). Infra mise à jour : `tests/conftest.py` (TRUNCATE), `tests/test_alembic.py` (`HEAD_REVISION = "0011"`, `push_subscriptions` dans `TENANT_TABLES`), `tests/helpers.py` (`FakePushSender`, `install_push_sender`), fakes du worker dans `test_notifications.py`/`test_alert_rules.py` (signature `push_sender`).
+- **Vérifs** : `pytest tests/test_push.py tests/test_alembic.py` **19 passed** · suite backend complète **408 passed** (384,37 s, +11 vs 6c-iii-a) · `ruff check` + `ruff format --check` ✅ · `mypy app` 0 erreur (121 fichiers) · Vitest **107 passed** (24 fichiers, +12 vs 6c-iii-a) · `npm run typecheck` 0 erreur · `npm run lint` 0 erreur · `npm run build` OK (avertissement « chunk > 500 kB » préexistant) · `npx playwright test` **13 passed** · `pre-commit run` ✅ (11 hooks, gitleaks « no leaks found ») · client OpenAPI régénéré (`export_openapi.py` + `generate:api`, types `Push*` ajoutés à `src/api/types.ts`).
+- **Piège rencontré (test)** : le premier test d'activation échouait en « Invalid characterError » — la clé VAPID factice du test n'était pas du base64url valide, donc `atob` levait. Corrigé en utilisant une vraie chaîne base64url. Aucun impact sur le code de production.
+- **Piège rencontré (e2e)** : la première passe Playwright a échoué en 11 tests (`ERR_CONNECTION_REFUSED` sur `localhost:5173`) — le serveur Vite de `webServer` n'était pas encore prêt (course au démarrage, connu sur ce poste). Relance avec le serveur déjà lancé : **13 passed**. Aucun code en cause.
+- Commit : `4a640c8` — `feat: notifications Web Push (6c-iii-b)`.
+- **Non fait** : merge sur `main` (PR #9 en draft : feu vert du mainteneur requis).
+
+### Critères de la sous-phase 6c-iii-b — vérité du terrain
+| Critère | État |
+|---|---|
+| Tests backend | ✅ `tests/test_push.py` (12) + `test_alembic` **19 passed** ; suite complète **408 passed** (384,37 s, +11 vs 6c-iii-a) |
+| Persistance | ✅ table `push_subscriptions` + migration `0011` ; RLS activée/forcée ; `UNIQUE(endpoint)` ; isolation testée |
+| Endpoints | ✅ `GET .../push/public-key` (404 si non configuré), `POST`/`DELETE .../push/subscriptions` |
+| Émission Web Push | ✅ best-effort au même endroit que la notification in-app ; `kind`+`params`+`link` seuls ; purge des endpoints caducs |
+| Aucune vraie clé/service en test ou CI | ✅ interface `PushSender` + faux émetteur ; émetteur `None` = canal désactivé |
+| Aucun texte en dur | ✅ `kind` = clé stable côté backend ; table FR/EN explicite dans le service worker ; i18n `push.*` côté app |
+| Tests frontend | ✅ `register.test.ts` (5) + `swAlignment.test.ts` (2) + `PushToggle.test.tsx` (5) ; Vitest **107 passed** (24 fichiers) |
+| Lint/types frontend | ✅ `npm run typecheck` (`tsc -b`) ✅ · `npm run lint` 0 erreur |
+| Tests e2e | ✅ `npx playwright test` **13 passed** (relance après la course au démarrage du serveur Vite) |
+| Build | ✅ `npm run build` OK |
+| Lint/types backend | ✅ `ruff check` + `ruff format --check` ✅ · `mypy` strict 0 erreur (121 fichiers) |
+| Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés (`Push*`) |
+| pre-commit | ✅ `pre-commit run` (11 hooks, dont gitleaks « no leaks found ») |
+| CI | ⚠️ job écrit, pas d'exécution sur ce commit (PR #9 ouverte) |

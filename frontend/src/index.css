@@ -111,3 +111,37 @@
     background-attachment: fixed;
   }
 }
+
+/* Impression / export PDF (sous-phase 6c-i) : on n'imprime que le contenu utile
+   (les éléments d'interface portent `print:hidden`, l'en-tête de document
+   `print:block`). Le thème sombre est ramené au clair sur papier — sinon le
+   texte clair serait invisible sur fond blanc — et le fond redevient uni. */
+@page {
+  margin: 12mm;
+}
+
+@media print {
+  .dark {
+    color-scheme: light;
+    --background: #ffffff;
+    --surface: #ffffff;
+    --surface-muted: #f4f4f6;
+    --surface-hover: #efeff2;
+    --border: #e7e7ec;
+    --border-strong: #dcdce3;
+    --text: #16161a;
+    --text-muted: #6e6e78;
+    --brand: #5b5bd6;
+    --brand-foreground: #ffffff;
+    --brand-muted: #eeeefb;
+    --brand-glow: transparent;
+    --success: #15803d;
+    --warning: #b45309;
+    --danger: #dc2626;
+  }
+
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+  }
+}

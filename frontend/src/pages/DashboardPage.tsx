@@ -1,49 +1,91 @@
-// Page « Vue d'ensemble » (sous-phase 5f) : le Pouls de l'entreprise. Elle
-// regroupe les KPI clés des modules autorisés, un indicateur de santé
-// d'exploitation, le fil d'activité (réservé aux admins) et un emplacement
-// d'objectifs. Toutes les données viennent de l'API (AGENTS.md §8), tous les
-// libellés de l'i18n ; le backend filtre déjà par module autorisé.
-import type { LucideIcon } from 'lucide-react'
-import {
-  BarChart3,
-  CircleCheck,
-  CircleHelp,
-  History,
-  Landmark,
-  ListChecks,
-  Share2,
-  Target,
-  TriangleAlert,
-  Wallet,
-} from 'lucide-react'
+// Page « Vue d'ensemble » (sous-phases 5f, 6a, 6b-ii-b) : le Pouls de
+// l'entreprise, présenté sous forme de widgets déplaçables. La disposition est
+// personnelle et persistée par membre (sous-phase 6b-ii-a) : l'API renvoie le
+// catalogue des widgets autorisés et la disposition courante, la page compose la
+// grille. Toutes les données viennent de l'API (AGENTS.md §8), tous les libellés
+// de l'i18n ; le backend filtre déjà par module autorisé.
+import { useEffect, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
+import { Check, GripVertical, PenLine, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { AuditLog, ModuleKey, PulseHealth, PulseKpi } from '../api/types.ts'
+import type { Layout, LayoutItem } from 'react-grid-layout'
+import type {
+  DashboardPlacement,
+  DashboardWidget,
+  MetricComparison,
+} from '../api/types.ts'
 import { useAuth } from '../auth/context.ts'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card.tsx'
-import { EmptyState } from '../components/ui/EmptyState.tsx'
+import { Button } from '../components/ui/Button.tsx'
+import { Card, CardContent } from '../components/ui/Card.tsx'
 import { ErrorState } from '../components/ui/ErrorState.tsx'
-import { KpiCard } from '../components/ui/KpiCard.tsx'
 import { PageHeader } from '../components/ui/PageHeader.tsx'
+import { PeriodSelect } from '../components/ui/PeriodSelect.tsx'
 import { Skeleton } from '../components/ui/Skeleton.tsx'
+import { DashboardGrid } from '../dashboard/DashboardGrid.tsx'
+import { sameLayout, toGridLayout, toPlacements, widgetTitleKey } from '../dashboard/layout.ts'
+import { useDashboard, useResetDashboard, useSaveDashboard } from '../dashboard/queries.ts'
+import { DashboardWidgetView, EmptyDashboard, type WidgetData } from '../dashboard/widgets.tsx'
 import { cn } from '../lib/utils.ts'
-import { KPI_META, actionLabelKey, formatRelativeTime, kpiTrend } from '../pulse/format.ts'
+import {
+  DEFAULT_PERIOD_DAYS,
+  PERIOD_OPTIONS,
+  fetchMetricComparison,
+  metricsKeys,
+} from '../metrics/queries.ts'
 import { usePulse } from '../pulse/queries.ts'
 
-// Icône d'un module pour les KPI (réutilise celles de la navigation).
-const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
-  finance: Wallet,
-  web: BarChart3,
-  social: Share2,
-  projects: ListChecks,
-  legal: Landmark,
+/** Widget résolu : son entrée de catalogue, garantie présente. */
+interface ResolvedWidget {
+  item: LayoutItem
+  widget: DashboardWidget
 }
 
 export function DashboardPage() {
   const { t } = useTranslation()
-  const { permissions, activeOrganizationId } = useAuth()
-  const pulseQuery = usePulse(activeOrganizationId ?? '')
+  const { activeOrganizationId } = useAuth()
+  const organizationId = activeOrganizationId ?? ''
+  const [periodDays, setPeriodDays] = useState<number>(DEFAULT_PERIOD_DAYS)
+  const [editing, setEditing] = useState(false)
 
-  if (pulseQuery.isPending) {
+  const pulseQuery = usePulse(organizationId)
+  const dashboardQuery = useDashboard(organizationId)
+  const saveDashboard = useSaveDashboard(organizationId)
+  const resetDashboard = useResetDashboard(organizationId)
+
+  // Le tableau de bord compare chaque KPI clé sur la fenêtre choisie (SPEC §4,
+  // phase 6a). Une requête par KPI visible : le Pouls fournit la liste autorisée,
+  // la comparaison fournit l'agrégat et l'écart. Les requêtes dépendent du Pouls
+  // (liste des clés), d'où les deux temps ; elles sont appelées ici, avant tout
+  // retour anticipé, pour respecter l'ordre des hooks.
+  const kpiKeys = (pulseQuery.data?.kpis ?? []).map((kpi) => kpi.metric_key)
+  const comparisonQueries = useQueries({
+    queries: kpiKeys.map((metricKey) => ({
+      queryKey: metricsKeys.comparison(organizationId, metricKey, periodDays),
+      queryFn: () => fetchMetricComparison(organizationId, metricKey, periodDays),
+      enabled: Boolean(organizationId),
+      retry: false,
+      refetchOnWindowFocus: false,
+    })),
+  })
+  const comparisons = new Map<string, MetricComparison>()
+  comparisonQueries.forEach((query, index) => {
+    if (query.data) {
+      comparisons.set(kpiKeys[index], query.data)
+    }
+  })
+
+  // Brouillon de disposition : `null` tant que l'utilisateur n'a rien déplacé,
+  // auquel cas la disposition serveur fait foi. Toute nouvelle disposition
+  // serveur (chargement, enregistrement, remise à zéro) repart du brouillon vide.
+  const [draft, setDraft] = useState<DashboardPlacement[] | null>(null)
+  useEffect(() => {
+    setDraft(null)
+  }, [dashboardQuery.data])
+
+  const serverLayout = dashboardQuery.data?.layout ?? []
+  const placements = draft ?? serverLayout
+
+  if (pulseQuery.isPending || dashboardQuery.isPending) {
     return (
       <div className="space-y-6">
         <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
@@ -52,7 +94,7 @@ export function DashboardPage() {
     )
   }
 
-  if (pulseQuery.isError) {
+  if (pulseQuery.isError || dashboardQuery.isError || !dashboardQuery.data) {
     return (
       <div className="space-y-6">
         <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
@@ -60,183 +102,132 @@ export function DashboardPage() {
           title={t('errorState.title')}
           description={t('dashboard.errorDescription')}
           retryLabel={t('common.retry')}
-          onRetry={() => void pulseQuery.refetch()}
+          onRetry={() => {
+            void pulseQuery.refetch()
+            void dashboardQuery.refetch()
+          }}
         />
       </div>
     )
   }
 
   const { kpis = [], health, activity = [] } = pulseQuery.data
-  const isAdmin = permissions?.role === 'admin'
+  const dashboard = dashboardQuery.data
+  const widgetsById = new Map(dashboard.available_widgets.map((widget) => [widget.widget_id, widget]))
+  const items: ResolvedWidget[] = toGridLayout(placements)
+    .map((item) => ({ item, widget: widgetsById.get(item.i) }))
+    .filter((entry): entry is ResolvedWidget => entry.widget !== undefined)
+
+  const data: WidgetData = {
+    kpis: new Map(kpis.map((kpi) => [kpi.metric_key, kpi])),
+    comparisons,
+    health,
+    activity,
+  }
+  const hasKpi = items.some((entry) => entry.widget.kind === 'kpi')
+
+  function handleLayoutChange(next: Layout) {
+    if (sameLayout(toGridLayout(placements), next)) return
+    setDraft(toPlacements(next))
+  }
+
+  function handleSave() {
+    saveDashboard.mutate({ widgets: placements }, { onSuccess: () => setEditing(false) })
+  }
+
+  function handleReset() {
+    resetDashboard.mutate(undefined, { onSuccess: () => setEditing(false) })
+  }
+
+  function handleCancel() {
+    setDraft(null)
+    setEditing(false)
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={t('dashboard.title')}
         subtitle={t('dashboard.subtitle')}
-        actions={<HealthBadge health={health} />}
+        printable
+        printPeriod={t('dashboard.periodDays', { days: periodDays })}
+        actions={
+          editing ? (
+            <>
+              <Button variant="ghost" onClick={handleCancel}>
+                {t('dashboard.cancel')}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleReset}
+                disabled={resetDashboard.isPending}
+              >
+                <RotateCcw aria-hidden="true" className="size-4" />
+                {t('dashboard.reset')}
+              </Button>
+              <Button onClick={handleSave} disabled={saveDashboard.isPending}>
+                <Check aria-hidden="true" className="size-4" />
+                {t('dashboard.save')}
+              </Button>
+            </>
+          ) : (
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              <PenLine aria-hidden="true" className="size-4" />
+              {t('dashboard.customize')}
+            </Button>
+          )
+        }
       />
 
-      <KpiGrid kpis={kpis} />
-
-      <div className="grid gap-4 xl:grid-cols-12">
-        <ActivityPanel entries={activity} isAdmin={isAdmin} className="xl:col-span-7" />
-        <GoalsPanel className="xl:col-span-5" />
-      </div>
-    </div>
-  )
-}
-
-/** Indicateur de santé d'exploitation : modules alimentés sur modules visibles. */
-function HealthBadge({ health }: { health: PulseHealth }) {
-  const { t } = useTranslation()
-  const config: Record<PulseHealth['status'], { icon: LucideIcon; className: string }> = {
-    good: { icon: CircleCheck, className: 'border-success/30 bg-success/5 text-success' },
-    warning: { icon: TriangleAlert, className: 'border-warning/30 bg-warning/5 text-warning' },
-    unknown: { icon: CircleHelp, className: 'border-border bg-surface-muted text-muted' },
-  }
-  const { icon: Icon, className } = config[health.status]
-  const label = {
-    good: t('dashboard.healthGood'),
-    warning: t('dashboard.healthWarning', {
-      withData: health.modules_with_data,
-      total: health.modules_total,
-    }),
-    unknown: t('dashboard.healthUnknown'),
-  }[health.status]
-
-  return (
-    <span
-      role="status"
-      aria-label={t('dashboard.healthAria')}
-      className={cn(
-        'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
-        className,
-      )}
-    >
-      <Icon aria-hidden="true" className="size-3.5" />
-      {label}
-    </span>
-  )
-}
-
-/** Grille des KPI clés autorisés, ou état vide si aucun module n'a de donnée. */
-function KpiGrid({ kpis }: { kpis: PulseKpi[] }) {
-  const { t } = useTranslation()
-
-  if (kpis.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-5">
-          <EmptyState
-            icon={BarChart3}
-            title={t('dashboard.kpiEmptyTitle')}
-            description={t('dashboard.kpiEmptyDescription')}
+      {hasKpi ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-muted">{t('dashboard.periodLabel')}</h2>
+          <PeriodSelect
+            label={t('dashboard.periodLabel')}
+            value={periodDays}
+            onChange={setPeriodDays}
+            options={PERIOD_OPTIONS.map((days) => ({
+              value: days,
+              label: t('dashboard.periodDays', { days }),
+            }))}
           />
-        </CardContent>
-      </Card>
-    )
-  }
+        </div>
+      ) : null}
 
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {kpis.map((kpi) => {
-        const meta = KPI_META[kpi.metric_key]
-        return (
-          <KpiCard
-            key={kpi.metric_key}
-            label={meta ? t(meta.labelKey) : kpi.metric_key}
-            value={kpi.value}
-            unit={meta?.unitKey ? t(meta.unitKey) : undefined}
-            decimals={meta?.decimals ?? 0}
-            trend={kpiTrend(kpi)}
-            icon={MODULE_ICONS[kpi.module]}
-          />
-        )
-      })}
-    </div>
-  )
-}
+      {editing ? <p className="text-sm text-muted">{t('dashboard.editHint')}</p> : null}
 
-/** Fil d'activité : journal lisible par les admins, note explicite sinon. */
-function ActivityPanel({
-  entries,
-  isAdmin,
-  className,
-}: {
-  entries: AuditLog[]
-  isAdmin: boolean
-  className?: string
-}) {
-  const { t, i18n } = useTranslation()
-
-  return (
-    <Card className={cn('flex flex-col', className)}>
-      <CardHeader>
-        <CardTitle>{t('dashboard.activityTitle')}</CardTitle>
-      </CardHeader>
-      <div className="flex-1 px-5 pb-5">
-        {!isAdmin ? (
-          <EmptyState
-            icon={History}
-            title={t('dashboard.activityAdminOnlyTitle')}
-            description={t('dashboard.activityAdminOnlyDescription')}
-            className="h-full"
-          />
-        ) : entries.length === 0 ? (
-          <EmptyState
-            icon={History}
-            title={t('dashboard.activityEmptyTitle')}
-            description={t('dashboard.activityEmptyDescription')}
-            className="h-full"
-          />
-        ) : (
-          <ul role="list" aria-label={t('dashboard.activityTitle')} className="space-y-1">
-            {entries.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex items-start gap-3 rounded-md px-2 py-2 hover:bg-surface-hover"
-              >
-                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-muted text-brand">
-                  <History aria-hidden="true" className="size-3.5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{t(actionLabelKey(entry))}</p>
-                  <time dateTime={entry.created_at} className="text-xs text-muted">
-                    {formatRelativeTime(entry.created_at, i18n.language)}
-                  </time>
+      {items.length === 0 ? (
+        <EmptyDashboard />
+      ) : (
+        <DashboardGrid
+          layout={toGridLayout(placements)}
+          editable={editing}
+          onLayoutChange={handleLayoutChange}
+        >
+          {items.map((entry) => (
+            <div
+              key={entry.item.i}
+              data-widget-id={entry.item.i}
+              className="flex h-full flex-col"
+            >
+              {editing ? (
+                <div className="widget-handle mb-1 flex cursor-move items-center gap-2 rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-muted">
+                  <GripVertical aria-hidden="true" className="size-3.5" />
+                  <span className="truncate">{t(widgetTitleKey(entry.widget))}</span>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </Card>
+              ) : null}
+              <div className={cn('min-h-0', editing ? 'flex-1' : 'h-full')}>
+                <DashboardWidgetView widget={entry.widget} data={data} />
+              </div>
+            </div>
+          ))}
+        </DashboardGrid>
+      )}
+    </div>
   )
 }
 
-/** Emplacement des objectifs : état vide, l'édition arrive en phase 6. */
-function GoalsPanel({ className }: { className?: string }) {
-  const { t } = useTranslation()
-
-  return (
-    <Card className={cn('flex flex-col', className)}>
-      <CardHeader>
-        <CardTitle>{t('dashboard.goalsTitle')}</CardTitle>
-      </CardHeader>
-      <div className="flex-1 px-5 pb-5">
-        <EmptyState
-          icon={Target}
-          title={t('dashboard.goalsEmptyTitle')}
-          description={t('dashboard.goalsEmptyDescription')}
-          className="h-full"
-        />
-      </div>
-    </Card>
-  )
-}
-
-/** Squellette chargé pendant la première requête du Pouls. */
+/** Squelette chargé pendant la première requête du Pouls ou de la disposition. */
 function PulseSkeleton() {
   return (
     <div className="space-y-4">

@@ -12,20 +12,26 @@ from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import SecurityMiddleware
 from app.core.rate_limit import RateLimiter
+from app.routers.alert_rules import router as alert_rules_router
 from app.routers.auth import router as auth_router
+from app.routers.dashboard import router as dashboard_router
+from app.routers.goals import router as goals_router
 from app.routers.google import router as google_router
 from app.routers.health import router as health_router
 from app.routers.invitations import accept_router as invitation_accept_router
 from app.routers.invitations import router as invitations_router
 from app.routers.legal import router as legal_router
 from app.routers.metrics import router as metrics_router
+from app.routers.notifications import router as notifications_router
 from app.routers.password import router as password_router
 from app.routers.pulse import router as pulse_router
+from app.routers.push import router as push_router
 from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
 from app.services.legal_registry import RechercheEntreprisesRegistry
 from app.services.oidc import GoogleOidcProvider
+from app.services.push import PushSender, WebPushSender
 from app.workers.scheduler import JobScheduler
 from app.workers.sync import sync_all_organizations
 
@@ -41,8 +47,11 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     settings: Settings = application.state.settings
     scheduler: JobScheduler | None = None
     if settings.sync_interval_minutes > 0:
+        push_sender: PushSender | None = application.state.push_sender
         scheduler = JobScheduler(
-            lambda: sync_all_organizations(application.state.session_factory),
+            lambda: sync_all_organizations(
+                application.state.session_factory, push_sender=push_sender
+            ),
             interval_seconds=settings.sync_interval_minutes * 60,
             name="sync",
         )
@@ -85,6 +94,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if resolved_settings.google_client_id
         else None
     )
+    # Web Push (phase 6c-iii-b) : émetteur réel si une clé VAPID privée est
+    # configurée, sinon `None` (canal désactivé) — les tests posent un faux
+    # émetteur sur `app.state.push_sender` (AGENTS.md §5 : aucune vraie clé).
+    app.state.push_sender = (
+        WebPushSender(resolved_settings) if resolved_settings.vapid_private_key else None
+    )
     engine = create_async_engine(resolved_settings.database_url)
     app.state.engine = engine
     # Une fabrique partagée : une session (donc une transaction) par requête.
@@ -97,6 +112,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(invitation_accept_router, prefix=API_PREFIX)
     app.include_router(team_router, prefix=API_PREFIX)
     app.include_router(metrics_router, prefix=API_PREFIX)
+    app.include_router(notifications_router, prefix=API_PREFIX)
+    app.include_router(push_router, prefix=API_PREFIX)
+    app.include_router(goals_router, prefix=API_PREFIX)
+    app.include_router(alert_rules_router, prefix=API_PREFIX)
+    app.include_router(dashboard_router, prefix=API_PREFIX)
     app.include_router(pulse_router, prefix=API_PREFIX)
     app.include_router(legal_router, prefix=API_PREFIX)
     app.include_router(health_router, prefix=API_PREFIX)

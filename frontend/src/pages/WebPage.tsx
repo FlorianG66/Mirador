@@ -97,6 +97,7 @@ export function WebPage() {
       <PageHeader
         title={t('nav.web')}
         subtitle={t('web.subtitle')}
+        printable
         actions={
           <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-xs text-muted">
             {t('web.demoNote')}

@@ -393,3 +393,153 @@ Le Pouls expose 8 clés (2 par module à métrique) : `finance.revenue`/`margin`
 ## 2026-10-12 — Lecture `get_latest` pour la valeur courante et la précédente (5f)
 
 Le KPI du Pouls lit les deux derniers points via `metric_snapshots.get_latest` (tri décroissant), pas `get_series` (tri croissant, fenêtré). Raison : le Pouls veut la dernière valeur et la précédente pour la tendance, pas une série complète — une lecture dédiée est plus simple et évite de charger 365 points par KPI.
+
+## 2026-10-12 — Comparaison de périodes calculée côté backend (6a-i)
+
+L'agrégation d'une fenêtre et la frontière entre les deux périodes vivent dans `app/services/metrics.get_metric_comparison`, exposées par `GET /organizations/{id}/metrics/{metric_key}/comparison` ; le frontend ne fait qu'afficher. Raison : le même calcul resservira à la vue d'ensemble, à l'export PDF (6c) et au chatbot (phase 8) — une seule vérité testable plutôt qu'une règle dupliquée par page.
+
+## 2026-10-12 — Catalogue d'agrégation `sum`/`last`/`average` par métrique (6a-i)
+
+`app/services/metric_catalog.METRIC_AGGREGATIONS` classe chaque clé connue : flux → `sum`, niveau/stock → `last`, taux/durée → `average` ; une clé inconnue retombe sur `sum`. Raison : une série quotidienne peut être un flux (CA) ou un stock (trésorerie, abonnés) — sommer un stock n'a pas de sens. Un test exige que chaque métrique des quatre connecteurs soit classée (aucune omission silencieuse).
+
+## 2026-10-12 — Comparaison : une lecture, frontière `end - days` (6a-i)
+
+`get_metric_comparison` lit une seule fois la double fenêtre `[end - 2×days, end]` puis répartit les points (`captured_at > end - days` → période courante). Raison : une requête au lieu de deux, et une frontière déterministe (pas de point compté deux fois) facile à tester avec un `end` explicite ; le résumé expose `change` et `change_percent` (`null` si la période précédente vaut 0).
+
+## 2026-10-12 — La comparaison de périodes est portée par le tableau de bord (6a-ii)
+
+Le sélecteur 7 j / 30 j / 90 j (défaut 30 j) vit sur la vue d'ensemble et pilote, pour chaque KPI clé du Pouls, un appel à `GET /metrics/{clé}/comparison?days=` : la carte affiche `summary.current_value` et `summary.change_percent`. Raison : le tableau de bord est la vue « coup d'œil » où la roadmap (6a) associe comparaison et objectifs ; le contrat du Pouls (5f) reste inchangé et aucun calcul n'est dupliqué côté client.
+
+## 2026-10-12 — Un KPI sans donnée sur la fenêtre retombe sur la dernière valeur (6a-ii)
+
+Une comparaison en 404 (aucun point dans la double fenêtre), en erreur ou en cours de chargement n'échoue pas la carte : elle affiche la valeur et la tendance à deux points fournies par le Pouls. Raison : une fenêtre vide ne doit pas transformer un KPI isolé en état d'erreur ; la dégradation reste lisible et aucune valeur n'est inventée (AGENTS.md §2).
+
+## 2026-10-12 — Objectif = cible sur une clé canonique, fenêtre glissante (6a-iii)
+
+Un objectif (table tenant `goals`, RLS) porte `metric_key`, un sens (`at_least` = atteindre au moins la cible, `at_most` = rester en dessous, cas du budget), une valeur cible et une fenêtre glissante `period_days` (1–365). Raison : une seule primitive couvre « objectif » et « budget » sur n'importe quel KPI ; la progression n'est pas stockée mais recalculée à la lecture depuis les `metric_snapshots`.
+
+## 2026-10-12 — Progression et dérive d'un objectif (6a-iii) — hypothèse non spécifiée
+
+La progression = valeur agrégée de la fenêtre courante / cible (pourcentage, `null` si cible nulle) ; la dérive = cible non atteinte **et** métrique s'éloignant de la fenêtre précédente équivalente (`off_track`), sinon `on_track`, `achieved` si la cible est atteinte, `unknown` sans donnée. Raison : la SPEC ne définit pas la dérive ; on retient la règle la plus simple et maintenable, qui réutilise la lecture de la double fenêtre de la comparaison (6a-i) sans alignement calendaire (fuseaux, mois de longueurs différentes).
+
+## 2026-10-12 — Objectifs : permission portée par le module de la métrique (6a-iii)
+
+Créer, modifier ou supprimer un objectif exige `edit` sur le module préfixe de `metric_key` (l'admin a `edit` partout) ; la lecture ne renvoie que les objectifs des modules visibles (même règle que le Pouls, jamais de 403 sur la liste). Raison : un objectif porte sur les données d'un module, sa gestion suit donc la permission de ce module ; la vérification se fait dans le service, seul à connaître la clé après lecture du corps.
+
+## 2026-10-12 — Réduction de fenêtre partagée `reduce_values` (6a-iii)
+
+La comparaison de périodes et les objectifs réduisent une fenêtre de la même façon, via `metric_catalog.reduce_values` (le `_aggregate` de `metrics.py` y délègue), classée par le catalogue `sum`/`last`/`average`. Raison : une seule source de vérité pour l'agrégation évite toute divergence entre les deux fonctionnalités.
+
+## 2026-10-12 — Le panneau d'objectifs vit sur le tableau de bord (6a-iv)
+
+`GoalsPanel` est une carte de la vue d'ensemble (à côté du fil d'activité), pas une page dédiée. Raison : les objectifs sont un pilotage au quotidien, ils complètent le Pouls là où on le consulte ; une page dédiée n'apporterait rien au scénario MVP (le formulaire s'ouvre en place).
+
+## 2026-10-12 — Le formulaire d'objectif restreint l'indicateur aux KPI clés (6a-iv)
+
+Le sélecteur d'indicateur de `GoalForm` ne propose que les 8 KPI clés du Pouls (`KPI_META`) que l'utilisateur peut écrire, alors que le backend accepte toute clé canonique. Raison : une liste étiquetée en i18n (libellés réutilisés) plutôt qu'une chaîne libre ; le backend reste la source de vérité et un objectif existant hors liste reste éditable (clé ajoutée aux options).
+
+## 2026-10-12 — Actions d'écriture masquées côté UI, backend source de vérité (6a-iv)
+
+`canEditMetric` (admin = tout, sinon `edit` sur le module de la clé) conditionne l'affichage des boutons créer/modifier/supprimer, et la suppression demande une confirmation native. Raison : ne pas montrer d'actions vouées à un 403, mais le serveur applique seul la règle (le masquage n'est qu'un confort, jamais une sécurité).
+
+## 2026-10-13 — Recherche globale sans backend (6b-i)
+
+L'index de recherche est dérivé du catalogue statique de l'application (table des routes + `KPI_META` du Pouls), filtré par les permissions courantes ; il n'appelle aucune API et « projets/tâches » sont couverts par la page et les KPI projets. Raison : le produit ne stocke pas d'entités tâches à ce stade, et un index frontend reste instantané — le jour où la recherche devra couvrir du contenu métier, elle s'appuiera sur le backend.
+
+## 2026-10-13 — Un résultat KPI navigue vers son module porteur (6b-i)
+
+`MODULE_ROUTES` fait pointer chaque KPI vers la route de son module (le KPI y vit déjà sous forme de carte). Raison : la palette sert à rejoindre un endroit de l'application, pas à dupliquer une vue.
+
+## 2026-10-13 — Le libellé du raccourci clavier n'est pas traduit (6b-i)
+
+Le `kbd` de la topbar affiche « Ctrl K » quelle que soit la langue. Raison : un nom de touche est une convention d'UI (comme une icône), pas un texte métier ; le libellé accessible du bouton reste i18n (`search.open`).
+
+## 2026-10-14 — La disposition est stockée en JSONB, par (organisation, utilisateur) (6b-ii-a)
+
+Table tenant `dashboard_layouts` (migration `0009`, RLS activée/forcée + politique par organisation) : une ligne par couple `(organization_id, user_id)` — contrainte d'unicité — et la disposition en JSONB (`widgets` = liste de placements `{widget_id, x, y, w, h}`). Raison : la mise en page se lit et s'écrit d'un bloc (jamais une ligne par widget), et « sauvegardée par utilisateur » (SPEC §4) correspond exactement à cette clé.
+
+## 2026-10-14 — Le catalogue de widgets est côté backend, avec un identifiant canonique (6b-ii-a)
+
+`app/services/dashboard.py` définit le catalogue (santé `health`, KPI `kpi.<clé canonique>`, objectifs `goals`, activité `activity`) et la disposition par défaut ; il ne compose aucun libellé (le frontend traduit, AGENTS.md §7). Raison : la validation des widgets enregistrés (connu/inconnu) et le filtrage par permission (KPI des modules visibles, activité réservée aux admins) doivent tenir en un seul endroit, côté serveur.
+
+## 2026-10-14 — Écriture refusée (422/403), lecture filtrée (défense en profondeur) (6b-ii-a)
+
+Un `PUT` portant un widget inconnu répond 422, un widget connu mais non autorisé 403 ; à la lecture, un widget enregistré puis devenu interdit (droit retiré, rôle revu) est écarté de la réponse. Raison : un seul chemin d'écriture (pas de disposition « fantôme » impossible à expliquer), et la lecture ne dépend jamais de l'état des droits au moment de l'enregistrement.
+
+## 2026-10-14 — Grille à 12 colonnes, `x + w ≤ 12`, hauteur ≤ 24 (6b-ii-a)
+
+Le contrat est fixé côté schéma (`GRID_COLUMNS = 12`, `MAX_WIDGET_HEIGHT = 24`, `MAX_WIDGETS = 24`) et partagé avec `react-grid-layout` (6b-ii-b) ; la disposition par défaut range la santé en bandeau, les KPI par trois, puis objectifs et activité côte à côte. Raison : un seul espace de coordonnées entre le serveur (validation) et le client (rendu), sans conversion.
+
+## 2026-10-14 — Grille déplaçable et redimensionnable via `react-grid-layout` 2.3.0 (6b-ii-b)
+
+Dépendance épinglée `react-grid-layout@2.3.0` (version stable vérifiée sur npm) ; la v2 est une réécriture TypeScript renommée (points d'entrée `core`/`extras`/`legacy`/`react`/`responsive`) qui ne livre plus aucune feuille de style — tout est en styles en ligne. Raison : elle couvre exactement le besoin (déplacement + redimensionnement + compaction verticale, coordonnées en unités de grille) sans empiler `@dnd-kit` et un redimensionnement maison.
+
+## 2026-10-14 — Largeur de grille mesurée localement, sans dépendre de `ResizeObserver` (6b-ii-b)
+
+`DashboardGrid` embarque son propre `useContainerWidth` (réf. + `clientWidth`, observateur `ResizeObserver` si présent, repli sur l'événement `resize`, largeur par défaut 1200 px) au lieu du hook `useContainerWidth` fourni par la librairie. Raison : jsdom n'implémente pas `ResizeObserver` ; le repli garde les tests unitaires déterministes et la grille s'affiche même hors navigateur.
+
+## 2026-10-14 — Aucune garde d'activité côté client (6b-ii-b)
+
+Le composant de fil d'activité ne revérifie pas le rôle : le backend écarte `activity` du catalogue des non-admins et filtre la disposition enregistrée à la lecture. Raison : un seul arbitre des droits (le serveur, AGENTS.md §5) ; une garde d'interface serait du code mort (le widget n'arrive jamais) et ne protégerait rien.
+
+## 2026-10-14 — Délai des requêtes asynchrones de test porté à 5 s (6b-ii-b)
+
+`configure({ asyncUtilTimeout: 5000 })` dans `src/test/setup.ts` (au lieu du défaut de 1 s des `findBy*`). Raison : les pages à graphiques (Recharts sous jsdom) dépassaient le délai dès que la suite tourne en parallèle — échecs intermittents préexistants, sans rapport avec le code testé ; un délai plus large rend `npm test` fiable.
+
+## 2026-10-14 — Job `frontend` ajouté à la CI, tests e2e maintenus hors CI (6b-ii-b)
+
+Le workflow ne contenait qu'un job `gitleaks` et un job `backend` (le commentaire annonçait un job frontend « en phase 3 » jamais ajouté). Ajout d'un job `frontend` (Node 24, `actions/setup-node@v7`) : `npm ci`, `lint`, `typecheck`, `test`, `build`. Raison : la SPA a des tests et des types vérifiables automatiquement ; sans ce job la qualité frontend ne reposait que sur la vérification locale. Les tests e2e Playwright restent lancés à la main : la configuration vise le canal `msedge` du poste de dev, absent des exécuteurs GitHub (les brancher demanderait un Chromium téléchargé ; à prévoir quand un remote existera).
+
+## 2026-10-14 — Export PDF par l'impression du navigateur (6c-i)
+
+L'export PDF (« d'un module ou du dashboard », SPEC §4) s'appuie sur l'impression du navigateur (`window.print()` → « Enregistrer au format PDF »), comme le faisait déjà la fiche légale. Raison : aucune dépendance de génération PDF côté serveur (pas de moteur de rendu à installer ni à maintenir, pas de coût CPU), rendu identique à l'écran, feuille d'impression maîtrisée par les tokens de thème ; c'est l'option la plus simple retenue par ROADMAP (§ phase 6). Une génération serveur (WeasyPrint, reportlab) pourra être ajoutée plus tard pour un PDF programmatique (envoi par e-mail, pièce jointe) sans remettre en cause l'export côté client.
+
+## 2026-10-18 — Notifications : d'abord les événements existants, pas de règles configurables (6c-ii)
+
+La sous-phase 6c-ii branche le **canal** de notification sans introduire la moindre règle configurable : les notifications naissent uniquement d'événements que le produit produit déjà — `goal.achieved` / `goal.off_track` (statut d'un objectif recalculé à chaque écriture de métrique) et `legal.diverged` (valeur manuelle divergeante du registre). Raison : ROADMAP découpe 6c-ii (canal) et 6c-iii (règles d'alerte) ; mêler les deux ferait entrer la table `alert_rules` par la porte de derrière et doublerait le périmètre. Une fois le canal en place, 6c-iii n'a plus qu'à produire les mêmes lignes d'un autre endroit.
+
+## 2026-10-18 — Notifications : table dédiée, une ligne par destinataire (6c-ii)
+
+Nouvelle table tenant `notifications` (migration `f2f1e655c879`, RLS activée et forcée + politique par organisation) : `kind` (clé stable, jamais un texte affiché), `params` JSONB (de quoi interpoler le message), `link` (route interne du module), `dedup_key` (texte libre, utilisé pour l'idempotence) et `read_at` (NULL = non lue). Une ligne **par destinataire** plutôt qu'un enregistrement « lu par » partagé : la lecture est l'action la plus fréquente, le filtrage par utilisateur est un index simple, et l'audit d'un événement diffusé à plusieurs ne se complique pas. Aucun texte côté backend (AGENTS.md §6) : `kind` est une clé i18n et le frontend compose le libellé.
+
+## 2026-10-18 — Notifications : émission par le worker, pas à la lecture (6c-ii)
+
+L'émission de `goal.achieved` / `goal.off_track` a lieu dans le service, appelée par le **worker de synchronisation** juste après l'écriture des métriques et avant le `commit()` unique — jamais lors d'un `GET` (une notification doit correspondre à un état écrit, pas au moment où on la consulte). Les destinataires d'un objectif sont les administrateurs **et** les membres ayant `edit` sur le module de la clé de métrique ; un écart légal ne notifie que les administrateurs (la fiche légale est la leur). L'écart légal est la seule émission appelée depuis un routeur applicatif (le rafraîchissement du registre), en best-effort : une notification qui échoue ne doit pas faire échouer l'enregistrement du registre.
+
+## 2026-10-18 — Notifications : déduplication en base des non-lues (6c-ii)
+
+Deux événements successifs du même type pour le même destinataire ne créent des lignes que si l'une est lue. Le `dedup_key` (par ex. `legal:diverged:unread:<org>:<user>`) est comparé par le repository ; s'il existe une non-lue, elle est **mise à jour** (`params`, `link`) au lieu d'être empilée. Raison : une divergence de registre qui dure produirait sinon une notification par synchronisation, et le lecteur serait noyé. Aucun test de purge automatique : la suppression des notifications lues est une décision d'exploitation (ROADMAP 6c-iii), et la fonction `cleanup_old_read` n'a pas été gardée — du code non utilisé sans besoin concret n'a rien à faire dans la base.
+
+## 2026-10-19 — Découpage de la 6c-iii en deux sous-phases (6c-iii)
+
+La 6c-iii est scindée en **6c-iii-a** (règles d'alerte configurables : table `alert_rules` + CRUD + évaluation + UI) et **6c-iii-b** (Web Push : PWA, service worker, VAPID, abonnements). Raison : la 6c-iii couvre à elle seule un nouveau schéma, des endpoints, le branchement worker et une brique navigateur entièrement différente (abonnements push) — trop pour une session (AGENTS.md §2).
+
+## 2026-10-19 — Règle d'alerte = seuil générique sur une clé canonique (6c-iii-a)
+
+Une règle porte `metric_key` canonique, `comparison` (`above`/`below`), `threshold`, fenêtre glissante `period_days` (1–365), `enabled` et `label` libre optionnel. Raison : une seule primitive de **seuil** couvre les cas de la roadmap (« facture impayée » = seuil sur `finance.invoices_outstanding`) sans multiplier les types de règles ; « objectif atteint » reste porté par `goal.achieved` (6c-ii), pas dupliqué en règle.
+
+## 2026-10-19 — Règle d'alerte : valeur recalculée, jamais stockée (6c-iii-a)
+
+Comme les objectifs (6a-iii), la valeur d'une règle se recalcule en agrégeant la fenêtre courante via `metric_catalog.reduce_values` puis se compare au seuil ; seule la règle est persistée. Raison : une valeur figée se périmerait dès la première synchronisation et contredirait les dashboards ; la réduction partagée garantit la cohérence avec la comparaison et les objectifs.
+
+## 2026-10-19 — Émission `alert.threshold` par le worker, destinataires du module (6c-iii-a)
+
+`evaluate_alert_rules` est appelée par le **worker de synchronisation** (après les objectifs, avant le `commit()` unique), jamais à la lecture ; les destinataires sont les administrateurs et les membres ayant `edit` sur le module de la métrique, avec la déduplication en base de la 6c-ii (`dedup_key = alert_rule:<id>:<sens>`). Raison : une alerte correspond à un état écrit ; réutiliser la logique de destinataires/lien du canal (`admins_and_editors_on`, `module_link`, exposées publiquement) évite d'en dupliquer une seconde version.
+
+## 2026-10-19 — Web Push : service worker + VAPID, envoi derrière une interface injectable (6c-iii-b)
+
+Technique retenue pour la 6c-iii-b : PWA + service worker + clés VAPID, abonnement stocké dans une table tenant `push_subscriptions` (RLS) et envoi derrière une interface `PushSender` (un faux en test). Raison : c'est la seule voie standard pour notifier hors de l'onglet ouvert, et l'interface injectable garantit qu'aucun vrai service de push ni vraie clé n'est requis en test ou en CI (AGENTS.md §5).
+
+Dépendance : `pywebpush==2.5.0` (dernière stable, vérifiée sur PyPI), épinglée dans `backend/pyproject.toml`. Raison : c'est l'implémentation de référence du protocole Web Push (VAPID + chiffrement `aes128gcm`, RFC 8291/8292) en Python, activement maintenue ; `mypy` l'ignore faute de `py.typed` (override ciblé, l'appel reste isolé dans `WebPushSender`).
+
+## 2026-10-20 — Web Push : envoi best-effort et abonnements caducs (6c-iii-b)
+
+Le push est émis **au même endroit** que la notification in-app (service `notifications`, une fois la ligne non dupliquée créée), via l'émetteur posé sur `app.state.push_sender` (`None` = canal désactivé). L'envoi est **best-effort** : une erreur de push ne fait jamais échouer l'écriture in-app. Un service qui répond 404/410 (abonnement caduc) fait supprimer la ligne. Raison : l'in-app reste la source de vérité ; ne pas laisser un appareil mort bloquer la synchro ni accumuler des abonnements fantômes.
+
+## 2026-10-20 — Service worker : libellés génériques, pas de duplication des KPI (6c-iii-b)
+
+Le service worker (`frontend/public/sw.js`) vit hors du bundle React : il ne peut pas importer i18next. Il traduit le `kind` par une table FR/EN explicite (jamais la clé brute) mais affiche un corps **générique** pour les événements liés à une métrique, plutôt que de recopier les libellés de KPI (`src/pulse/format.ts`). Raison : dupliquer la source de vérité des indicateurs dans un fichier public non testé garantirait une divergence ; le libellé complet et formaté est affiché dès l'ouverture de l'application (centre de notifications).
+
+## 2026-10-19 — `kind` de notification traduit par table explicite, jamais la clé brute (6c-iii-a)
+
+Le `kind` backend `alert.threshold` est traduit par une entrée explicite de `TITLE_BODY_KEYS` (`frontend/src/notifications/format.ts`), avec deux variantes haut/bas choisies sur `params.comparison`. Raison : i18next lit le point comme un séparateur de chemin — la clé brute ne peut pas servir de clé i18n ; une table explicite garde une erreur visible (jamais un texte non traduit) et suit la règle posée en 6c-ii.

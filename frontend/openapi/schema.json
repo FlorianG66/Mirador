@@ -881,6 +881,860 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}/comparison": {
+      "get": {
+        "summary": "Read Metric Comparison",
+        "description": "Série sur `days` jours comparée aux `days` jours précédents (SPEC §4).",
+        "operationId": "read_metric_comparison_api_v1_organizations__organization_id__metrics__metric_key__comparison_get",
+        "parameters": [
+          {
+            "name": "metric_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Clé canonique « module.metric »",
+              "title": "Metric Key"
+            },
+            "description": "Clé canonique « module.metric »"
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "description": "Longueur de la fenêtre en jours",
+              "default": 30,
+              "title": "Days"
+            },
+            "description": "Longueur de la fenêtre en jours"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Borne haute ; maintenant par défaut",
+              "title": "End"
+            },
+            "description": "Borne haute ; maintenant par défaut"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricComparison"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/notifications": {
+      "get": {
+        "summary": "List Notifications",
+        "description": "Notifications personnelles de l'appelant, de la plus récente à la plus ancienne.",
+        "operationId": "list_notifications_api_v1_organizations__organization_id__notifications_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/notifications/{notification_id}/read": {
+      "post": {
+        "summary": "Mark Notification Read",
+        "description": "Marque une notification de l'appelant comme lue (404 si elle appartient à un autre).",
+        "operationId": "mark_notification_read_api_v1_organizations__organization_id__notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Notification Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/notifications/read-all": {
+      "post": {
+        "summary": "Mark All Read",
+        "description": "Marque comme lues toutes les notifications non lues de l'appelant.",
+        "operationId": "mark_all_read_api_v1_organizations__organization_id__notifications_read_all_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/push/public-key": {
+      "get": {
+        "summary": "Get Public Key",
+        "description": "Clé VAPID publique ; 404 si Web Push n'est pas configuré sur ce serveur.",
+        "operationId": "get_public_key_api_v1_organizations__organization_id__push_public_key_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushPublicKeyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/push/subscriptions": {
+      "post": {
+        "summary": "Subscribe",
+        "description": "Enregistre l'abonnement d'un navigateur pour l'appelant (idempotent).",
+        "operationId": "subscribe_api_v1_organizations__organization_id__push_subscriptions_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscriptionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Unsubscribe",
+        "description": "Retire l'abonnement d'un endpoint pour l'appelant (idempotent).",
+        "operationId": "unsubscribe_api_v1_organizations__organization_id__push_subscriptions_delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushUnsubscribeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/goals": {
+      "get": {
+        "summary": "List Goals",
+        "description": "Objectifs des modules visibles, avec leur progression calculée.",
+        "operationId": "list_goals_api_v1_organizations__organization_id__goals_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GoalOut"
+                  },
+                  "title": "Response List Goals Api V1 Organizations  Organization Id  Goals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Goal",
+        "description": "Crée un objectif (ou un budget) sur une métrique canonique.",
+        "operationId": "create_goal_api_v1_organizations__organization_id__goals_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/goals/{goal_id}": {
+      "patch": {
+        "summary": "Update Goal",
+        "description": "Modifie un objectif existant (champs partiels).",
+        "operationId": "update_goal_api_v1_organizations__organization_id__goals__goal_id__patch",
+        "parameters": [
+          {
+            "name": "goal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Goal Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Goal",
+        "description": "Supprime un objectif.",
+        "operationId": "delete_goal_api_v1_organizations__organization_id__goals__goal_id__delete",
+        "parameters": [
+          {
+            "name": "goal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Goal Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/alert-rules": {
+      "get": {
+        "summary": "List Alert Rules",
+        "description": "Règles des modules visibles (aucun refus possible).",
+        "operationId": "list_alert_rules_api_v1_organizations__organization_id__alert_rules_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertRuleOut"
+                  },
+                  "title": "Response List Alert Rules Api V1 Organizations  Organization Id  Alert Rules Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Alert Rule",
+        "description": "Crée une règle d'alerte (seuil franchi sur une métrique canonique).",
+        "operationId": "create_alert_rule_api_v1_organizations__organization_id__alert_rules_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertRuleCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/alert-rules/{rule_id}": {
+      "patch": {
+        "summary": "Update Alert Rule",
+        "description": "Modifie une règle existante (champs partiels).",
+        "operationId": "update_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__patch",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertRuleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Alert Rule",
+        "description": "Supprime une règle d'alerte.",
+        "operationId": "delete_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__delete",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/dashboard": {
+      "get": {
+        "summary": "Read Dashboard",
+        "description": "Mise en page du membre (ou disposition par défaut) et catalogue autorisé.",
+        "operationId": "read_dashboard_api_v1_organizations__organization_id__dashboard_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save Dashboard",
+        "description": "Enregistre la mise en page du membre (remplace la précédente).",
+        "operationId": "save_dashboard_api_v1_organizations__organization_id__dashboard_put",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardLayoutUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Reset Dashboard",
+        "description": "Remet la mise en page du membre à la disposition par défaut.",
+        "operationId": "reset_dashboard_api_v1_organizations__organization_id__dashboard_delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{organization_id}/pulse": {
       "get": {
         "summary": "Read Pulse",
@@ -1146,6 +2000,200 @@
         "title": "AcceptInvitationResponse",
         "description": "Rattachement créé et niveaux effectivement obtenus."
       },
+      "AlertComparison": {
+        "type": "string",
+        "enum": [
+          "above",
+          "below"
+        ],
+        "title": "AlertComparison",
+        "description": "Sens de franchissement d'une règle d'alerte (SPEC §4) : dépasser ou passer sous.\n\n`above` = la valeur de la fenêtre dépasse le seuil (facture impayée élevée,\ndépenses qui débordent) ; `below` = elle passe sous le seuil (CA qui plonge,\nvisites en chute)."
+      },
+      "AlertRuleCreate": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/AlertComparison",
+            "default": "above"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "period_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Period Days",
+            "default": 1
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "threshold"
+        ],
+        "title": "AlertRuleCreate",
+        "description": "Définition d'une règle d'alerte à créer (seuil sur une clé canonique)."
+      },
+      "AlertRuleOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/AlertComparison"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "period_days": {
+            "type": "integer",
+            "title": "Period Days"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "metric_key",
+          "label",
+          "comparison",
+          "threshold",
+          "period_days",
+          "enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AlertRuleOut",
+        "description": "Règle d'alerte complète : définition + horodatages."
+      },
+      "AlertRuleUpdate": {
+        "properties": {
+          "metric_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlertComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
+          "period_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Days"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "title": "AlertRuleUpdate",
+        "description": "Mise à jour partielle : seuls les champs fournis sont modifiés.\n\nUn `label` explicitement `null` efface le libellé (retour au libellé i18n de\nla métrique côté interface) ; un champ omis garde sa valeur."
+      },
       "AuditLogOut": {
         "properties": {
           "id": {
@@ -1221,6 +2269,130 @@
         ],
         "title": "AuditLogOut",
         "description": "Entrée du journal des actions sensibles (verbatim, l'UI traduit)."
+      },
+      "DashboardLayoutUpdate": {
+        "properties": {
+          "widgets": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardPlacement"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "title": "Widgets"
+          }
+        },
+        "type": "object",
+        "title": "DashboardLayoutUpdate",
+        "description": "Corps du PUT : la liste complète des placements, sans doublon."
+      },
+      "DashboardOut": {
+        "properties": {
+          "available_widgets": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardWidgetOut"
+            },
+            "type": "array",
+            "title": "Available Widgets"
+          },
+          "layout": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardPlacement"
+            },
+            "type": "array",
+            "title": "Layout"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available_widgets",
+          "layout",
+          "is_default"
+        ],
+        "title": "DashboardOut",
+        "description": "Mise en page courante + catalogue des widgets autorisés pour le membre."
+      },
+      "DashboardPlacement": {
+        "properties": {
+          "widget_id": {
+            "type": "string",
+            "title": "Widget Id"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "W"
+          },
+          "h": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "H"
+          }
+        },
+        "type": "object",
+        "required": [
+          "widget_id",
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "DashboardPlacement",
+        "description": "Placement d'un widget sur la grille (coin haut-gauche, largeur, hauteur)."
+      },
+      "DashboardWidgetOut": {
+        "properties": {
+          "widget_id": {
+            "type": "string",
+            "title": "Widget Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WidgetKind"
+          },
+          "module": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Module"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "widget_id",
+          "kind"
+        ],
+        "title": "DashboardWidgetOut",
+        "description": "Entrée du catalogue : de quoi identifier et rendre un widget."
       },
       "DatabaseDetails": {
         "properties": {
@@ -1344,6 +2516,251 @@
         "type": "object",
         "title": "ForgotPasswordResponse",
         "description": "Toujours identique, que le compte existe ou non (anti-énumération)."
+      },
+      "GoalCreate": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/GoalDirection",
+            "default": "at_least"
+          },
+          "target_value": {
+            "type": "number",
+            "title": "Target Value"
+          },
+          "period_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Period Days",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "target_value"
+        ],
+        "title": "GoalCreate",
+        "description": "Définition d'un objectif à créer (cible sur une clé canonique)."
+      },
+      "GoalDirection": {
+        "type": "string",
+        "enum": [
+          "at_least",
+          "at_most"
+        ],
+        "title": "GoalDirection",
+        "description": "Sens d'un objectif (SPEC §4) : viser au moins la cible, ou rester en dessous.\n\n`at_least` pour une cible à atteindre (chiffre d'affaires, abonnés) ; `at_most`\npour un plafond à ne pas dépasser (budget de dépenses, tâches en retard)."
+      },
+      "GoalOut": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/GoalDirection",
+            "default": "at_least"
+          },
+          "target_value": {
+            "type": "number",
+            "title": "Target Value"
+          },
+          "period_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Period Days",
+            "default": 30
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/GoalProgress"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "target_value",
+          "id",
+          "progress",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "GoalOut",
+        "description": "Objectif complet : définition + progression calculée + horodatages."
+      },
+      "GoalProgress": {
+        "properties": {
+          "current_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Value"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "progress_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Percent"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus",
+            "default": "unknown"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "title": "GoalProgress",
+        "description": "Progression recalculée d'un objectif sur sa fenêtre glissante.\n\n`current_value` est agrégée selon le catalogue de métriques (somme pour un\nflux, dernière valeur pour un niveau, moyenne pour un taux). `progress_percent`\npeut dépasser 100 (cible dépassée) et vaut `None` si la cible est nulle."
+      },
+      "GoalStatus": {
+        "type": "string",
+        "enum": [
+          "achieved",
+          "on_track",
+          "off_track",
+          "unknown"
+        ],
+        "title": "GoalStatus",
+        "description": "État d'un objectif, calculé à la lecture (jamais stocké).\n\n- `achieved` : la cible est atteinte.\n- `off_track` : la cible n'est pas atteinte **et** la métrique s'en éloigne\n  (dérive par rapport à la fenêtre précédente équivalente).\n- `on_track` : la cible n'est pas encore atteinte mais la métrique progresse\n  ou se maintient.\n- `unknown` : aucune donnée sur la fenêtre (module pas encore synchronisé)."
+      },
+      "GoalUpdate": {
+        "properties": {
+          "metric_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalDirection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Value"
+          },
+          "period_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Days"
+          }
+        },
+        "type": "object",
+        "title": "GoalUpdate",
+        "description": "Mise à jour partielle : seuls les champs fournis sont modifiés.\n\nUn `label` explicitement `null` efface le libellé (retour au libellé i18n de\nla métrique côté interface) ; un champ omis garde sa valeur."
       },
       "HTTPValidationError": {
         "properties": {
@@ -2026,6 +3443,107 @@
         "title": "MembershipOut",
         "description": "Rattachement de l'utilisateur courant à une organisation."
       },
+      "MetricAggregation": {
+        "type": "string",
+        "enum": [
+          "sum",
+          "last",
+          "average"
+        ],
+        "title": "MetricAggregation",
+        "description": "Réduction d'une fenêtre de points en une valeur (comparaison de périodes, phase 6a).\n\n`sum` pour les flux (CA, visites, conversions…), `last` pour les niveaux\n(trésorerie, abonnés, tâches ouvertes…) et `average` pour les taux et durées\nmoyennes. Le catalogue `app.services.metric_catalog` porte le choix par clé."
+      },
+      "MetricComparison": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "period": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 1,
+            "title": "Period"
+          },
+          "aggregation": {
+            "$ref": "#/components/schemas/MetricAggregation"
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Days"
+          },
+          "current": {
+            "items": {
+              "$ref": "#/components/schemas/MetricPoint"
+            },
+            "type": "array",
+            "title": "Current"
+          },
+          "previous": {
+            "items": {
+              "$ref": "#/components/schemas/MetricPoint"
+            },
+            "type": "array",
+            "title": "Previous"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/MetricComparisonSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "unit",
+          "period",
+          "aggregation",
+          "days",
+          "summary"
+        ],
+        "title": "MetricComparison",
+        "description": "Une série sur une période comparée à la période précédente équivalente.\n\nLes deux fenêtres sont livrées brutes (points) en plus du résumé agrégé :\nl'interface peut tracer la courbe précédente sans seconde requête."
+      },
+      "MetricComparisonSummary": {
+        "properties": {
+          "current_value": {
+            "type": "number",
+            "title": "Current Value"
+          },
+          "previous_value": {
+            "type": "number",
+            "title": "Previous Value"
+          },
+          "change": {
+            "type": "number",
+            "title": "Change"
+          },
+          "change_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Percent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_value",
+          "previous_value",
+          "change"
+        ],
+        "title": "MetricComparisonSummary",
+        "description": "Comparaison des valeurs agrégées de deux fenêtres de même longueur."
+      },
       "MetricPoint": {
         "properties": {
           "at": {
@@ -2121,6 +3639,86 @@
         ],
         "title": "MyPermissionsOut",
         "description": "Niveaux du membre courant : sert aux gardes de routes côté frontend."
+      },
+      "NotificationListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "unread_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unread Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "unread_count"
+        ],
+        "title": "NotificationListOut",
+        "description": "Liste paginée des notifications + compteur de non-lus."
+      },
+      "NotificationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "params",
+          "link",
+          "read_at",
+          "created_at"
+        ],
+        "title": "NotificationOut",
+        "description": "Détail d'une notification in-app."
       },
       "OrganizationOut": {
         "properties": {
@@ -2272,6 +3870,129 @@
         ],
         "title": "PulseOut",
         "description": "Réponse du Pouls : KPI clés, santé et fil d'activité (réservé aux admins)."
+      },
+      "PushKeysIn": {
+        "properties": {
+          "p256dh": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "P256Dh"
+          },
+          "auth": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Auth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "p256dh",
+          "auth"
+        ],
+        "title": "PushKeysIn",
+        "description": "Clés publiques du client (chiffrement du contenu, RFC 8291)."
+      },
+      "PushPublicKeyOut": {
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "title": "Public Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_key"
+        ],
+        "title": "PushPublicKeyOut",
+        "description": "Clé VAPID publique à remettre au navigateur avant tout abonnement."
+      },
+      "PushSubscribeIn": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/PushKeysIn"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "title": "PushSubscribeIn",
+        "description": "Corps d'abonnement : ce que `PushSubscription.toJSON()` produit côté navigateur."
+      },
+      "PushSubscriptionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "endpoint",
+          "user_agent",
+          "created_at"
+        ],
+        "title": "PushSubscriptionOut",
+        "description": "Abonnement enregistré (l'endpoint et l'utilisateur suffisent à l'identifier)."
+      },
+      "PushUnsubscribeIn": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint"
+        ],
+        "title": "PushUnsubscribeIn",
+        "description": "Corps de désabonnement : l'endpoint seul identifie l'abonnement."
       },
       "RegisterRequest": {
         "properties": {
@@ -2484,6 +4205,17 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WidgetKind": {
+        "type": "string",
+        "enum": [
+          "health",
+          "goals",
+          "activity",
+          "kpi"
+        ],
+        "title": "WidgetKind",
+        "description": "Genre d'un widget : détermine le composant frontend qui le rend."
       }
     }
   }

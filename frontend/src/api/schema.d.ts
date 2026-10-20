@@ -438,6 +438,254 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/metrics/{metric_key}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Metric Comparison
+         * @description Série sur `days` jours comparée aux `days` jours précédents (SPEC §4).
+         */
+        get: operations["read_metric_comparison_api_v1_organizations__organization_id__metrics__metric_key__comparison_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Notifications
+         * @description Notifications personnelles de l'appelant, de la plus récente à la plus ancienne.
+         */
+        get: operations["list_notifications_api_v1_organizations__organization_id__notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Notification Read
+         * @description Marque une notification de l'appelant comme lue (404 si elle appartient à un autre).
+         */
+        post: operations["mark_notification_read_api_v1_organizations__organization_id__notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark All Read
+         * @description Marque comme lues toutes les notifications non lues de l'appelant.
+         */
+        post: operations["mark_all_read_api_v1_organizations__organization_id__notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/push/public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Key
+         * @description Clé VAPID publique ; 404 si Web Push n'est pas configuré sur ce serveur.
+         */
+        get: operations["get_public_key_api_v1_organizations__organization_id__push_public_key_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/push/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe
+         * @description Enregistre l'abonnement d'un navigateur pour l'appelant (idempotent).
+         */
+        post: operations["subscribe_api_v1_organizations__organization_id__push_subscriptions_post"];
+        /**
+         * Unsubscribe
+         * @description Retire l'abonnement d'un endpoint pour l'appelant (idempotent).
+         */
+        delete: operations["unsubscribe_api_v1_organizations__organization_id__push_subscriptions_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Goals
+         * @description Objectifs des modules visibles, avec leur progression calculée.
+         */
+        get: operations["list_goals_api_v1_organizations__organization_id__goals_get"];
+        put?: never;
+        /**
+         * Create Goal
+         * @description Crée un objectif (ou un budget) sur une métrique canonique.
+         */
+        post: operations["create_goal_api_v1_organizations__organization_id__goals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/goals/{goal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Goal
+         * @description Supprime un objectif.
+         */
+        delete: operations["delete_goal_api_v1_organizations__organization_id__goals__goal_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Goal
+         * @description Modifie un objectif existant (champs partiels).
+         */
+        patch: operations["update_goal_api_v1_organizations__organization_id__goals__goal_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/alert-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Alert Rules
+         * @description Règles des modules visibles (aucun refus possible).
+         */
+        get: operations["list_alert_rules_api_v1_organizations__organization_id__alert_rules_get"];
+        put?: never;
+        /**
+         * Create Alert Rule
+         * @description Crée une règle d'alerte (seuil franchi sur une métrique canonique).
+         */
+        post: operations["create_alert_rule_api_v1_organizations__organization_id__alert_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/alert-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Alert Rule
+         * @description Supprime une règle d'alerte.
+         */
+        delete: operations["delete_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Alert Rule
+         * @description Modifie une règle existante (champs partiels).
+         */
+        patch: operations["update_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Dashboard
+         * @description Mise en page du membre (ou disposition par défaut) et catalogue autorisé.
+         */
+        get: operations["read_dashboard_api_v1_organizations__organization_id__dashboard_get"];
+        /**
+         * Save Dashboard
+         * @description Enregistre la mise en page du membre (remplace la précédente).
+         */
+        put: operations["save_dashboard_api_v1_organizations__organization_id__dashboard_put"];
+        post?: never;
+        /**
+         * Reset Dashboard
+         * @description Remet la mise en page du membre à la disposition par défaut.
+         */
+        delete: operations["reset_dashboard_api_v1_organizations__organization_id__dashboard_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/pulse": {
         parameters: {
             query?: never;
@@ -579,6 +827,92 @@ export interface components {
             };
         };
         /**
+         * AlertComparison
+         * @description Sens de franchissement d'une règle d'alerte (SPEC §4) : dépasser ou passer sous.
+         *
+         *     `above` = la valeur de la fenêtre dépasse le seuil (facture impayée élevée,
+         *     dépenses qui débordent) ; `below` = elle passe sous le seuil (CA qui plonge,
+         *     visites en chute).
+         * @enum {string}
+         */
+        AlertComparison: "above" | "below";
+        /**
+         * AlertRuleCreate
+         * @description Définition d'une règle d'alerte à créer (seuil sur une clé canonique).
+         */
+        AlertRuleCreate: {
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label?: string | null;
+            /** @default above */
+            comparison: components["schemas"]["AlertComparison"];
+            /** Threshold */
+            threshold: number;
+            /**
+             * Period Days
+             * @default 1
+             */
+            period_days: number;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * AlertRuleOut
+         * @description Règle d'alerte complète : définition + horodatages.
+         */
+        AlertRuleOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label: string | null;
+            comparison: components["schemas"]["AlertComparison"];
+            /** Threshold */
+            threshold: number;
+            /** Period Days */
+            period_days: number;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * AlertRuleUpdate
+         * @description Mise à jour partielle : seuls les champs fournis sont modifiés.
+         *
+         *     Un `label` explicitement `null` efface le libellé (retour au libellé i18n de
+         *     la métrique côté interface) ; un champ omis garde sa valeur.
+         */
+        AlertRuleUpdate: {
+            /** Metric Key */
+            metric_key?: string | null;
+            /** Label */
+            label?: string | null;
+            comparison?: components["schemas"]["AlertComparison"] | null;
+            /** Threshold */
+            threshold?: number | null;
+            /** Period Days */
+            period_days?: number | null;
+            /** Enabled */
+            enabled?: boolean | null;
+        };
+        /**
          * AuditLogOut
          * @description Entrée du journal des actions sensibles (verbatim, l'UI traduit).
          */
@@ -605,6 +939,54 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * DashboardLayoutUpdate
+         * @description Corps du PUT : la liste complète des placements, sans doublon.
+         */
+        DashboardLayoutUpdate: {
+            /** Widgets */
+            widgets?: components["schemas"]["DashboardPlacement"][];
+        };
+        /**
+         * DashboardOut
+         * @description Mise en page courante + catalogue des widgets autorisés pour le membre.
+         */
+        DashboardOut: {
+            /** Available Widgets */
+            available_widgets: components["schemas"]["DashboardWidgetOut"][];
+            /** Layout */
+            layout: components["schemas"]["DashboardPlacement"][];
+            /** Is Default */
+            is_default: boolean;
+        };
+        /**
+         * DashboardPlacement
+         * @description Placement d'un widget sur la grille (coin haut-gauche, largeur, hauteur).
+         */
+        DashboardPlacement: {
+            /** Widget Id */
+            widget_id: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** W */
+            w: number;
+            /** H */
+            h: number;
+        };
+        /**
+         * DashboardWidgetOut
+         * @description Entrée du catalogue : de quoi identifier et rendre un widget.
+         */
+        DashboardWidgetOut: {
+            /** Widget Id */
+            widget_id: string;
+            kind: components["schemas"]["WidgetKind"];
+            module?: components["schemas"]["Module"] | null;
+            /** Metric Key */
+            metric_key?: string | null;
         };
         /**
          * DatabaseDetails
@@ -673,6 +1055,120 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /**
+         * GoalCreate
+         * @description Définition d'un objectif à créer (cible sur une clé canonique).
+         */
+        GoalCreate: {
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label?: string | null;
+            /** @default at_least */
+            direction: components["schemas"]["GoalDirection"];
+            /** Target Value */
+            target_value: number;
+            /**
+             * Period Days
+             * @default 30
+             */
+            period_days: number;
+        };
+        /**
+         * GoalDirection
+         * @description Sens d'un objectif (SPEC §4) : viser au moins la cible, ou rester en dessous.
+         *
+         *     `at_least` pour une cible à atteindre (chiffre d'affaires, abonnés) ; `at_most`
+         *     pour un plafond à ne pas dépasser (budget de dépenses, tâches en retard).
+         * @enum {string}
+         */
+        GoalDirection: "at_least" | "at_most";
+        /**
+         * GoalOut
+         * @description Objectif complet : définition + progression calculée + horodatages.
+         */
+        GoalOut: {
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label?: string | null;
+            /** @default at_least */
+            direction: components["schemas"]["GoalDirection"];
+            /** Target Value */
+            target_value: number;
+            /**
+             * Period Days
+             * @default 30
+             */
+            period_days: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            progress: components["schemas"]["GoalProgress"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * GoalProgress
+         * @description Progression recalculée d'un objectif sur sa fenêtre glissante.
+         *
+         *     `current_value` est agrégée selon le catalogue de métriques (somme pour un
+         *     flux, dernière valeur pour un niveau, moyenne pour un taux). `progress_percent`
+         *     peut dépasser 100 (cible dépassée) et vaut `None` si la cible est nulle.
+         */
+        GoalProgress: {
+            /** Current Value */
+            current_value?: number | null;
+            /** Previous Value */
+            previous_value?: number | null;
+            /** Progress Percent */
+            progress_percent?: number | null;
+            /** @default unknown */
+            status: components["schemas"]["GoalStatus"];
+            /** Unit */
+            unit?: string | null;
+        };
+        /**
+         * GoalStatus
+         * @description État d'un objectif, calculé à la lecture (jamais stocké).
+         *
+         *     - `achieved` : la cible est atteinte.
+         *     - `off_track` : la cible n'est pas atteinte **et** la métrique s'en éloigne
+         *       (dérive par rapport à la fenêtre précédente équivalente).
+         *     - `on_track` : la cible n'est pas encore atteinte mais la métrique progresse
+         *       ou se maintient.
+         *     - `unknown` : aucune donnée sur la fenêtre (module pas encore synchronisé).
+         * @enum {string}
+         */
+        GoalStatus: "achieved" | "on_track" | "off_track" | "unknown";
+        /**
+         * GoalUpdate
+         * @description Mise à jour partielle : seuls les champs fournis sont modifiés.
+         *
+         *     Un `label` explicitement `null` efface le libellé (retour au libellé i18n de
+         *     la métrique côté interface) ; un champ omis garde sa valeur.
+         */
+        GoalUpdate: {
+            /** Metric Key */
+            metric_key?: string | null;
+            /** Label */
+            label?: string | null;
+            direction?: components["schemas"]["GoalDirection"] | null;
+            /** Target Value */
+            target_value?: number | null;
+            /** Period Days */
+            period_days?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -925,6 +1421,53 @@ export interface components {
             role: components["schemas"]["Role"];
         };
         /**
+         * MetricAggregation
+         * @description Réduction d'une fenêtre de points en une valeur (comparaison de périodes, phase 6a).
+         *
+         *     `sum` pour les flux (CA, visites, conversions…), `last` pour les niveaux
+         *     (trésorerie, abonnés, tâches ouvertes…) et `average` pour les taux et durées
+         *     moyennes. Le catalogue `app.services.metric_catalog` porte le choix par clé.
+         * @enum {string}
+         */
+        MetricAggregation: "sum" | "last" | "average";
+        /**
+         * MetricComparison
+         * @description Une série sur une période comparée à la période précédente équivalente.
+         *
+         *     Les deux fenêtres sont livrées brutes (points) en plus du résumé agrégé :
+         *     l'interface peut tracer la courbe précédente sans seconde requête.
+         */
+        MetricComparison: {
+            /** Key */
+            key: string;
+            /** Unit */
+            unit: string;
+            /** Period */
+            period: string;
+            aggregation: components["schemas"]["MetricAggregation"];
+            /** Days */
+            days: number;
+            /** Current */
+            current?: components["schemas"]["MetricPoint"][];
+            /** Previous */
+            previous?: components["schemas"]["MetricPoint"][];
+            summary: components["schemas"]["MetricComparisonSummary"];
+        };
+        /**
+         * MetricComparisonSummary
+         * @description Comparaison des valeurs agrégées de deux fenêtres de même longueur.
+         */
+        MetricComparisonSummary: {
+            /** Current Value */
+            current_value: number;
+            /** Previous Value */
+            previous_value: number;
+            /** Change */
+            change: number;
+            /** Change Percent */
+            change_percent?: number | null;
+        };
+        /**
          * MetricPoint
          * @description Un point d'une série : un instant, une valeur, éventuellement des dimensions.
          */
@@ -971,6 +1514,42 @@ export interface components {
             modules: {
                 [key: string]: components["schemas"]["PermissionLevel"];
             };
+        };
+        /**
+         * NotificationListOut
+         * @description Liste paginée des notifications + compteur de non-lus.
+         */
+        NotificationListOut: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
+            /** Unread Count */
+            unread_count: number;
+        };
+        /**
+         * NotificationOut
+         * @description Détail d'une notification in-app.
+         */
+        NotificationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Link */
+            link: string | null;
+            /** Read At */
+            read_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * OrganizationOut
@@ -1050,6 +1629,63 @@ export interface components {
             health: components["schemas"]["PulseHealthOut"];
             /** Activity */
             activity?: components["schemas"]["AuditLogOut"][];
+        };
+        /**
+         * PushKeysIn
+         * @description Clés publiques du client (chiffrement du contenu, RFC 8291).
+         */
+        PushKeysIn: {
+            /** P256Dh */
+            p256dh: string;
+            /** Auth */
+            auth: string;
+        };
+        /**
+         * PushPublicKeyOut
+         * @description Clé VAPID publique à remettre au navigateur avant tout abonnement.
+         */
+        PushPublicKeyOut: {
+            /** Public Key */
+            public_key: string;
+        };
+        /**
+         * PushSubscribeIn
+         * @description Corps d'abonnement : ce que `PushSubscription.toJSON()` produit côté navigateur.
+         */
+        PushSubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["PushKeysIn"];
+            /** User Agent */
+            user_agent?: string | null;
+        };
+        /**
+         * PushSubscriptionOut
+         * @description Abonnement enregistré (l'endpoint et l'utilisateur suffisent à l'identifier).
+         */
+        PushSubscriptionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Endpoint */
+            endpoint: string;
+            /** User Agent */
+            user_agent: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PushUnsubscribeIn
+         * @description Corps de désabonnement : l'endpoint seul identifie l'abonnement.
+         */
+        PushUnsubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
         };
         /**
          * RegisterRequest
@@ -1145,6 +1781,12 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * WidgetKind
+         * @description Genre d'un widget : détermine le composant frontend qui le rend.
+         * @enum {string}
+         */
+        WidgetKind: "health" | "goals" | "activity" | "kpi";
     };
     responses: never;
     parameters: never;
@@ -1800,6 +2442,592 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MetricSeries"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_metric_comparison_api_v1_organizations__organization_id__metrics__metric_key__comparison_get: {
+        parameters: {
+            query?: {
+                /** @description Longueur de la fenêtre en jours */
+                days?: number;
+                /** @description Borne haute ; maintenant par défaut */
+                end?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Clé canonique « module.metric » */
+                metric_key: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricComparison"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_organizations__organization_id__notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_notification_read_api_v1_organizations__organization_id__notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_all_read_api_v1_organizations__organization_id__notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_key_api_v1_organizations__organization_id__push_public_key_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushPublicKeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    subscribe_api_v1_organizations__organization_id__push_subscriptions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscribeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushSubscriptionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_api_v1_organizations__organization_id__push_subscriptions_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushUnsubscribeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_goals_api_v1_organizations__organization_id__goals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_goal_api_v1_organizations__organization_id__goals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_goal_api_v1_organizations__organization_id__goals__goal_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_goal_api_v1_organizations__organization_id__goals__goal_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_alert_rules_api_v1_organizations__organization_id__alert_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_alert_rule_api_v1_organizations__organization_id__alert_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_dashboard_api_v1_organizations__organization_id__dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_dashboard_api_v1_organizations__organization_id__dashboard_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DashboardLayoutUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_dashboard_api_v1_organizations__organization_id__dashboard_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

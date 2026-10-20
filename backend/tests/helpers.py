@@ -14,8 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.constants import API_PREFIX, CSRF_COOKIE
 from app.core.tenancy import set_tenant
+from app.models.push_subscription import PushSubscription
 from app.services.legal_registry import LegalCompany, LegalLeader, LegalRegistryError
 from app.services.oidc import OidcIdentity, OidcProviderError
+from app.services.push import PushOutcome
 from tests.conftest import register_client
 
 PASSWORD = "mot-de-passe-secret"
@@ -157,6 +159,32 @@ def install_legal_registry(
     registry = FakeLegalRegistry(companies=companies, error=error)
     app.state.legal_registry = registry
     return registry
+
+
+class FakePushSender:
+    """Émetteur Web Push de test : aucun réseau, tout est journalisé en mémoire.
+
+    `outcomes` permet de scénariser le résultat d'un envoi (livré, caduc, échec) ;
+    par défaut tout est livré. `messages` conserve chaque envoi pour les
+    assertions (kind, params, endpoint).
+    """
+
+    def __init__(self, outcome: PushOutcome = PushOutcome.DELIVERED) -> None:
+        self.outcome = outcome
+        self.sent: list[tuple[str, dict[str, object]]] = []
+
+    async def send(self, subscription: PushSubscription, message: dict[str, object]) -> PushOutcome:
+        self.sent.append((subscription.endpoint, message))
+        return self.outcome
+
+
+def install_push_sender(
+    app: FastAPI, *, outcome: PushOutcome = PushOutcome.DELIVERED
+) -> FakePushSender:
+    """Branche un émetteur Web Push factice sur l'application sous test."""
+    sender = FakePushSender(outcome=outcome)
+    app.state.push_sender = sender
+    return sender
 
 
 def csrf_headers(client: httpx.AsyncClient) -> dict[str, str]:
