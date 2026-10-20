@@ -39,8 +39,21 @@ class GoalDirection(StrEnum):
     AT_MOST = "at_most"
 
 
+class AlertComparison(StrEnum):
+    """Sens de franchissement d'une règle d'alerte (SPEC §4) : dépasser ou passer sous.
+
+    `above` = la valeur de la fenêtre dépasse le seuil (facture impayée élevée,
+    dépenses qui débordent) ; `below` = elle passe sous le seuil (CA qui plonge,
+    visites en chute).
+    """
+
+    ABOVE = "above"
+    BELOW = "below"
+
+
 # Reprise textuelle dans les contraintes CHECK de la base : une seule source de vérité.
 ROLE_VALUES_SQL = ", ".join(f"'{role.value}'" for role in Role)
 MODULE_VALUES_SQL = ", ".join(f"'{module.value}'" for module in Module)
 LEVEL_VALUES_SQL = ", ".join(f"'{level.value}'" for level in PermissionLevel)
 GOAL_DIRECTION_VALUES_SQL = ", ".join(f"'{direction.value}'" for direction in GoalDirection)
+ALERT_COMPARISON_VALUES_SQL = ", ".join(f"'{item.value}'" for item in AlertComparison)

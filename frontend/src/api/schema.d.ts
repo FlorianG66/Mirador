@@ -566,6 +566,54 @@ export interface paths {
         patch: operations["update_goal_api_v1_organizations__organization_id__goals__goal_id__patch"];
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/alert-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Alert Rules
+         * @description Règles des modules visibles (aucun refus possible).
+         */
+        get: operations["list_alert_rules_api_v1_organizations__organization_id__alert_rules_get"];
+        put?: never;
+        /**
+         * Create Alert Rule
+         * @description Crée une règle d'alerte (seuil franchi sur une métrique canonique).
+         */
+        post: operations["create_alert_rule_api_v1_organizations__organization_id__alert_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/alert-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Alert Rule
+         * @description Supprime une règle d'alerte.
+         */
+        delete: operations["delete_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Alert Rule
+         * @description Modifie une règle existante (champs partiels).
+         */
+        patch: operations["update_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__patch"];
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/dashboard": {
         parameters: {
             query?: never;
@@ -733,6 +781,92 @@ export interface components {
             modules: {
                 [key: string]: components["schemas"]["PermissionLevel"];
             };
+        };
+        /**
+         * AlertComparison
+         * @description Sens de franchissement d'une règle d'alerte (SPEC §4) : dépasser ou passer sous.
+         *
+         *     `above` = la valeur de la fenêtre dépasse le seuil (facture impayée élevée,
+         *     dépenses qui débordent) ; `below` = elle passe sous le seuil (CA qui plonge,
+         *     visites en chute).
+         * @enum {string}
+         */
+        AlertComparison: "above" | "below";
+        /**
+         * AlertRuleCreate
+         * @description Définition d'une règle d'alerte à créer (seuil sur une clé canonique).
+         */
+        AlertRuleCreate: {
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label?: string | null;
+            /** @default above */
+            comparison: components["schemas"]["AlertComparison"];
+            /** Threshold */
+            threshold: number;
+            /**
+             * Period Days
+             * @default 1
+             */
+            period_days: number;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * AlertRuleOut
+         * @description Règle d'alerte complète : définition + horodatages.
+         */
+        AlertRuleOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Metric Key */
+            metric_key: string;
+            /** Label */
+            label: string | null;
+            comparison: components["schemas"]["AlertComparison"];
+            /** Threshold */
+            threshold: number;
+            /** Period Days */
+            period_days: number;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * AlertRuleUpdate
+         * @description Mise à jour partielle : seuls les champs fournis sont modifiés.
+         *
+         *     Un `label` explicitement `null` efface le libellé (retour au libellé i18n de
+         *     la métrique côté interface) ; un champ omis garde sa valeur.
+         */
+        AlertRuleUpdate: {
+            /** Metric Key */
+            metric_key?: string | null;
+            /** Label */
+            label?: string | null;
+            comparison?: components["schemas"]["AlertComparison"] | null;
+            /** Threshold */
+            threshold?: number | null;
+            /** Period Days */
+            period_days?: number | null;
+            /** Enabled */
+            enabled?: boolean | null;
         };
         /**
          * AuditLogOut
@@ -2466,6 +2600,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_alert_rules_api_v1_organizations__organization_id__alert_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_alert_rule_api_v1_organizations__organization_id__alert_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"];
                 };
             };
             /** @description Validation Error */

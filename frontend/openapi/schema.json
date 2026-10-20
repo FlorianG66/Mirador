@@ -1282,6 +1282,203 @@
         }
       }
     },
+    "/api/v1/organizations/{organization_id}/alert-rules": {
+      "get": {
+        "summary": "List Alert Rules",
+        "description": "Règles des modules visibles (aucun refus possible).",
+        "operationId": "list_alert_rules_api_v1_organizations__organization_id__alert_rules_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertRuleOut"
+                  },
+                  "title": "Response List Alert Rules Api V1 Organizations  Organization Id  Alert Rules Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Alert Rule",
+        "description": "Crée une règle d'alerte (seuil franchi sur une métrique canonique).",
+        "operationId": "create_alert_rule_api_v1_organizations__organization_id__alert_rules_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertRuleCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/alert-rules/{rule_id}": {
+      "patch": {
+        "summary": "Update Alert Rule",
+        "description": "Modifie une règle existante (champs partiels).",
+        "operationId": "update_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__patch",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertRuleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Alert Rule",
+        "description": "Supprime une règle d'alerte.",
+        "operationId": "delete_alert_rule_api_v1_organizations__organization_id__alert_rules__rule_id__delete",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/organizations/{organization_id}/dashboard": {
       "get": {
         "summary": "Read Dashboard",
@@ -1668,6 +1865,200 @@
         ],
         "title": "AcceptInvitationResponse",
         "description": "Rattachement créé et niveaux effectivement obtenus."
+      },
+      "AlertComparison": {
+        "type": "string",
+        "enum": [
+          "above",
+          "below"
+        ],
+        "title": "AlertComparison",
+        "description": "Sens de franchissement d'une règle d'alerte (SPEC §4) : dépasser ou passer sous.\n\n`above` = la valeur de la fenêtre dépasse le seuil (facture impayée élevée,\ndépenses qui débordent) ; `below` = elle passe sous le seuil (CA qui plonge,\nvisites en chute)."
+      },
+      "AlertRuleCreate": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/AlertComparison",
+            "default": "above"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "period_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Period Days",
+            "default": 1
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "threshold"
+        ],
+        "title": "AlertRuleCreate",
+        "description": "Définition d'une règle d'alerte à créer (seuil sur une clé canonique)."
+      },
+      "AlertRuleOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/AlertComparison"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "period_days": {
+            "type": "integer",
+            "title": "Period Days"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "metric_key",
+          "label",
+          "comparison",
+          "threshold",
+          "period_days",
+          "enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AlertRuleOut",
+        "description": "Règle d'alerte complète : définition + horodatages."
+      },
+      "AlertRuleUpdate": {
+        "properties": {
+          "metric_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlertComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
+          "period_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Days"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "title": "AlertRuleUpdate",
+        "description": "Mise à jour partielle : seuls les champs fournis sont modifiés.\n\nUn `label` explicitement `null` efface le libellé (retour au libellé i18n de\nla métrique côté interface) ; un champ omis garde sa valeur."
       },
       "AuditLogOut": {
         "properties": {

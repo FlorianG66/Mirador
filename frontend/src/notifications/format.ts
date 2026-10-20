@@ -27,6 +27,23 @@ const TITLE_BODY_KEYS: Record<string, { title: string; body: string }> = {
     title: 'notifications.legalDivergedTitle',
     body: 'notifications.legalDivergedBody',
   },
+  'alert.threshold': {
+    title: 'notifications.alertThresholdAboveTitle',
+    body: 'notifications.alertThresholdAboveBody',
+  },
+}
+
+// Le type `alert.threshold` a deux variantes (au-dessus / en dessous) : la clé
+// du titre et du corps dépend du sens porté par les `params`.
+const ALERT_THRESHOLD_KEYS: Record<string, { title: string; body: string }> = {
+  above: {
+    title: 'notifications.alertThresholdAboveTitle',
+    body: 'notifications.alertThresholdAboveBody',
+  },
+  below: {
+    title: 'notifications.alertThresholdBelowTitle',
+    body: 'notifications.alertThresholdBelowBody',
+  },
 }
 
 const FALLBACK_KEYS = {
@@ -38,6 +55,12 @@ const FALLBACK_KEYS = {
 function paramString(params: Record<string, unknown>, key: string): string {
   const value = params[key]
   return typeof value === 'string' ? value : ''
+}
+
+/** Lit un nombre dans les `params` JSON, ou `null` si absent ou mal typé. */
+function paramNumber(params: Record<string, unknown>, key: string): number | null {
+  const value = params[key]
+  return typeof value === 'number' ? value : null
 }
 
 /** Libellé de l'indicateur visé (KPI clé connu, sinon la clé canonique brute). */
@@ -72,6 +95,24 @@ export function describeNotification(
       body: t(keys.body, {
         metric: metricLabel(metricKey, t),
         target: targetLabel(params.target_value, metricKey, language),
+      }),
+    }
+  }
+
+  if (notification.kind === 'alert.threshold') {
+    const metricKey = paramString(params, 'metric_key')
+    const decimals = goalMetricMeta(metricKey)?.decimals ?? 0
+    const alertKeys = ALERT_THRESHOLD_KEYS[paramString(params, 'comparison')] ?? keys
+    const value = paramNumber(params, 'value')
+    const threshold = paramNumber(params, 'threshold')
+    const days = paramNumber(params, 'period_days')
+    return {
+      title: t(alertKeys.title),
+      body: t(alertKeys.body, {
+        metric: metricLabel(metricKey, t),
+        value: value === null ? '—' : formatGoalNumber(value, language, decimals),
+        threshold: threshold === null ? '—' : formatGoalNumber(threshold, language, decimals),
+        days: days === null ? '—' : formatGoalNumber(days, language, 0),
       }),
     }
   }

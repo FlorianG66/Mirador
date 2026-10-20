@@ -509,3 +509,27 @@ L'émission de `goal.achieved` / `goal.off_track` a lieu dans le service, appel�
 ## 2026-10-18 — Notifications : déduplication en base des non-lues (6c-ii)
 
 Deux événements successifs du même type pour le même destinataire ne créent des lignes que si l'une est lue. Le `dedup_key` (par ex. `legal:diverged:unread:<org>:<user>`) est comparé par le repository ; s'il existe une non-lue, elle est **mise à jour** (`params`, `link`) au lieu d'être empilée. Raison : une divergence de registre qui dure produirait sinon une notification par synchronisation, et le lecteur serait noyé. Aucun test de purge automatique : la suppression des notifications lues est une décision d'exploitation (ROADMAP 6c-iii), et la fonction `cleanup_old_read` n'a pas été gardée — du code non utilisé sans besoin concret n'a rien à faire dans la base.
+
+## 2026-10-19 — Découpage de la 6c-iii en deux sous-phases (6c-iii)
+
+La 6c-iii est scindée en **6c-iii-a** (règles d'alerte configurables : table `alert_rules` + CRUD + évaluation + UI) et **6c-iii-b** (Web Push : PWA, service worker, VAPID, abonnements). Raison : la 6c-iii couvre à elle seule un nouveau schéma, des endpoints, le branchement worker et une brique navigateur entièrement différente (abonnements push) — trop pour une session (AGENTS.md §2).
+
+## 2026-10-19 — Règle d'alerte = seuil générique sur une clé canonique (6c-iii-a)
+
+Une règle porte `metric_key` canonique, `comparison` (`above`/`below`), `threshold`, fenêtre glissante `period_days` (1–365), `enabled` et `label` libre optionnel. Raison : une seule primitive de **seuil** couvre les cas de la roadmap (« facture impayée » = seuil sur `finance.invoices_outstanding`) sans multiplier les types de règles ; « objectif atteint » reste porté par `goal.achieved` (6c-ii), pas dupliqué en règle.
+
+## 2026-10-19 — Règle d'alerte : valeur recalculée, jamais stockée (6c-iii-a)
+
+Comme les objectifs (6a-iii), la valeur d'une règle se recalcule en agrégeant la fenêtre courante via `metric_catalog.reduce_values` puis se compare au seuil ; seule la règle est persistée. Raison : une valeur figée se périmerait dès la première synchronisation et contredirait les dashboards ; la réduction partagée garantit la cohérence avec la comparaison et les objectifs.
+
+## 2026-10-19 — Émission `alert.threshold` par le worker, destinataires du module (6c-iii-a)
+
+`evaluate_alert_rules` est appelée par le **worker de synchronisation** (après les objectifs, avant le `commit()` unique), jamais à la lecture ; les destinataires sont les administrateurs et les membres ayant `edit` sur le module de la métrique, avec la déduplication en base de la 6c-ii (`dedup_key = alert_rule:<id>:<sens>`). Raison : une alerte correspond à un état écrit ; réutiliser la logique de destinataires/lien du canal (`admins_and_editors_on`, `module_link`, exposées publiquement) évite d'en dupliquer une seconde version.
+
+## 2026-10-19 — Web Push : service worker + VAPID, envoi derrière une interface injectable (6c-iii-b)
+
+Technique retenue pour la 6c-iii-b : PWA + service worker + clés VAPID, abonnement stocké dans une table tenant `push_subscriptions` (RLS) et envoi derrière une interface `PushSender` (un faux en test). Raison : c'est la seule voie standard pour notifier hors de l'onglet ouvert, et l'interface injectable garantit qu'aucun vrai service de push ni vraie clé n'est requis en test ou en CI (AGENTS.md §5).
+
+## 2026-10-19 — `kind` de notification traduit par table explicite, jamais la clé brute (6c-iii-a)
+
+Le `kind` backend `alert.threshold` est traduit par une entrée explicite de `TITLE_BODY_KEYS` (`frontend/src/notifications/format.ts`), avec deux variantes haut/bas choisies sur `params.comparison`. Raison : i18next lit le point comme un séparateur de chemin — la clé brute ne peut pas servir de clé i18n ; une table explicite garde une erreur visible (jamais un texte non traduit) et suit la règle posée en 6c-ii.

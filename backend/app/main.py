@@ -12,6 +12,7 @@ from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import SecurityMiddleware
 from app.core.rate_limit import RateLimiter
+from app.routers.alert_rules import router as alert_rules_router
 from app.routers.auth import router as auth_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.goals import router as goals_router
@@ -102,6 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(metrics_router, prefix=API_PREFIX)
     app.include_router(notifications_router, prefix=API_PREFIX)
     app.include_router(goals_router, prefix=API_PREFIX)
+    app.include_router(alert_rules_router, prefix=API_PREFIX)
     app.include_router(dashboard_router, prefix=API_PREFIX)
     app.include_router(pulse_router, prefix=API_PREFIX)
     app.include_router(legal_router, prefix=API_PREFIX)

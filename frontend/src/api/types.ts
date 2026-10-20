@@ -101,3 +101,8 @@ export type ProjectMetricKey =
 
 export type Notification = components['schemas']['NotificationOut']
 export type NotificationList = components['schemas']['NotificationListOut']
+
+export type AlertRule = components['schemas']['AlertRuleOut']
+export type AlertRuleCreate = components['schemas']['AlertRuleCreate']
+export type AlertRuleUpdate = components['schemas']['AlertRuleUpdate']
+export type AlertComparison = components['schemas']['AlertComparison']

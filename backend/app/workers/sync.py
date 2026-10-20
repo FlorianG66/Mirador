@@ -7,7 +7,8 @@ sans identifiants personnels et n'arrête pas les suivantes.
 
 Depuis la phase 6c-ii, le même passage évalue les objectifs et émet les
 notifications correspondantes : la synchro est ce qui fait bouger les métriques,
-donc le bon moment pour vérifier les cibles.
+donc le bon moment pour vérifier les cibles. Depuis la 6c-iii, il évalue aussi
+les règles d'alerte configurables (seuils franchis).
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.tenancy import set_tenant
 from app.repositories.organizations import list_organization_ids
+from app.services import alert_rules as alert_rules_service
 from app.services import notifications as notifications_service
 from app.services.sync import sync_organization
 
@@ -37,6 +39,7 @@ async def sync_all_organizations(
                 await set_tenant(session, organization_id=organization_id)
                 written = await sync_organization(session, organization_id)
                 await notifications_service.evaluate_goal_notifications(session, organization_id)
+                await alert_rules_service.evaluate_alert_rules(session, organization_id)
                 await session.commit()
             logger.info(
                 "Synchronisation des métriques : %d point(s) pour %s",

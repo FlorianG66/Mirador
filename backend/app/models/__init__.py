@@ -4,12 +4,13 @@ L'import de chaque table ici remplit `Base.metadata` : Alembic et l'application
 voient le schéma complet sans import circulaire (les modèles importent `base`).
 """
 
+from app.models.alert_rule import AlertRule
 from app.models.audit_log import AuditLog
 from app.models.auth_challenge import AuthChallenge
 from app.models.backup_code import BackupCode
 from app.models.base import Base
 from app.models.dashboard_layout import DashboardLayout
-from app.models.enums import GoalDirection, Module, PermissionLevel, Role
+from app.models.enums import AlertComparison, GoalDirection, Module, PermissionLevel, Role
 from app.models.goal import Goal
 from app.models.invitation import Invitation
 from app.models.legal_identifier import LegalIdentifier
@@ -24,6 +25,8 @@ from app.models.session import UserSession
 from app.models.user import User
 
 __all__ = [
+    "AlertRule",
+    "AlertComparison",
     "AuditLog",
     "AuthChallenge",
     "BackupCode",

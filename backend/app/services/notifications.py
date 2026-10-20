@@ -34,9 +34,19 @@ _MODULE_LINKS: dict[str, str] = {
 }
 
 
-async def _admins_and_editors_on(
+def module_link(module: Module) -> str:
+    """Route frontend d'un module (cible du clic sur une notification)."""
+    return _MODULE_LINKS.get(module.value, f"/{module.value}")
+
+
+async def admins_and_editors_on(
     session: AsyncSession, organization_id: uuid.UUID, module: Module
 ) -> list[uuid.UUID]:
+    """Destinataires d'un événement de module : admins + membres ayant `edit`.
+
+    Partagé par les notifications d'objectif (6c-ii) et les règles d'alerte
+    (6c-iii) : une seule règle de destinataires pour tout le canal.
+    """
     members = await memberships_repository.list_members(session, organization_id=organization_id)
     recipients: list[uuid.UUID] = []
     for member in members:
@@ -70,8 +80,8 @@ async def evaluate_goal_notifications(session: AsyncSession, organization_id: uu
         else:
             continue
         prefix = metric_prefix(goal.metric_key)
-        link = _MODULE_LINKS.get(prefix, f"/{prefix}")
-        recipients = await _admins_and_editors_on(session, organization_id, Module(prefix))
+        link = module_link(Module(prefix))
+        recipients = await admins_and_editors_on(session, organization_id, Module(prefix))
         for uid in recipients:
             existing = await notifications_repository.get_existing_dedup(
                 session, organization_id=organization_id, user_id=uid, dedup_key=dedup
