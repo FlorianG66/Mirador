@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.142.3",
     "pydantic==2.13.5",
-    "pydantic-settings==2.15.0",
+    "pydantic-settings==2.16.0",
     "sqlalchemy[asyncio]==2.1.4",
     "alembic==1.20.0",
     "asyncpg==0.32.0",
