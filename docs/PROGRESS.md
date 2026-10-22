@@ -4,12 +4,12 @@
 
 ## État
 
-- **Phase en cours** : 6 — Fonctions transverses (ROADMAP ligne 58, réf. SPEC §4). **Phase 6 complète et mergée sur `main`** (merge `c813f9f`, PR #9) — toutes les sous-phases livrées : 6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`. La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
-- **Branche** : `main` (tête `c813f9f`, synchro avec `origin/main`). La branche `phase-6-transverse` est conservée, mergée.
-- **Prochaine action** : lire la **phase 7** dans `docs/ROADMAP.md` (et les sections de `docs/SPEC.md` qu'elle référence) et proposer un plan court avant d'exécuter.
-- **Reste avant merge** : néant — la phase 6 est mergée sur `main`.
+- **Phase en cours** : aucune — **phase 6 clôturée et mergée sur `main`** (merge `c813f9f`, PR #9) : toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
+- **Branche** : `main` (tête `21dbfbd`, synchro avec `origin/main`) + branche de maintenance `chore/qualite-docs-ci` (docs/CI, issue de `main`). `phase-7-demo` existe en local au même commit que `main`, sans travail commencé.
+- **Prochaine action** : proposer un plan court pour la **phase 7 « Mode démo »** (`ROADMAP.md` phase 7, `SPEC.md` §9), puis exécuter.
+- **Reste avant merge** : néant.
 - **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
-- **Dette connue — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (draft `phase-6-transverse` → `main`, 3/3 jobs). Reste avant merge : feu vert du mainteneur.
+- **Dette historique — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (3/3 jobs), PR mergée le 2026-10-20.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
 
 ### Critères de la phase 0 — vérité du terrain
@@ -987,3 +987,11 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Schéma OpenAPI | ✅ `export_openapi.py` + `generate:api` régénérés (`Push*`) |
 | pre-commit | ✅ `pre-commit run` (11 hooks, dont gitleaks « no leaks found ») |
 | CI | ⚠️ job écrit, pas d'exécution sur ce commit (PR #9 ouverte) |
+
+### 2026-10-22 — Maintenance : audit des dépendances en CI, doc remise à jour, test flaky stabilisé
+- **Audit des dépendances en CI** (AGENTS.md §5) : `pip-audit==2.10.1` ajouté aux extras `dev` (`backend/pyproject.toml`) et étape `pip-audit` dans le job backend ; `npm audit --audit-level=high` dans le job frontend. Premier passage : une vulnérabilité réelle — `certifi 2026.7.22` (PYSEC-2026-4320, corrigée en `2026.10.19`), dépendance transitive de `httpx`. Correctif retenu : épingler `certifi==2026.10.19` plutôt que d'ignorer l'alerte, pour que le vert ne dépende pas de la résolution de pip. `npm audit` : 0 vulnérabilité.
+- **Doc remise en phase** : entête de statut du `README.md` réécrite (phases 0 à 6 mergées, prochaine étape la phase 7) — elle annonçait encore la phase 5 sur sa branche et la phase 6 « en cours » ; références `docs/SPEC.md`/`docs/ROADMAP.md` corrigées en `SPEC.md`/`ROADMAP.md` dans `AGENTS.md` (les deux fichiers sont à la racine) ; entête de ce fichier rafraîchi (plus de « reste avant merge », branche réelle indiquée).
+- **Test flaky stabilisé** : `tests/connectors/test_scheduler.py` remplaçait les attentes par des `asyncio.sleep(0.03)` fixes ; sur machine chargée la boucle n'avait pas tourné assez et le test échouait sans bug applicatif (constaté en 6c-ii). Les quatre tests positifs attendent désormais une condition (`_wait_until`, sondage de 5 ms borné à 5 s), les assertions négatives gardent leur marge. Aucun changement du code de production.
+- Vérifs : `pytest tests/connectors/test_scheduler.py` **5 passed sur 5 exécutions consécutives** · `ruff check` + `ruff format --check` (185 fichiers) ✅ · `mypy` strict 0 erreur (121 fichiers) ✅ · `pip-audit` « No known vulnerabilities found » (exit 0) · `npm audit` 0 vulnérabilité.
+- **Non fait / à arbitrer** : les **10 PR Dependabot** ouvertes (FastAPI, SQLAlchemy, Pydantic, ruff, i18next, motion, lucide, react-query, @types/node) n'ont pas été mergées — un merge sur `main` demande ton feu vert (AGENTS.md §3). Les e2e Playwright restent hors CI (canal Edge local).
+- Commit : `51ffb61` — `chore: audit des dependances en CI, doc a jour et test flaky stabilise`.

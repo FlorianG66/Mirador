@@ -142,5 +142,5 @@ frontend/
 ## Environnements
 
 - **Dev** : Docker Compose (PostgreSQL avec volume persistant), `.env.example` en modèle.
-- **CI** (`.github/workflows/ci.yml`) : `gitleaks` sur tout l'historique ; job `backend` = ruff check/format + mypy + pytest (couverture) ; job `frontend` = eslint + `tsc` + Vitest + build Vite. Les tests e2e Playwright ne tournent pas en CI (canal Edge local — v. `DECISIONS.md`). L'audit des dépendances (`pip-audit`, `npm audit`) reste à brancher.
+- **CI** (`.github/workflows/ci.yml`) : `gitleaks` sur tout l'historique ; job `backend` = ruff check/format + mypy + `pip-audit` + pytest (couverture) ; job `frontend` = eslint + `tsc` + Vitest + build Vite + `npm audit --audit-level=high`. Les tests e2e Playwright ne tournent pas en CI (canal Edge local — v. `DECISIONS.md`).
 - **Production** : PaaS managé français (voir `SPEC.md` §10), config d'infra dans un dépôt privé séparé.

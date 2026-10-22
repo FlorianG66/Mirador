@@ -543,3 +543,11 @@ Le service worker (`frontend/public/sw.js`) vit hors du bundle React : il ne peu
 ## 2026-10-19 — `kind` de notification traduit par table explicite, jamais la clé brute (6c-iii-a)
 
 Le `kind` backend `alert.threshold` est traduit par une entrée explicite de `TITLE_BODY_KEYS` (`frontend/src/notifications/format.ts`), avec deux variantes haut/bas choisies sur `params.comparison`. Raison : i18next lit le point comme un séparateur de chemin — la clé brute ne peut pas servir de clé i18n ; une table explicite garde une erreur visible (jamais un texte non traduit) et suit la règle posée en 6c-ii.
+
+## 2026-10-22 — Audit des dépendances dans la CI (`pip-audit` + `npm audit`, seuil high)
+
+`pip-audit` (épinglé dans les extras `dev`) audite l'environnement installé dans le job backend ; le job frontend exécute `npm audit --audit-level=high`. Raison : AGENTS.md §5 l'exige et un audit lancé à la main ne survit pas aux oublis ; le seuil `high` évite de bloquer un projet solo sur une vulnérabilité modérée tout en arrêtant les hautes et critiques. Le premier passage a fait épingler `certifi==2026.10.19` (PYSEC-2026-4320) au lieu d'ignorer l'alerte : un correctif disponible ne se contourne pas.
+
+## 2026-10-22 — Tests du planificateur : attente de condition, pas de sommeil fixe
+
+Les tests de `JobScheduler` attendaient `asyncio.sleep(0.03)` en supposant que la boucle aurait tourné deux fois ; ce n'est pas garanti sur une machine chargée (flake constaté en 6c-ii, vert isolé). Ils attendent désormais la condition (`_wait_until`, sondage de 5 ms borné à 5 s). Raison : un test doit échouer pour un bug, pas pour un aléa d'ordonnancement — et le code de production n'est pas modifié (aucune marge ajoutée au planificateur).
