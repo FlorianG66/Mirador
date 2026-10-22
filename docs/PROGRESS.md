@@ -5,7 +5,7 @@
 ## État
 
 - **Phase en cours** : aucune — **phases 0 à 6 mergées sur `main`**, **phase 7 « Mode démo » livrée sur la branche `phase-7-demo`** (backend, frontend, e2e, docs), en attente de revue et de feu vert pour le merge. Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
-- **Branche** : `phase-7-demo` (issue de `main`). La branche de maintenance `chore/qualite-docs-ci` (docs/CI) attend aussi sa revue.
+- **Branche** : `phase-7-demo` (issue de `main`) — **PR #15** (brouillon) ouverte. La branche de maintenance `chore/qualite-docs-ci` (docs/CI) attend aussi sa revue.
 - **Prochaine action** : relire la PR brouillon de `phase-7-demo`, puis merger après feu vert ; ensuite proposer un plan court pour la **phase 8 « Chatbot IA »** (`ROADMAP.md` phase 8, `SPEC.md` §4).
 - **Reste avant merge** : néant.
 - **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
@@ -1007,7 +1007,8 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - **Tests frontend** : `DemoPage.test.tsx` (4 — scénarios + session sur le secteur choisi, échange d'un lien, lien expiré, panne des scénarios) et `DemoBanner.test.tsx` (2 — visible en démo, invisible sinon) ; Vitest **113 passed** (26 fichiers). e2e `demo.spec.ts` (2 — parcours secteur → tableau de bord → bandeau, lien expiré) ; suite Playwright **15 passed**.
 - **Vérifications** : `ruff check` + `ruff format --check` OK ; `mypy app` 0 erreur (126 fichiers) ; `npm run typecheck` 0 erreur ; `npm run lint` 0 erreur ; `npm run build` OK (avertissement « chunk > 500 kB » préexistant) ; client OpenAPI régénéré (`export_openapi.py` + `generate:api`).
 - **Décisions** : `DECISIONS.md` (2026-10-22) — organisation éphémère par session, jetons hachés et route admin sous `/organizations/{id}`, e-mails sur `example.com` et purge dans le worker, rafraîchissement du registre refusé en démo.
-- **Non fait** : push de la branche `phase-7-demo`, PR et merge sur `main` (feu vert du mainteneur requis, AGENTS.md §3). Les 10 PR Dependabot restent en attente.
+- **Non fait** : merge sur `main` (feu vert du mainteneur requis, AGENTS.md §3) et vérification de la CI sur la PR #15. Les 10 PR Dependabot restent en attente.
+- **Commits** : `7276d50` (backend), `d2f1127` (frontend + e2e + client API), `18e3c78` (docs) — PR #15.
 
 ### Critères de la phase 7 — vérifié du terrain
 | Critère | État |
