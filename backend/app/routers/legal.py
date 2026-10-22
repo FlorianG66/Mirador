@@ -20,6 +20,7 @@ from app.models.membership import Membership
 from app.repositories import organizations as organizations_repository
 from app.schemas.legal import LegalProfileOut, LegalProfileUpdate
 from app.services import legal as legal_service
+from app.services.errors import ServiceProblem
 from app.services.legal_registry import LegalRegistry
 from app.services.push import PushSender
 
@@ -72,7 +73,16 @@ async def refresh_legal_profile(
     registry: RegistryDependency,
     push_sender: PushSenderDependency,
 ) -> LegalProfileOut:
-    """Recharge la fiche depuis le registre, sans écraser la saisie manuelle."""
+    """Recharge la fiche depuis le registre, sans écraser la saisie manuelle.
+
+    Les organisations de démonstration utilisent une fiche fictive figée : le
+    rafraîchissement vers le registre public est interdit (SPEC §9).
+    """
+    organization = await organizations_repository.get_organization(
+        session, membership.organization_id
+    )
+    if organization is not None and organization.is_demo:
+        raise ServiceProblem(403, "Le rafraîchissement du registre est désactivé en mode démo.")
     return await legal_service.refresh_profile(
         session,
         organization_id=membership.organization_id,

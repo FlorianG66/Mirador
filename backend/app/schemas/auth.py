@@ -50,6 +50,7 @@ class OrganizationOut(BaseModel):
 
     id: uuid.UUID
     name: str
+    is_demo: bool = False
 
 
 class RegisterResponse(BaseModel):
@@ -65,10 +66,17 @@ class LoginResponse(BaseModel):
 
 
 class MembershipOut(BaseModel):
-    """Rattachement de l'utilisateur courant à une organisation."""
+    """Rattachement de l'utilisateur courant à une organisation.
+
+    Le nom et le marqueur `is_demo` évitent un second appel : l'UI peut afficher
+    l'organisation active et le bandeau « Démo » dès `/auth/me`.
+    """
 
     organization_id: uuid.UUID
+    organization_name: str
     role: Role
+    is_demo: bool = False
+    demo_sector: str | None = None
 
 
 class MeResponse(BaseModel):

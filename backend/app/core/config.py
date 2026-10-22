@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     vapid_public_key: str = ""
     vapid_private_key: str = ""
     vapid_subject: str = ""
+    # Mode démo (phase 7) : durée de vie d'une session fictive et d'un lien
+    # `/demo/<token>` généré pour un prospect. La purge automatique du worker
+    # supprime les organisations démo arrivées à échéance.
+    demo_session_ttl_minutes: int = 60
+    demo_link_ttl_hours: int = 72
 
     @property
     def google_redirect_uri(self) -> str:

@@ -15,6 +15,8 @@ from app.core.rate_limit import RateLimiter
 from app.routers.alert_rules import router as alert_rules_router
 from app.routers.auth import router as auth_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.demo import organizations_router as demo_organizations_router
+from app.routers.demo import router as demo_router
 from app.routers.goals import router as goals_router
 from app.routers.google import router as google_router
 from app.routers.health import router as health_router
@@ -105,6 +107,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Une fabrique partagée : une session (donc une transaction) par requête.
     app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
     app.include_router(auth_router, prefix=API_PREFIX)
+    app.include_router(demo_router, prefix=API_PREFIX)
+    app.include_router(demo_organizations_router, prefix=API_PREFIX)
     app.include_router(google_router, prefix=API_PREFIX)
     app.include_router(two_factor_router, prefix=API_PREFIX)
     app.include_router(password_router, prefix=API_PREFIX)

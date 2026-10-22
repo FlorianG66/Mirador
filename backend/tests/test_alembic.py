@@ -8,7 +8,7 @@ from alembic import command
 from tests.conftest import _with_database, alembic_config, fetch_scalar, upgrade_to_head
 
 BASELINE_REVISION = "0001"
-HEAD_REVISION = "0011"
+HEAD_REVISION = "0012"
 
 # Tables soumises à Row-Level Security : elles portent toutes organization_id.
 TENANT_TABLES = (
@@ -26,7 +26,7 @@ TENANT_TABLES = (
     "push_subscriptions",
 )
 # Globals d'identité (comme `users` et `sessions`) : hors RLS, phase 2c.
-IDENTITY_TABLES = ("auth_challenges", "backup_codes", "password_reset_tokens")
+IDENTITY_TABLES = ("auth_challenges", "backup_codes", "password_reset_tokens", "demo_links")
 
 
 def test_with_database_preserves_unix_socket_url() -> None:
@@ -130,6 +130,21 @@ def test_two_factor_columns_added_to_users(alembic_test_database_url: str) -> No
     assert "totp_enabled_at" in columns
 
 
+def test_demo_columns_added_to_organizations(alembic_test_database_url: str) -> None:
+    """Phase 7 : une organisation peut être marquée démo, avec secteur et échéance."""
+    upgrade_to_head(alembic_test_database_url)
+
+    columns = fetch_scalar(
+        alembic_test_database_url,
+        "SELECT string_agg(column_name, ',' ORDER BY column_name)"
+        " FROM information_schema.columns WHERE table_name = 'organizations'",
+    )
+    assert isinstance(columns, str)
+    assert "is_demo" in columns
+    assert "demo_sector" in columns
+    assert "demo_expires_at" in columns
+
+
 def test_sessions_stay_out_of_row_level_security(alembic_test_database_url: str) -> None:
     """`sessions` est un global d'identité (comme `users`) : la RLS ne la concerne pas."""
     upgrade_to_head(alembic_test_database_url)
@@ -142,7 +157,7 @@ def test_sessions_stay_out_of_row_level_security(alembic_test_database_url: str)
 
 
 def test_two_factor_tables_stay_out_of_row_level_security(alembic_test_database_url: str) -> None:
-    """Défis, codes de secours et jetons de réinitialisation : pas de tenant (phase 2c)."""
+    """Défis, codes de secours, jetons de réinitialisation et liens démo : pas de tenant."""
     upgrade_to_head(alembic_test_database_url)
 
     for table in IDENTITY_TABLES:
