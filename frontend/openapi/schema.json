@@ -138,6 +138,159 @@
         }
       }
     },
+    "/api/v1/demo/scenarios": {
+      "get": {
+        "summary": "List Demo Scenarios",
+        "description": "Liste des scénarios sectoriels disponibles pour la démo publique.",
+        "operationId": "list_demo_scenarios_api_v1_demo_scenarios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemoScenarioOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Demo Scenarios Api V1 Demo Scenarios Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/demo/sessions": {
+      "post": {
+        "summary": "Create Demo Session",
+        "description": "Ouvre une session de démonstration isolée (entreprise fictive, données mock).",
+        "operationId": "create_demo_session_api_v1_demo_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/demo/links/{token}": {
+      "post": {
+        "summary": "Redeem Demo Link",
+        "description": "Échange un lien `/demo/<token>` contre une session de démonstration.",
+        "operationId": "redeem_demo_link_api_v1_demo_links__token__post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/demo-links": {
+      "post": {
+        "summary": "Create Demo Link",
+        "description": "Génère un lien de démonstration à destination d'un prospect (réservé aux admins).",
+        "operationId": "create_demo_link_api_v1_organizations__organization_id__demo_links_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoLinkOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/google": {
       "get": {
         "summary": "Start",
@@ -1869,7 +2022,7 @@
     "/api/v1/organizations/{organization_id}/legal/refresh": {
       "post": {
         "summary": "Refresh Legal Profile",
-        "description": "Recharge la fiche depuis le registre, sans écraser la saisie manuelle.",
+        "description": "Recharge la fiche depuis le registre, sans écraser la saisie manuelle.\n\nLes organisations de démonstration utilisent une fiche fictive figée : le\nrafraîchissement vers le registre public est interdit (SPEC §9).",
         "operationId": "refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post",
         "parameters": [
           {
@@ -2432,6 +2585,121 @@
         ],
         "title": "DatabaseHealthResponse",
         "description": "Réponse de GET /health/db."
+      },
+      "DemoLinkOut": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/DemoSector"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "path",
+          "url",
+          "sector",
+          "expires_at"
+        ],
+        "title": "DemoLinkOut",
+        "description": "Lien de démonstration : le jeton en clair n'est montré qu'une seule fois."
+      },
+      "DemoLinkRequest": {
+        "properties": {
+          "sector": {
+            "$ref": "#/components/schemas/DemoSector"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sector"
+        ],
+        "title": "DemoLinkRequest",
+        "description": "Génération d'un lien pour un prospect, sur un secteur donné."
+      },
+      "DemoScenarioOut": {
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/DemoSector"
+          },
+          "organization_name": {
+            "type": "string",
+            "title": "Organization Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "organization_name"
+        ],
+        "title": "DemoScenarioOut",
+        "description": "Un scénario sectoriel proposé sur `/demo`."
+      },
+      "DemoSector": {
+        "type": "string",
+        "enum": [
+          "restaurant",
+          "agency",
+          "ecommerce"
+        ],
+        "title": "DemoSector",
+        "description": "Scénario sectoriel d'une organisation de démonstration (SPEC §9)."
+      },
+      "DemoSessionRequest": {
+        "properties": {
+          "sector": {
+            "$ref": "#/components/schemas/DemoSector"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sector"
+        ],
+        "title": "DemoSessionRequest",
+        "description": "Ouverture d'une session de démonstration depuis `/demo`."
+      },
+      "DemoSessionResponse": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserOut"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationOut"
+          },
+          "sector": {
+            "$ref": "#/components/schemas/DemoSector"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user",
+          "organization",
+          "sector",
+          "expires_at"
+        ],
+        "title": "DemoSessionResponse",
+        "description": "Session de démonstration ouverte : même forme qu'une inscription."
       },
       "DisableTwoFactorRequest": {
         "properties": {
@@ -3431,17 +3699,38 @@
             "format": "uuid",
             "title": "Organization Id"
           },
+          "organization_name": {
+            "type": "string",
+            "title": "Organization Name"
+          },
           "role": {
             "$ref": "#/components/schemas/Role"
+          },
+          "is_demo": {
+            "type": "boolean",
+            "title": "Is Demo",
+            "default": false
+          },
+          "demo_sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demo Sector"
           }
         },
         "type": "object",
         "required": [
           "organization_id",
+          "organization_name",
           "role"
         ],
         "title": "MembershipOut",
-        "description": "Rattachement de l'utilisateur courant à une organisation."
+        "description": "Rattachement de l'utilisateur courant à une organisation.\n\nLe nom et le marqueur `is_demo` évitent un second appel : l'UI peut afficher\nl'organisation active et le bandeau « Démo » dès `/auth/me`."
       },
       "MetricAggregation": {
         "type": "string",
@@ -3730,6 +4019,11 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "is_demo": {
+            "type": "boolean",
+            "title": "Is Demo",
+            "default": false
           }
         },
         "type": "object",

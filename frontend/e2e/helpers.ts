@@ -14,6 +14,8 @@ export interface ApiMockState {
   twoFactorRequired: boolean
   /** Si `true`, `/auth/login` répond 401 (identifiants incorrects). */
   loginRejected: boolean
+  /** Si `true`, l'organisation active est une démonstration (bandeau). */
+  demo: boolean
 }
 
 function fulfill(route: Route, status: number, body: unknown): Promise<void> {
@@ -28,7 +30,6 @@ function problem(status: number, detail: string): unknown {
   return { type: 'about:blank', title: 'Erreur', status, detail, instance: '' }
 }
 
-const memberships = [{ organization_id: ORG_ID, role: 'admin' }]
 const modules = {
   finance: 'edit',
   web: 'edit',
@@ -56,12 +57,27 @@ export async function installApiMocks(
     loggedIn: false,
     twoFactorRequired: false,
     loginRejected: false,
+    demo: false,
     ...overrides,
   }
 
+  const memberships = () => [
+    {
+      organization_id: ORG_ID,
+      organization_name: 'Entreprise fictive',
+      role: 'admin',
+      is_demo: state.demo,
+      demo_sector: state.demo ? 'restaurant' : null,
+    },
+  ]
+
   await page.route('**/api/v1/auth/me', (route) =>
     state.loggedIn
-      ? fulfill(route, 200, { id: USER_ID, email: 'admin@example.com', memberships })
+      ? fulfill(route, 200, {
+          id: USER_ID,
+          email: 'admin@example.com',
+          memberships: memberships(),
+        })
       : fulfill(route, 401, problem(401, 'Non authentifié.')),
   )
 

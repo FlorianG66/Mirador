@@ -246,7 +246,7 @@ async def clean_tables(session_factory: async_sessionmaker[AsyncSession]) -> Asy
                 " invitations, audit_logs, sessions, auth_challenges, backup_codes,"
                 " password_reset_tokens, metric_snapshots, legal_profiles,"
                 " legal_identifiers, goals, alert_rules, dashboard_layouts, notifications,"
-                " push_subscriptions CASCADE"
+                " push_subscriptions, demo_links CASCADE"
             )
         )
         await session.commit()

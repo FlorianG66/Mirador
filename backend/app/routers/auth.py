@@ -156,11 +156,20 @@ async def me(
     session: SessionDependency,
 ) -> MeResponse:
     """Utilisateur courant et ses organisations (tenant utilisateur déjà posé)."""
-    rows = await memberships_repository.list_memberships_for_user(session, user_id=current_user.id)
+    rows = await memberships_repository.list_memberships_with_organization_for_user(
+        session, user_id=current_user.id
+    )
     return MeResponse(
         id=current_user.id,
         email=current_user.email,
         memberships=[
-            MembershipOut(organization_id=row.organization_id, role=Role(row.role)) for row in rows
+            MembershipOut(
+                organization_id=membership.organization_id,
+                organization_name=organization.name,
+                role=Role(membership.role),
+                is_demo=organization.is_demo,
+                demo_sector=organization.demo_sector,
+            )
+            for membership, organization in rows
         ],
     )

@@ -102,6 +102,11 @@ export function LoginPage() {
             {t('login.noAccount')}
           </Link>
         </p>
+        <p className="text-center text-sm">
+          <Link to="/demo" className="text-brand hover:underline">
+            {t('login.demoLink')}
+          </Link>
+        </p>
       </form>
     </main>
   )

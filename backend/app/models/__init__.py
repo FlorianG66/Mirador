@@ -10,7 +10,15 @@ from app.models.auth_challenge import AuthChallenge
 from app.models.backup_code import BackupCode
 from app.models.base import Base
 from app.models.dashboard_layout import DashboardLayout
-from app.models.enums import AlertComparison, GoalDirection, Module, PermissionLevel, Role
+from app.models.demo_link import DemoLink
+from app.models.enums import (
+    AlertComparison,
+    DemoSector,
+    GoalDirection,
+    Module,
+    PermissionLevel,
+    Role,
+)
 from app.models.goal import Goal
 from app.models.invitation import Invitation
 from app.models.legal_identifier import LegalIdentifier
@@ -33,6 +41,8 @@ __all__ = [
     "BackupCode",
     "Base",
     "DashboardLayout",
+    "DemoLink",
+    "DemoSector",
     "Goal",
     "GoalDirection",
     "Invitation",

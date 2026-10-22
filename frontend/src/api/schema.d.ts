@@ -108,6 +108,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/demo/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Demo Scenarios
+         * @description Liste des scénarios sectoriels disponibles pour la démo publique.
+         */
+        get: operations["list_demo_scenarios_api_v1_demo_scenarios_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demo/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Demo Session
+         * @description Ouvre une session de démonstration isolée (entreprise fictive, données mock).
+         */
+        post: operations["create_demo_session_api_v1_demo_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demo/links/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem Demo Link
+         * @description Échange un lien `/demo/<token>` contre une session de démonstration.
+         */
+        post: operations["redeem_demo_link_api_v1_demo_links__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/demo-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Demo Link
+         * @description Génère un lien de démonstration à destination d'un prospect (réservé aux admins).
+         */
+        post: operations["create_demo_link_api_v1_organizations__organization_id__demo_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/google": {
         parameters: {
             query?: never;
@@ -745,6 +825,9 @@ export interface paths {
         /**
          * Refresh Legal Profile
          * @description Recharge la fiche depuis le registre, sans écraser la saisie manuelle.
+         *
+         *     Les organisations de démonstration utilisent une fiche fictive figée : le
+         *     rafraîchissement vers le registre public est interdit (SPEC §9).
          */
         post: operations["refresh_legal_profile_api_v1_organizations__organization_id__legal_refresh_post"];
         delete?: never;
@@ -1012,6 +1095,67 @@ export interface components {
              */
             status: "ok";
             database: components["schemas"]["DatabaseDetails"];
+        };
+        /**
+         * DemoLinkOut
+         * @description Lien de démonstration : le jeton en clair n'est montré qu'une seule fois.
+         */
+        DemoLinkOut: {
+            /** Token */
+            token: string;
+            /** Path */
+            path: string;
+            /** Url */
+            url: string;
+            sector: components["schemas"]["DemoSector"];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /**
+         * DemoLinkRequest
+         * @description Génération d'un lien pour un prospect, sur un secteur donné.
+         */
+        DemoLinkRequest: {
+            sector: components["schemas"]["DemoSector"];
+        };
+        /**
+         * DemoScenarioOut
+         * @description Un scénario sectoriel proposé sur `/demo`.
+         */
+        DemoScenarioOut: {
+            key: components["schemas"]["DemoSector"];
+            /** Organization Name */
+            organization_name: string;
+        };
+        /**
+         * DemoSector
+         * @description Scénario sectoriel d'une organisation de démonstration (SPEC §9).
+         * @enum {string}
+         */
+        DemoSector: "restaurant" | "agency" | "ecommerce";
+        /**
+         * DemoSessionRequest
+         * @description Ouverture d'une session de démonstration depuis `/demo`.
+         */
+        DemoSessionRequest: {
+            sector: components["schemas"]["DemoSector"];
+        };
+        /**
+         * DemoSessionResponse
+         * @description Session de démonstration ouverte : même forme qu'une inscription.
+         */
+        DemoSessionResponse: {
+            user: components["schemas"]["UserOut"];
+            organization: components["schemas"]["OrganizationOut"];
+            sector: components["schemas"]["DemoSector"];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /** DisableTwoFactorRequest */
         DisableTwoFactorRequest: {
@@ -1411,6 +1555,9 @@ export interface components {
         /**
          * MembershipOut
          * @description Rattachement de l'utilisateur courant à une organisation.
+         *
+         *     Le nom et le marqueur `is_demo` évitent un second appel : l'UI peut afficher
+         *     l'organisation active et le bandeau « Démo » dès `/auth/me`.
          */
         MembershipOut: {
             /**
@@ -1418,7 +1565,16 @@ export interface components {
              * Format: uuid
              */
             organization_id: string;
+            /** Organization Name */
+            organization_name: string;
             role: components["schemas"]["Role"];
+            /**
+             * Is Demo
+             * @default false
+             */
+            is_demo: boolean;
+            /** Demo Sector */
+            demo_sector?: string | null;
         };
         /**
          * MetricAggregation
@@ -1563,6 +1719,11 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Is Demo
+             * @default false
+             */
+            is_demo: boolean;
         };
         /**
          * PermissionLevel
@@ -1918,6 +2079,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    list_demo_scenarios_api_v1_demo_scenarios_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoScenarioOut"][];
+                };
+            };
+        };
+    };
+    create_demo_session_api_v1_demo_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeem_demo_link_api_v1_demo_links__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_demo_link_api_v1_organizations__organization_id__demo_links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoLinkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

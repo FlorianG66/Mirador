@@ -21,7 +21,15 @@ from app.core.constants import ACCESS_COOKIE, API_PREFIX, CSRF_COOKIE, CSRF_HEAD
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 # Ces routes sont le point d'entrée du jeton CSRF : elles en délivrent un, on ne
 # peut pas en exiger une au moment de la première connexion.
-CSRF_EXEMPT_PATHS = frozenset({f"{API_PREFIX}/auth/register", f"{API_PREFIX}/auth/login"})
+# `/demo/sessions` et `/demo/links/{token}` sont publiques et sans cookie
+# d'authentification au premier appel : la protection CSRF ne s'applique pas.
+CSRF_EXEMPT_PATHS = frozenset(
+    {
+        f"{API_PREFIX}/auth/register",
+        f"{API_PREFIX}/auth/login",
+        f"{API_PREFIX}/demo/sessions",
+    }
+)
 
 
 def _security_headers(settings: Settings) -> list[tuple[bytes, bytes]]:
