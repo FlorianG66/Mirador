@@ -1,7 +1,7 @@
 # AGENTS.md — Mirador (nom provisoire)
 
 > Règles permanentes du projet. Lis ce fichier en entier au début de chaque session.
-> Cahier des charges : `docs/SPEC.md`. Découpage en phases : `docs/ROADMAP.md`. Suivi : `docs/PROGRESS.md`.
+> Cahier des charges : `SPEC.md`. Découpage en phases : `ROADMAP.md`. Suivi : `docs/PROGRESS.md`.
 
 ## 1. Le projet en 3 lignes
 SaaS de dashboard pour entreprises de tout secteur : il centralise finance, web analytics, réseaux sociaux, projets/tâches, identité légale de l'entreprise (puis d'autres modules) pour « jeter un coup d'œil » à ce qui se passe dans l'entreprise. Le dirigeant est admin et donne à chaque collaborateur l'accès aux modules de son choix. Projet perso : d'abord portfolio, objectif final = produit publiable et commercialisable.
@@ -9,7 +9,7 @@ Le nom est provisoire : utilise une constante `PROJECT_NAME` centralisée, jamai
 Le dépôt GitHub est **public** (portfolio) alors que le produit sera commercialisé : règles de dépôt public en §5, licence en SPEC §12. Fonction de base du produit : la fiche légale de l'entreprise (SPEC §3).
 
 ## 2. Méthode de travail
-- **Une seule phase à la fois.** Quand on te dit « Phase N », lis uniquement la phase N dans `docs/ROADMAP.md` et les sections de `docs/SPEC.md` qu'elle référence. N'anticipe pas les phases suivantes.
+- **Une seule phase à la fois.** Quand on te dit « Phase N », lis uniquement la phase N dans `ROADMAP.md` et les sections de `SPEC.md` qu'elle référence. N'anticipe pas les phases suivantes.
 - Commence par un plan court (/plan), puis exécute. Ne pose une question que si une ambiguïté bloque vraiment ou si une décision d'architecture majeure n'est couverte par aucun document.
 - Décision non couverte ? Prends l'option la plus simple et maintenable, et note-la en 3 lignes dans `docs/DECISIONS.md` (date, décision, raison).
 - Petits pas : fichiers courts (< 300 lignes), une responsabilité par fichier, commits atomiques. N'ouvre que les fichiers utiles, ne relis pas tout le repo.

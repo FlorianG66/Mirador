@@ -8,6 +8,7 @@ sont idempotents, et l'intervalle doit être strictement positif.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 
 import pytest
 
@@ -19,7 +20,7 @@ async def test_le_travail_tourne_periodiquement() -> None:
     calls: list[int] = []
     scheduler = JobScheduler(lambda: _record(calls), interval_seconds=0.01, name="test-period")
     await scheduler.start()
-    await asyncio.sleep(0.05)
+    await _wait_until(lambda: len(calls) >= 3)
     assert scheduler.running
     await scheduler.stop()
 
@@ -33,7 +34,7 @@ async def test_start_est_idempotent() -> None:
     await scheduler.start()
     await scheduler.start()
     assert scheduler.running
-    await asyncio.sleep(0.03)
+    await _wait_until(lambda: len(calls) >= 2)
     await scheduler.stop()
 
     assert len(calls) >= 2
@@ -44,7 +45,7 @@ async def test_stop_annule_la_boucle_et_est_idempotent() -> None:
     calls: list[int] = []
     scheduler = JobScheduler(lambda: _record(calls), interval_seconds=0.01, name="test-stop")
     await scheduler.start()
-    await asyncio.sleep(0.03)
+    await _wait_until(lambda: len(calls) >= 1)
     await scheduler.stop()
     count_after_stop = len(calls)
 
@@ -67,7 +68,7 @@ async def test_un_echec_du_travail_ne_arrete_pas_la_boucle() -> None:
 
     scheduler = JobScheduler(flaky, interval_seconds=0.01, name="test-flaky")
     await scheduler.start()
-    await asyncio.sleep(0.03)
+    await _wait_until(lambda: bool(attempts))
     assert scheduler.running  # l'échec a été absorbé, pas d'arrêt.
     await scheduler.stop()
 
@@ -84,3 +85,19 @@ def test_intervalle_strictement_positif() -> None:
 async def _record(calls: list[int]) -> None:
     """Travail de test : enregistre un appel puis rend la main (sans attendre)."""
     calls.append(1)
+
+
+async def _wait_until(predicate: Callable[[], bool], timeout: float = 5.0) -> None:
+    """Attend qu'une condition devienne vraie, sans durée fixe.
+
+    Un `asyncio.sleep(0.03)` supposait que la boucle aurait tourné au moins deux
+    fois : sur une machine chargée (CI, suite complète en parallèle) l'ordonnanceur
+    peut ne pas rendre la main assez tôt et le test échouait sans bug applicatif.
+    On sonde jusqu'à une échéance large pour rester déterministe.
+    """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    while not predicate():
+        if loop.time() > deadline:
+            raise AssertionError("condition non atteinte dans le délai imparti")
+        await asyncio.sleep(0.005)

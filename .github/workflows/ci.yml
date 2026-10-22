@@ -54,6 +54,8 @@ jobs:
         run: ruff format --check .
       - name: Types (mypy strict)
         run: mypy
+      - name: Audit des dépendances (pip-audit)
+        run: pip-audit
       - name: Tests + couverture (seuil 80 %)
         # Les tests lancent PostgreSQL via pgserver (binaires fournis par la wheel).
         run: pytest -q --cov=app
@@ -81,3 +83,7 @@ jobs:
         run: npm test
       - name: Build (vite)
         run: npm run build
+      - name: Audit des dépendances (npm audit)
+        # Seuil « high » : une vulnérabilité modérée ne doit pas bloquer un projet
+        # solo, mais les hautes et critiques oui (AGENTS.md §5).
+        run: npm audit --audit-level=high

@@ -20,6 +20,9 @@ dependencies = [
     "email-validator==2.3.0",
     # Connexion Google (phase 2e) : échange du code OIDC et userinfo (déjà utilisé en test).
     "httpx==0.28.1",
+    # Dépendance transitive de httpx, épinglée pour garder le correctif de sécurité
+    # PYSEC-2026-4320 (corrigé en 2026.10.19) et une CI d'audit verte.
+    "certifi==2026.10.19",
     # Web Push (phase 6c-iii-b) : protocole VAPID + chiffrement des messages.
     "pywebpush==2.5.0",
 ]
@@ -32,6 +35,8 @@ dev = [
     "ruff==0.16.10",
     "mypy==2.4.0",
     "pgserver==0.1.4",
+    # Audit des dépendances en CI (AGENTS.md §5).
+    "pip-audit==2.10.1",
 ]
 
 [tool.setuptools.packages.find]
