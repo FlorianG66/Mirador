@@ -4,10 +4,10 @@
 
 ## État
 
-- **Phase en cours** : aucune — **phases 0 à 7 mergées sur `main`** : la phase 7 « Mode démo » (backend, frontend, e2e, docs) est mergée le 2026-10-30 (merge `0da725b`, PR #15, CI verte ; contrôles relancés en local avant merge : 420 tests backend, couverture 86 %, 113 tests Vitest, lint/types/build OK — e2e Playwright non relancés en local). Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
-- **Branche** : `main` (`phase-7-demo` et `chore/qualite-docs-ci` sont mergées, PR #15 et #14).
-- **Prochaine action** : proposer un plan court pour la **phase 8 « Chatbot IA »** (`ROADMAP.md` phase 8, `SPEC.md` §4).
-- **Reste avant merge** : néant.
+- **Phase en cours** : 8 « Chatbot IA » — **livrée sur `phase-8-chatbot`** (8a backend + 8b frontend), en attente de feu vert pour le merge. **Phases 0 à 7 mergées sur `main`** : la phase 7 « Mode démo » (backend, frontend, e2e, docs) est mergée le 2026-10-30 (merge `0da725b`, PR #15, CI verte ; contrôles relancés en local avant merge : 420 tests backend, couverture 86 %, 113 tests Vitest, lint/types/build OK — e2e Playwright non relancés en local). Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
+- **Branche** : `phase-8-chatbot` (issue de `main` ; `phase-7-demo` et `chore/qualite-docs-ci` sont mergées, PR #15 et #14).
+- **Prochaine action** : revue puis merge de la phase 8 après feu vert ; ensuite **phase 9 « Paramétrage & premiers connecteurs réels »** (`ROADMAP.md` phase 9).
+- **Reste avant merge** : feu vert du mainteneur ; la vraie API Anthropic n'a jamais été appelée (aucune clé ici) — l'adaptateur n'est testé qu'avec un client simulé.
 - **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
 - **Dette historique — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (3/3 jobs), PR mergée le 2026-10-20.
 - **À ne pas faire** : merger sur `main` sans feu vert du mainteneur.
@@ -1028,3 +1028,9 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 | Lint/types/build frontend | OK — `tsc -b`, `eslint`, `vite build` |
 | Client OpenAPI | OK — schéma et types régénérés |
 | Merge sur `main` | En attente du feu vert du mainteneur |
+
+### 2026-10-30 — Phase 8 livrée (chatbot IA, branche `phase-8-chatbot`)
+- **Fait** : 8a backend — `LlmProvider` + `AnthropicProvider` (SDK `anthropic==2.3.0`), boucle d'outils en lecture seule (`list_metrics`, `get_metric_comparison`) avec les droits du membre, table `chat_messages` (migration `0013`, RLS), quota journalier (429, plafond démo), 503 sans clé, 502 sur échec ; 8b frontend — page `/assistant`, entrée de menu, i18n FR/EN.
+- **Tests** : `tests/test_chat.py` (9, fournisseur mocké : module non autorisé sans fuite, quota, historique personnel, autre organisation 403, adaptateur), `test_alembic.py` (tête `0013`, RLS sur `chat_messages`), `AssistantPage.test.tsx` (3).
+- **Non vérifié** : appel réel à l'API Anthropic (aucune clé sur cette machine) ; e2e Playwright non écrits pour cette phase (la ROADMAP ne les demande pas).
+- **Dette notée** : la règle « niveaux effectifs du membre » existe maintenant en 5 copies privées (`pulse`, `goals`, `alert_rules`, `team`, `chat`) — à factoriser dans une phase dédiée (refactor hors périmètre ici, AGENTS.md §8).

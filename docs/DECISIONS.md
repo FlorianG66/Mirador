@@ -567,3 +567,15 @@ Les comptes fictifs utilisent `demo+<uuid>@example.com` : `demo.invalid` est ref
 ## 2026-10-22 — Démo : le rafraîchissement du registre est refusé (403) (phase 7)
 
 En organisation de démonstration, `POST /organizations/{id}/legal/refresh` répond 403 : la fiche reste la fiche fictive figée, avec `field_sources.source = "demo"`. Raison : appeler l'API publique avec le SIREN fictif n'aurait aucun sens et pourrait écraser les mentions « fictives » qui signalent la démonstration (SPEC §9) ; le refus est explicite plutôt qu'un échec silencieux.
+
+## 2026-10-30 — Chatbot : SDK officiel `anthropic` 2.3.0, modèle `claude-opus-5-5` configurable (phase 8)
+
+`anthropic==2.3.0` (dernière version stable PyPI vérifiée le 2026-10-30) est ajouté pour le fournisseur LLM par défaut ; le modèle vient de `LLM_MODEL` (défaut `claude-opus-5-5`), avec `effort: low` (réponses courtes, coût maîtrisé) et le repli serveur sur refus (`fallbacks: "default"`). Raison : le SDK officiel plutôt que des appels HTTP faits main (types, erreurs, évolutions de l'API suivies par Anthropic) ; le modèle reste un réglage pour arbitrer coût/qualité sans toucher au code.
+
+## 2026-10-30 — Chatbot : protocole `LlmProvider` + boucle d'outils maison, en lecture seule (phase 8)
+
+Le service ne dépend que du protocole `LlmProvider.respond(system, messages, tools)` ; `AnthropicProvider` l'implémente, la CI injecte un faux fournisseur (`app.state.llm_provider`). La boucle (≤ 6 tours) exécute deux outils, `list_metrics` et `get_metric_comparison`, **avec les droits du membre** : un module non autorisé renvoie une erreur d'outil sans aucune valeur. Seuls la question et la réponse finale sont stockées (`chat_messages`, RLS, historique personnel) ; la question n'est jamais journalisée. Raison : fournisseur interchangeable (SPEC §4) sans abstraction de plus, et la frontière des permissions reste côté serveur, là où elle est déjà testée. Les données envoyées au fournisseur sont des agrégats de métriques, pas de données personnelles (RGPD : minimisation).
+
+## 2026-10-30 — Chatbot : quota journalier par utilisateur en configuration (phase 8)
+
+`CHAT_DAILY_QUOTA` (50) et `CHAT_DEMO_DAILY_QUOTA` (10) bornent les questions par utilisateur et par jour UTC, comptées dans `chat_messages` ; au-delà, 429. Clé absente → 503 (assistant désactivé). Raison : les plans tarifaires n'arrivent qu'en phase 10 ; un plafond configurable suffit à protéger le coût du LLM en attendant, et le compte en base survit aux redémarrages (contrairement au rate limit mémoire).
