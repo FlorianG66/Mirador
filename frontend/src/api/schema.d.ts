@@ -168,6 +168,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/chat/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Messages
+         * @description Historique personnel de l'appelant dans l'organisation.
+         */
+        get: operations["list_messages_api_v1_organizations__organization_id__chat_messages_get"];
+        put?: never;
+        /**
+         * Ask
+         * @description Pose une question ; renvoie la question et la réponse enregistrées.
+         */
+        post: operations["ask_api_v1_organizations__organization_id__chat_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/demo-links": {
         parameters: {
             query?: never;
@@ -1022,6 +1046,37 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * ChatMessageOut
+         * @description Un message de l'historique (question ou réponse).
+         */
+        ChatMessageOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ChatQuestionIn
+         * @description Question posée en langage naturel.
+         */
+        ChatQuestionIn: {
+            /** Content */
+            content: string;
         };
         /**
          * DashboardLayoutUpdate
@@ -2154,6 +2209,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DemoSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_messages_api_v1_organizations__organization_id__chat_messages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatMessageOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_api_v1_organizations__organization_id__chat_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatQuestionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatMessageOut"][];
                 };
             };
             /** @description Validation Error */

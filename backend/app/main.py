@@ -14,6 +14,7 @@ from app.core.middleware import SecurityMiddleware
 from app.core.rate_limit import RateLimiter
 from app.routers.alert_rules import router as alert_rules_router
 from app.routers.auth import router as auth_router
+from app.routers.chat import router as chat_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.demo import organizations_router as demo_organizations_router
 from app.routers.demo import router as demo_router
@@ -32,6 +33,7 @@ from app.routers.team import router as team_router
 from app.routers.two_factor import router as two_factor_router
 from app.services.emails import LogEmailSender
 from app.services.legal_registry import RechercheEntreprisesRegistry
+from app.services.llm import AnthropicProvider, LlmProvider
 from app.services.oidc import GoogleOidcProvider
 from app.services.push import PushSender, WebPushSender
 from app.workers.scheduler import JobScheduler
@@ -102,12 +104,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.push_sender = (
         WebPushSender(resolved_settings) if resolved_settings.vapid_private_key else None
     )
+    # Chatbot IA (phase 8) : fournisseur réel si une clé est configurée, sinon
+    # `None` (503) — les tests posent un faux fournisseur sur `app.state`.
+    llm_provider: LlmProvider | None = (
+        AnthropicProvider(
+            api_key=resolved_settings.anthropic_api_key, model=resolved_settings.llm_model
+        )
+        if resolved_settings.anthropic_api_key
+        else None
+    )
+    app.state.llm_provider = llm_provider
     engine = create_async_engine(resolved_settings.database_url)
     app.state.engine = engine
     # Une fabrique partagée : une session (donc une transaction) par requête.
     app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
     app.include_router(auth_router, prefix=API_PREFIX)
     app.include_router(demo_router, prefix=API_PREFIX)
+    app.include_router(chat_router, prefix=API_PREFIX)
     app.include_router(demo_organizations_router, prefix=API_PREFIX)
     app.include_router(google_router, prefix=API_PREFIX)
     app.include_router(two_factor_router, prefix=API_PREFIX)

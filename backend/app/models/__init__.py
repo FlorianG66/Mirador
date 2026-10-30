@@ -9,6 +9,7 @@ from app.models.audit_log import AuditLog
 from app.models.auth_challenge import AuthChallenge
 from app.models.backup_code import BackupCode
 from app.models.base import Base
+from app.models.chat_message import ChatMessage
 from app.models.dashboard_layout import DashboardLayout
 from app.models.demo_link import DemoLink
 from app.models.enums import (
@@ -40,6 +41,7 @@ __all__ = [
     "AuthChallenge",
     "BackupCode",
     "Base",
+    "ChatMessage",
     "DashboardLayout",
     "DemoLink",
     "DemoSector",

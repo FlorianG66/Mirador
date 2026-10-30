@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     # supprime les organisations démo arrivées à échéance.
     demo_session_ttl_minutes: int = 60
     demo_link_ttl_hours: int = 72
+    # Chatbot IA (phase 8) : clé vide = assistant désactivé (503), jamais de vraie
+    # clé en test ni dans le dépôt. Quotas = questions par utilisateur et par jour
+    # (plafond réduit en démo, SPEC §9) en attendant les plans tarifaires (phase 10).
+    anthropic_api_key: str = ""
+    llm_model: str = "claude-opus-5-5"
+    chat_daily_quota: int = 50
+    chat_demo_daily_quota: int = 10
 
     @property
     def google_redirect_uri(self) -> str:

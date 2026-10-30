@@ -25,6 +25,8 @@ dependencies = [
     "certifi==2026.10.19",
     # Web Push (phase 6c-iii-b) : protocole VAPID + chiffrement des messages.
     "pywebpush==2.5.0",
+    # Chatbot IA (phase 8) : SDK officiel Anthropic (fournisseur LLM par défaut).
+    "anthropic==2.3.0",
 ]
 
 [project.optional-dependencies]
