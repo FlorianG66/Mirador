@@ -4,7 +4,7 @@
 
 ## État
 
-- **Phase en cours** : aucune — **phases 0 à 6 mergées sur `main`**, **phase 7 « Mode démo » livrée sur la branche `phase-7-demo`** (backend, frontend, e2e, docs), en attente de revue et de feu vert pour le merge. Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
+- **Phase en cours** : aucune — **phases 0 à 7 mergées sur `main`** : la phase 7 « Mode démo » (backend, frontend, e2e, docs) est mergée le 2026-10-30 (merge `0da725b`, PR #15, CI verte ; contrôles relancés en local avant merge : 420 tests backend, couverture 86 %, 113 tests Vitest, lint/types/build OK — e2e Playwright non relancés en local). Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
 - **Branche** : `main` (`phase-7-demo` et `chore/qualite-docs-ci` sont mergées, PR #15 et #14).
 - **Prochaine action** : proposer un plan court pour la **phase 8 « Chatbot IA »** (`ROADMAP.md` phase 8, `SPEC.md` §4).
 - **Reste avant merge** : néant.
