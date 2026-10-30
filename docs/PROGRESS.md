@@ -5,8 +5,8 @@
 ## État
 
 - **Phase en cours** : aucune — **phases 0 à 6 mergées sur `main`**, **phase 7 « Mode démo » livrée sur la branche `phase-7-demo`** (backend, frontend, e2e, docs), en attente de revue et de feu vert pour le merge. Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
-- **Branche** : `phase-7-demo` (issue de `main`) — **PR #15** (brouillon) ouverte. La branche de maintenance `chore/qualite-docs-ci` (docs/CI) attend aussi sa revue.
-- **Prochaine action** : relire la PR brouillon de `phase-7-demo`, puis merger après feu vert ; ensuite proposer un plan court pour la **phase 8 « Chatbot IA »** (`ROADMAP.md` phase 8, `SPEC.md` §4).
+- **Branche** : `main` (`phase-7-demo` et `chore/qualite-docs-ci` sont mergées, PR #15 et #14).
+- **Prochaine action** : proposer un plan court pour la **phase 8 « Chatbot IA »** (`ROADMAP.md` phase 8, `SPEC.md` §4).
 - **Reste avant merge** : néant.
 - **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
 - **Dette historique — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (3/3 jobs), PR mergée le 2026-10-20.
