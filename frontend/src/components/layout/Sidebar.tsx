@@ -5,6 +5,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BarChart3,
+  Bot,
   Landmark,
   LayoutDashboard,
   ListChecks,
@@ -59,6 +60,7 @@ export function Sidebar({
   const modules: NavEntry[] = [
     { to: '/', end: true, icon: LayoutDashboard, label: t('nav.dashboard') },
     ...allModules.filter((entry) => entry.moduleKey && canSeeModule(entry.moduleKey, permissions)),
+    { to: '/assistant', icon: Bot, label: t('nav.assistant') },
   ]
 
   const settings: NavEntry[] = [

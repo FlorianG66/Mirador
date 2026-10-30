@@ -21,6 +21,7 @@ const fr = {
     projects: 'Projets & tâches',
     legal: 'Identité légale',
     team: 'Équipe',
+    assistant: 'Assistant IA',
     collapse: 'Replier le menu',
     expand: 'Déplier le menu',
   },
@@ -519,6 +520,22 @@ const fr = {
   errorState: {
     title: 'Impossible de charger les données',
     description: 'Une erreur est survenue. Réessayez dans un instant.',
+  },
+  assistant: {
+    title: 'Assistant IA',
+    subtitle:
+      "Posez vos questions sur les données de l'entreprise. L'assistant ne voit que les modules auxquels vous avez accès et ne modifie rien.",
+    historyLabel: 'Conversation avec l’assistant',
+    empty: "Aucune question pour l'instant. Essayez : « Comment évolue mon chiffre d'affaires ce mois-ci ? »",
+    you: 'Vous',
+    assistant: 'Assistant',
+    thinking: "L'assistant réfléchit…",
+    inputLabel: 'Votre question',
+    placeholder: 'Posez une question sur vos données…',
+    send: 'Envoyer',
+    errorUnavailable: "L'assistant n'est pas disponible sur ce serveur pour le moment.",
+    errorQuota: 'Vous avez atteint votre quota de questions pour aujourd’hui. Revenez demain.',
+    errorGeneric: "L'assistant n'a pas pu répondre. Réessayez dans un instant.",
   },
   notFound: {
     title: 'Page introuvable',

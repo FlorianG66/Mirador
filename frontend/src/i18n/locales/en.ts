@@ -20,6 +20,7 @@ const en = {
     projects: 'Projects & tasks',
     legal: 'Legal identity',
     team: 'Team',
+    assistant: 'AI assistant',
     collapse: 'Collapse menu',
     expand: 'Expand menu',
   },
@@ -512,6 +513,22 @@ const en = {
   errorState: {
     title: 'Could not load the data',
     description: 'Something went wrong. Please try again in a moment.',
+  },
+  assistant: {
+    title: 'AI assistant',
+    subtitle:
+      'Ask questions about your company data. The assistant only sees the modules you can access and never changes anything.',
+    historyLabel: 'Conversation with the assistant',
+    empty: 'No questions yet. Try: “How is my revenue trending this month?”',
+    you: 'You',
+    assistant: 'Assistant',
+    thinking: 'The assistant is thinking…',
+    inputLabel: 'Your question',
+    placeholder: 'Ask a question about your data…',
+    send: 'Send',
+    errorUnavailable: 'The assistant is not available on this server right now.',
+    errorQuota: 'You have reached your question quota for today. Come back tomorrow.',
+    errorGeneric: 'The assistant could not answer. Please try again in a moment.',
   },
   notFound: {
     title: 'Page not found',

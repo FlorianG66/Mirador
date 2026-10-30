@@ -6,6 +6,7 @@ import type { RouteObject } from 'react-router'
 import { AuthProvider } from '../auth/AuthProvider.tsx'
 import { RequireAdmin, RequireAuth, RequireModule } from '../auth/guards.tsx'
 import { AppShell } from '../components/layout/AppShell.tsx'
+import { AssistantPage } from '../pages/AssistantPage.tsx'
 import { DashboardPage } from '../pages/DashboardPage.tsx'
 import { DemoPage } from '../pages/DemoPage.tsx'
 import { FinancePage } from '../pages/FinancePage.tsx'
@@ -81,6 +82,8 @@ export const routes: RouteObject[] = [
                   </RequireModule>
                 ),
               },
+              // Pas de garde de module : chaque outil du chatbot vérifie les droits.
+              { path: 'assistant', element: <AssistantPage /> },
               {
                 path: 'settings',
                 element: <SettingsPage />,
