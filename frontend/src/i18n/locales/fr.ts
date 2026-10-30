@@ -146,6 +146,27 @@ const fr = {
     error: 'Identifiants incorrects. Vérifie ton e-mail et ton mot de passe.',
     forgotPassword: 'Mot de passe oublié ?',
     noAccount: "Pas encore de compte ? S'inscrire",
+    demoLink: 'Essayer la démo sans compte',
+  },
+  demo: {
+    title: 'Essayer la démo',
+    description:
+      'Choisissez un secteur : vous explorez une entreprise fictive, alimentée par des données de démonstration. Aucun compte n’est nécessaire.',
+    sectorLegend: 'Secteur d’activité',
+    restaurant: 'Restaurant',
+    agency: 'Agence',
+    ecommerce: 'E-commerce',
+    start: 'Ouvrir cette démo',
+    starting: 'Ouverture de la démonstration…',
+    loading: 'Chargement des scénarios…',
+    error: 'Impossible d’ouvrir la démonstration pour le moment.',
+    expired: 'Ce lien de démonstration est inconnu ou a expiré.',
+    rateLimited: 'Trop de tentatives. Réessayez dans quelques minutes.',
+    backToLogin: 'Retour à la connexion',
+    bannerTitle: 'Mode démonstration',
+    bannerText:
+      'Entreprise fictive : les données ne sont pas réelles et rien n’est conservé.',
+    bannerCta: 'Créer mon compte',
   },
   register: {
     title: 'Créer un compte',
@@ -438,6 +459,7 @@ const fr = {
       registry: 'Registre',
       manual: 'Saisie manuelle',
       computed: 'Calculé',
+      demo: 'Données fictives',
     },
     fields: {
       raison_sociale: 'Raison sociale',

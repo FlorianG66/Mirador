@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.tenancy import set_tenant
 from app.repositories.organizations import list_organization_ids
 from app.services import alert_rules as alert_rules_service
+from app.services import demo as demo_service
 from app.services import notifications as notifications_service
 from app.services.push import PushSender
 from app.services.sync import sync_organization
@@ -38,6 +39,14 @@ async def sync_all_organizations(
     `push_sender` (optionnel) pousse les notifications émises vers les abonnements
     Web Push ; `None` = canal désactivé (l'in-app reste toujours écrit).
     """
+    # Remise à zéro du bac à sable (SPEC §9) : les organisations de démonstration
+    # échues disparaissent avec leurs données avant la synchro.
+    async with session_factory() as session:
+        purged = await demo_service.purge_expired_demos(session)
+        await session.commit()
+    if purged:
+        logger.info("Démonstrations expirées purgées : %d", purged)
+
     async with session_factory() as session:
         organization_ids = await list_organization_ids(session)
 

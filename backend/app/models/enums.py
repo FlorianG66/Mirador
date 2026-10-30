@@ -51,9 +51,18 @@ class AlertComparison(StrEnum):
     BELOW = "below"
 
 
+class DemoSector(StrEnum):
+    """Scénario sectoriel d'une organisation de démonstration (SPEC §9)."""
+
+    RESTAURANT = "restaurant"
+    AGENCY = "agency"
+    ECOMMERCE = "ecommerce"
+
+
 # Reprise textuelle dans les contraintes CHECK de la base : une seule source de vérité.
 ROLE_VALUES_SQL = ", ".join(f"'{role.value}'" for role in Role)
 MODULE_VALUES_SQL = ", ".join(f"'{module.value}'" for module in Module)
 LEVEL_VALUES_SQL = ", ".join(f"'{level.value}'" for level in PermissionLevel)
 GOAL_DIRECTION_VALUES_SQL = ", ".join(f"'{direction.value}'" for direction in GoalDirection)
 ALERT_COMPARISON_VALUES_SQL = ", ".join(f"'{item.value}'" for item in AlertComparison)
+DEMO_SECTOR_VALUES_SQL = ", ".join(f"'{sector.value}'" for sector in DemoSector)

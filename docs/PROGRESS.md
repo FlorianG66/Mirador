@@ -4,9 +4,9 @@
 
 ## État
 
-- **Phase en cours** : aucune — **phase 6 clôturée et mergée sur `main`** (merge `c813f9f`, PR #9) : toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
-- **Branche** : `main` (tête `21dbfbd`, synchro avec `origin/main`) + branche de maintenance `chore/qualite-docs-ci` (docs/CI, issue de `main`). `phase-7-demo` existe en local au même commit que `main`, sans travail commencé.
-- **Prochaine action** : proposer un plan court pour la **phase 7 « Mode démo »** (`ROADMAP.md` phase 7, `SPEC.md` §9), puis exécuter.
+- **Phase en cours** : aucune — **phases 0 à 6 mergées sur `main`**, **phase 7 « Mode démo » livrée sur la branche `phase-7-demo`** (backend, frontend, e2e, docs), en attente de revue et de feu vert pour le merge. Toutes les sous-phases 6a → 6c sont livrées (6a-i `4c41e9e`, 6a-ii `01c2220`, 6a-iii `831546e`, 6a-iv `e114627`, 6b-i `bd6dcbf`, 6b-ii-a `3f26777`, 6b-ii-b `4140297`, 6c-i `992709c`, 6c-ii `4738b86`+`06f5717`, 6c-iii-a `a3f302e`, 6c-iii-b `4a640c8`). La phase 5 était déjà clôturée et mergée (`dcb7c9d`).
+- **Branche** : `phase-7-demo` (issue de `main`) — **PR #15** (brouillon) ouverte. La branche de maintenance `chore/qualite-docs-ci` (docs/CI) attend aussi sa revue.
+- **Prochaine action** : relire la PR brouillon de `phase-7-demo`, puis merger après feu vert ; ensuite proposer un plan court pour la **phase 8 « Chatbot IA »** (`ROADMAP.md` phase 8, `SPEC.md` §4).
 - **Reste avant merge** : néant.
 - **Dépôt distant** : `https://github.com/FlorianG66/Mirador` (**public**, branche par défaut `main`). Premier push le 2026-10-15 : `main` = `4c1b221`, `phase-6-transverse` = `08eea66`. Secret scanning + push protection + Dependabot (alertes et mises à jour de sécurité) activés ; gitleaks sur tout l'historique (60 commits) → « no leaks found ».
 - **Dette historique — CI rouge** : **réglée le 2026-10-18** — voir l'entrée « Correctif de la CI rouge » dans l'historique. Les 7 tests `test_alembic.py` en `FileNotFoundError` sous Linux venaient de `_with_database` (`backend/tests/conftest.py`) qui faisait `rsplit("/", 1)` dans l'URL **à socket Unix** de pgserver (le vert local Windows en TCP était trompeur) ; corrigé par `make_url(...).set(database=...)` + échappement `%%` de l'URL pour l'interpolation ConfigParser d'Alembic (`68e54d6`, `8781779`). **CI verte sur la PR #9** (3/3 jobs), PR mergée le 2026-10-20.
@@ -996,3 +996,35 @@ Frontend (page d'accueil `/`, le tableau de bord placeholder est remplacé) :
 - **Non fait / à arbitrer** : les **10 PR Dependabot** ouvertes (FastAPI, SQLAlchemy, Pydantic, ruff, i18next, motion, lucide, react-query, @types/node) n'ont pas été mergées — un merge sur `main` demande ton feu vert (AGENTS.md §3). Les e2e Playwright restent hors CI (canal Edge local).
 - CI : **verte sur la PR #14** (brouillon `chore/qualite-docs-ci` → `main`, 3/3 jobs) — première exécution réelle des deux étapes d'audit : `pip-audit` « No known vulnerabilities found » sur Ubuntu (le paquet éditable local `mirador-backend` est ignoré, faute d'être publié sur PyPI) et `npm audit --audit-level=high` « found 0 vulnerabilities ».
 - Commit : `92dfb82` — `chore: audit des dependances en CI, doc a jour et test flaky stabilise` (+ ce compte rendu CI).
+
+
+### 2026-10-22 — Phase 7 livrée (mode démo, backend + frontend + e2e)
+- **Périmètre** (ROADMAP phase 7, SPEC §9) : organisation de démonstration **éphémère par session**, scénarios sectoriels, page publique `/demo`, liens `/demo/<token>` à durée limitée, remise à zéro automatique, bandeau « Démo » et rate limiting renforcé.
+- **Backend** : colonnes `is_demo`/`demo_sector`/`demo_expires_at` sur `organizations` (contrainte `organizations_demo_fields`), table tenant `demo_links` (migration `0012`, RLS activée et forcée + politique par organisation), seul le **haché** du jeton est stocké. `app/services/demo.py` : trois scénarios (restaurant, agence, e-commerce), création de la session (admin sans mot de passe, fiche légale fictive `000000000`/`00000000000000` avec provenance `demo`, données de démo des connecteurs), liens à 72 h, purge des organisations échues. Routes publiques `GET /demo/scenarios`, `POST /demo/sessions` et `POST /demo/links/{token}` (410 si inconnu/expiré) ; génération d'un lien réservée aux admins sous `POST /organizations/{id}/demo-links` (refusée depuis une démo). `sync_all_organizations` purge les démos échues avant la synchro ; `POST .../legal/refresh` répond 403 en démo ; `/auth/me` expose `organization_name`, `is_demo` et `demo_sector` ; rate limits dédiés (session, lien, création de lien) ; `demo_session_ttl_minutes=60` et `demo_link_ttl_hours=72` dans la configuration et `.env.example`.
+- **Frontend** : page publique `DemoPage` (`/demo`, `/demo/:token`) — chargement des scénarios, choix du secteur, ouverture de session, échange d'un lien, messages dédiés (410/429), rechargement de `/auth/me` puis navigation ; `DemoBanner` rendu par `AppShell` (visible seulement si l'organisation active est `is_demo`, rappel « données fictives » + lien d'inscription) ; lien « Essayer la démo sans compte » sur la connexion ; i18n `demo.*` et `legal.provenance.demo` FR/EN.
+- **Corrections pendant la session** : `scenario_payload` inexistant remplacé par la construction de `DemoScenarioOut` ; route admin déplacée sous `/organizations/{organization_id}/demo-links` (routeur `organizations_router`, cohérent avec les tests et les autres ressources d'organisation) ; `rowcount` typé via `getattr` ; purge branchée sur le worker ; e-mails démo sur `example.com` (`demo.invalid` refusé par `EmailStr`/email-validator) ; tests ajustés (`fictive`, `WHERE is_demo`).
+- **Tests backend** : `tests/test_demo.py` **11 passed** — isolement réel/démo (marqueur inséré dans un vrai tenant, invisible depuis la démo, refus 403 hors organisation), scénarios et fiche fictive, lien valide/expiré, purge via `sync_all_organizations`, rate limit, refus du rafraîchissement registre. Suite complète **420 passed** (378 s). `tests/test_alembic.py` mis à jour (`HEAD_REVISION = "0012"`, colonnes `demo_*`).
+- **Tests frontend** : `DemoPage.test.tsx` (4 — scénarios + session sur le secteur choisi, échange d'un lien, lien expiré, panne des scénarios) et `DemoBanner.test.tsx` (2 — visible en démo, invisible sinon) ; Vitest **113 passed** (26 fichiers). e2e `demo.spec.ts` (2 — parcours secteur → tableau de bord → bandeau, lien expiré) ; suite Playwright **15 passed**.
+- **Vérifications** : `ruff check` + `ruff format --check` OK ; `mypy app` 0 erreur (126 fichiers) ; `npm run typecheck` 0 erreur ; `npm run lint` 0 erreur ; `npm run build` OK (avertissement « chunk > 500 kB » préexistant) ; client OpenAPI régénéré (`export_openapi.py` + `generate:api`).
+- **Décisions** : `DECISIONS.md` (2026-10-22) — organisation éphémère par session, jetons hachés et route admin sous `/organizations/{id}`, e-mails sur `example.com` et purge dans le worker, rafraîchissement du registre refusé en démo.
+- **Non fait** : merge sur `main` (feu vert du mainteneur requis, AGENTS.md §3) et vérification de la CI sur la PR #15. Les 10 PR Dependabot restent en attente.
+- **Commits** : `7276d50` (backend), `d2f1127` (frontend + e2e + client API), `18e3c78` (docs) — PR #15.
+
+### Critères de la phase 7 — vérifié du terrain
+| Critère | État |
+|---|---|
+| Organisation `is_demo` isolée et fictive | OK — une organisation par session, fiche légale `000000000`/`00000000000000` marquée `demo`, aucun appel aux registres |
+| Scénarios sectoriels | OK — restaurant, agence, e-commerce |
+| `/demo` public et liens à durée limitée | OK — sessions, lien haché 72 h, 410 si expiré, route admin réservée aux admins |
+| Remise à zéro automatique | OK — purge des organisations échues dans le worker de synchronisation |
+| Bandeau « Démo » | OK — `DemoBanner` dans `AppShell`, visible si `is_demo` |
+| Rate limiting renforcé | OK — quotas dédiés sur session/lien/création de lien |
+| Aucune fuite démo ↔ vrai tenant | OK — test dédié (marqueur + 403), RLS sur `demo_links` |
+| Expiration des liens | OK — test backend + test frontend + e2e |
+| Tests backend | OK — `tests/test_demo.py` 11 passed ; suite **420 passed** |
+| Tests frontend | OK — Vitest **113 passed** (26 fichiers) |
+| Tests e2e | OK — Playwright **15 passed** (+2 `demo.spec.ts`) |
+| Lint/types backend | OK — `ruff` + `mypy` 0 erreur |
+| Lint/types/build frontend | OK — `tsc -b`, `eslint`, `vite build` |
+| Client OpenAPI | OK — schéma et types régénérés |
+| Merge sur `main` | En attente du feu vert du mainteneur |

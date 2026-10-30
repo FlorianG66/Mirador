@@ -7,6 +7,7 @@ import { AuthProvider } from '../auth/AuthProvider.tsx'
 import { RequireAdmin, RequireAuth, RequireModule } from '../auth/guards.tsx'
 import { AppShell } from '../components/layout/AppShell.tsx'
 import { DashboardPage } from '../pages/DashboardPage.tsx'
+import { DemoPage } from '../pages/DemoPage.tsx'
 import { FinancePage } from '../pages/FinancePage.tsx'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.tsx'
 import { LegalPage } from '../pages/LegalPage.tsx'
@@ -30,6 +31,8 @@ export const routes: RouteObject[] = [
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
       { path: '/reset-password', element: <ResetPasswordPage /> },
       { path: '/2fa', element: <TwoFactorPage /> },
+      { path: '/demo', element: <DemoPage /> },
+      { path: '/demo/:token', element: <DemoPage /> },
       {
         element: <RequireAuth />,
         children: [

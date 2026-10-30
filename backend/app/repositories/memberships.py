@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import Role
 from app.models.membership import Membership
+from app.models.organization import Organization
 
 
 async def create_membership(
@@ -64,3 +65,21 @@ async def list_memberships_for_user(
         .order_by(Membership.created_at, Membership.organization_id)
     )
     return list(result.scalars().all())
+
+
+async def list_memberships_with_organization_for_user(
+    session: AsyncSession, *, user_id: uuid.UUID
+) -> list[tuple[Membership, Organization]]:
+    """Rattachements d'un utilisateur, avec l'organisation (nom et marqueur démo).
+
+    L'UI a besoin du nom pour l'écran de choix d'organisation et du drapeau `is_demo`
+    pour afficher le bandeau « Démo ». La jointure reste filtrée par utilisateur,
+    donc lisible sous la politique RLS `USING` de `memberships`.
+    """
+    result = await session.execute(
+        select(Membership, Organization)
+        .join(Organization, Organization.id == Membership.organization_id)
+        .where(Membership.user_id == user_id)
+        .order_by(Membership.created_at, Membership.organization_id)
+    )
+    return [(membership, organization) for membership, organization in result.all()]

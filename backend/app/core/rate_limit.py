@@ -35,6 +35,21 @@ INVITE_RATE_WINDOW_SECONDS = 60 * 60
 GOOGLE_RATE_LIMIT = 10
 GOOGLE_RATE_WINDOW_SECONDS = 60
 
+# Démonstration publique (phase 7) : chaque ouverture crée une organisation et
+# seme ses données. Le quota est volontairement bas (SPEC §9 : rate limiting
+# renforcé) ; l'échange d'un lien est un peu plus permissif (ouverture répétée).
+DEMO_SESSION_RATE_LIMIT = 5
+DEMO_SESSION_RATE_WINDOW_SECONDS = 10 * 60
+DEMO_LINK_RATE_LIMIT = 10
+DEMO_LINK_RATE_WINDOW_SECONDS = 10 * 60
+DEMO_LINK_CREATE_RATE_LIMIT = 20
+DEMO_LINK_CREATE_RATE_WINDOW_SECONDS = 60 * 60
+
+# Démarrage d'une démonstration (phase 7) : chaque appel crée (une seule fois) une
+# organisation et une session. Quota renforcé (SPEC §9) : 5 par heure et par IP.
+DEMO_START_RATE_LIMIT = 5
+DEMO_START_RATE_WINDOW_SECONDS = 60 * 60
+
 
 class RateLimiter:
     """Compteur de tentatives par clé, purge automatique des fenêtres expirées."""

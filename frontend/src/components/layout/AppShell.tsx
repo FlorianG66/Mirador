@@ -11,6 +11,7 @@ import { useRailCollapsed } from '../../hooks/useRailCollapsed.ts'
 import { SearchPalette } from '../../search/SearchPalette.tsx'
 import { Sidebar } from './Sidebar.tsx'
 import { Topbar } from './Topbar.tsx'
+import { DemoBanner } from './DemoBanner.tsx'
 import { PageTransition } from './PageTransition.tsx'
 
 const RAIL_EXPANDED = '16rem'
@@ -67,6 +68,7 @@ export function AppShell() {
           onOpenSidebar={() => setSidebarOpen(true)}
           onOpenSearch={() => setSearchOpen(true)}
         />
+        <DemoBanner />
         <main id="main-content" className="flex-1 p-4 lg:p-8 print:p-0">
           <PageTransition key={location.pathname}>
             <Outlet />

@@ -551,3 +551,19 @@ Le `kind` backend `alert.threshold` est traduit par une entrée explicite de `TI
 ## 2026-10-22 — Tests du planificateur : attente de condition, pas de sommeil fixe
 
 Les tests de `JobScheduler` attendaient `asyncio.sleep(0.03)` en supposant que la boucle aurait tourné deux fois ; ce n'est pas garanti sur une machine chargée (flake constaté en 6c-ii, vert isolé). Ils attendent désormais la condition (`_wait_until`, sondage de 5 ms borné à 5 s). Raison : un test doit échouer pour un bug, pas pour un aléa d'ordonnancement — et le code de production n'est pas modifié (aucune marge ajoutée au planificateur).
+
+## 2026-10-22 — Démo : une organisation éphémère par session, jamais un tenant partagé (phase 7)
+
+Chaque ouverture de démo crée une organisation `is_demo` **neuve** (admin sans mot de passe, fiche légale fictive, données de démo), avec une échéance (`demo_expires_at`, 60 min par défaut) ; la purge supprime l'organisation et ses comptes. Raison : un bac à sable partagé aurait exigé un nettoyage fin par visiteur et laissé des traces entre deux prospects ; l'isolation par tenant réutilise la RLS existante et rend la remise à zéro triviale. Le prix (une organisation par session) est acceptable à cette échelle.
+
+## 2026-10-22 — Démo : liens à jeton haché, route admin sous `/organizations/{id}` (phase 7)
+
+Le lien `/demo/<token>` n'est stocké que sous forme de haché (`demo_links`, échéance 72 h) ; le jeton en clair n'existe que dans la réponse de création. La génération vit sous `POST /organizations/{organization_id}/demo-links`, comme les autres ressources d'organisation, et est réservée aux admins ; une organisation de démonstration ne peut pas en générer. Raison : un jeton en clair en base serait un secret durable (dépôt public, AGENTS.md §5) et la route d'administration devait suivre le préfixe existant plutôt que d'ajouter un second schéma d'URL.
+
+## 2026-10-22 — Démo : e-mails sur `example.com`, purge branchée sur le worker (phase 7)
+
+Les comptes fictifs utilisent `demo+<uuid>@example.com` : `demo.invalid` est refusé par `EmailStr`/email-validator (domaine « special-use »), alors que `example.com` est réservé par la RFC 2606 et ne peut recevoir de courrier. La purge des organisations échues est appelée par `sync_all_organizations` avant la synchro, plutôt qu'un job dédié. Raison : aucun compte démo ne doit pouvoir être repris (pas de mot de passe) et un seul passage planifié suffit à garantir la remise à zéro, sans nouveau planificateur à maintenir.
+
+## 2026-10-22 — Démo : le rafraîchissement du registre est refusé (403) (phase 7)
+
+En organisation de démonstration, `POST /organizations/{id}/legal/refresh` répond 403 : la fiche reste la fiche fictive figée, avec `field_sources.source = "demo"`. Raison : appeler l'API publique avec le SIREN fictif n'aurait aucun sens et pourrait écraser les mentions « fictives » qui signalent la démonstration (SPEC §9) ; le refus est explicite plutôt qu'un échec silencieux.
